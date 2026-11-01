@@ -1,0 +1,172 @@
+name: Vesel
+options:
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: ../Signing.xcconfig
+  Release: ../Signing.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGN_STYLE: Automatic
+packages:
+  VeselCore:
+    path: Packages/VeselCore
+  VeselStorage:
+    path: Packages/VeselStorage
+  VeselWearable:
+    path: Packages/VeselWearable
+  VeselSync:
+    path: Packages/VeselSync
+targets:
+  Vesel:
+    type: application
+    platform: iOS
+    sources:
+      - Vesel
+    dependencies:
+      - package: VeselCore
+      - package: VeselStorage
+      - package: VeselWearable
+      - package: VeselWearable
+        product: VeselWearableTesting
+      - package: VeselSync
+      - target: VeselWidgets
+    postBuildScripts:
+      - name: Leave the fake band out of Release
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        # The input makes the script wait until the package's resource bundle has been copied in.
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(WRAPPER_NAME)/VeselWearable_VeselWearableTesting.bundle
+        script: |
+          set -euo pipefail
+          [ "$CONFIGURATION" = Release ] || exit 0
+          app="${TARGET_BUILD_DIR}/${WRAPPER_NAME}"
+          rm -rf "$app/VeselWearable_VeselWearableTesting.bundle"
+          if find "$app" -name Fixtures | grep -q . || grep -rq FakeWearableSource "$app"; then
+            echo "error: the fake band is in the Release app" >&2
+            exit 1
+          fi
+    info:
+      path: Vesel/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLName: app.vesel.ios
+            CFBundleURLSchemes:
+              - vesel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UIBackgroundModes:
+          - bluetooth-central
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - app.vesel.ios.refresh
+          - app.vesel.ios.catchup
+          - $(VESEL_BUNDLE_PREFIX).ios.read.*
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        VeselAppGroup: group.$(VESEL_BUNDLE_PREFIX).ios
+    entitlements:
+      path: Vesel/Vesel.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.$(VESEL_BUNDLE_PREFIX).ios
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).ios
+        PRODUCT_NAME: Vesel
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Vesel
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Vesel reads your band directly over Bluetooth, so your data never goes through anyone's cloud."
+        INFOPLIST_KEY_NSCameraUsageDescription: "Vesel uses the camera only to scan the backup QR your Mac shows."
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Vesel backs up to your Mac over your home Wi-Fi, and nowhere else."
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: Accent
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+  VeselWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VeselWidgets
+        excludes:
+          - Info.plist
+      - Vesel/Theme
+      - Vesel/Assets.xcassets
+    dependencies:
+      - package: VeselCore
+      - package: VeselStorage
+    info:
+      path: VeselWidgets/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        VeselAppGroup: group.$(VESEL_BUNDLE_PREFIX).ios
+    entitlements:
+      path: VeselWidgets/VeselWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.$(VESEL_BUNDLE_PREFIX).ios
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).ios.widgets
+        PRODUCT_NAME: VeselWidgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Vesel
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: Accent
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+  VeselAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: VeselAppTests
+      - path: VeselWidgets
+        excludes:
+          - Info.plist
+          - VeselWidgetsBundle.swift
+          - VeselWidgets.entitlements
+      - Vesel/Theme
+    dependencies:
+      - target: Vesel
+      - package: VeselCore
+      - package: VeselStorage
+      - package: VeselWearable
+      - package: VeselWearable
+        product: VeselWearableTesting
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).ios.app.tests
+schemes:
+  Vesel:
+    build:
+      targets:
+        Vesel: all
+        VeselWidgets: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-VeselScenario normal": true
+    test:
+      config: Debug
+      targets:
+        - name: VeselAppTests
+          parallelizable: true
+        - package: VeselWearable/VeselWearableTests
+          parallelizable: true

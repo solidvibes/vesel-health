@@ -1,0 +1,23 @@
+[project]
+name = "vesel-server"
+version = "0.1.0"
+description = "Backup service for Vesel on the owner's own Mac"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "uvicorn>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16",
+    "pytest>=8.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

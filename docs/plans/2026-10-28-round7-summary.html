@@ -1,0 +1,215 @@
+<title>Vesel Round 7</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a column of two decisions; each shows phones side by side, then a short options table. */
+:root{
+  --bg:#F3F3F1; --surface:#FFFFFF; --text:#111113; --muted:#55555B; --line:#DCDCD8;
+  --recovery:#2F9E5B; --sleep:#3B6CF6; --stress:#D9621B; --accent:#2F5FE0; --steps:#55555B;
+  --glass:rgba(255,255,255,.62); --glassEdge:rgba(255,255,255,.8); --phone:#1b1b1d;
+  --pick:#22844A; --pickBg:#E6F3EB;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E0F11; --surface:#1A1C20; --text:#F2F2F4; --muted:#A1A1AA; --line:#2A2C31;
+  --recovery:#4CC27D; --sleep:#7FA2FF; --stress:#FF9A52; --accent:#7FA2FF; --steps:#A1A1AA;
+  --glass:rgba(34,36,41,.62); --glassEdge:rgba(255,255,255,.08); --phone:#3a3b3f;
+  --pick:#4ADE80; --pickBg:#16301f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E0F11; --surface:#1A1C20; --text:#F2F2F4; --muted:#A1A1AA; --line:#2A2C31;
+  --recovery:#4CC27D; --sleep:#7FA2FF; --stress:#FF9A52; --accent:#7FA2FF; --steps:#A1A1AA;
+  --glass:rgba(34,36,41,.62); --glassEdge:rgba(255,255,255,.08); --phone:#3a3b3f;
+  --pick:#4ADE80; --pickBg:#16301f; color-scheme:dark}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.45}
+main{max-width:1060px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:56px}
+h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:26px;margin:0;text-wrap:balance}
+h3{font-size:17px;margin:0}
+p{margin:0;max-width:65ch}
+.lead{color:var(--muted);font-size:17px}
+section{display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.cap{font-weight:600;display:flex;gap:8px;align-items:center}
+.sub{color:var(--muted);font-size:13px;text-align:center;max-width:270px}
+.pick{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--pick);background:var(--pickBg);padding:2px 8px;border-radius:99px}
+
+/* Phone */
+.phone{width:270px;max-width:100%;height:540px;border-radius:40px;border:7px solid var(--phone);position:relative;overflow:hidden;background:var(--bg)}
+.phone.short{height:auto;min-height:0}
+.blobs{position:absolute;inset:0;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(38px)}
+.screen{position:relative;padding:44px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.screen .t{font-family:var(--display);font-size:26px;font-weight:700;line-height:1.1}
+.screen .d{color:var(--muted);font-size:12px;margin-top:-6px}
+.card{background:var(--glass);border:1px solid var(--glassEdge);border-radius:18px;padding:11px 12px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:6px}
+.card .lbl{font-size:11px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between}
+.big{font-family:var(--display);font-size:24px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.big small{font-size:12px;font-weight:500;color:var(--muted);margin-left:4px}
+.lr{display:grid;grid-template-columns:62px 1fr;align-items:center;gap:8px;font-size:11px}
+.track{position:relative;height:6px;border-radius:3px;background:var(--line)}
+.track .n{position:absolute;top:0;bottom:0;border-radius:3px;opacity:.35}
+.track .dot{position:absolute;top:50%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid var(--surface)}
+.new{outline:2px dashed var(--accent);outline-offset:3px}
+svg{display:block;max-width:100%}
+.chart text{fill:var(--muted);font-size:9px;font-family:var(--sans)}
+
+/* Tables */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+tr.rec td:first-child{font-weight:700}
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.term{background:var(--surface);border-radius:14px;padding:12px 14px;min-width:0}
+.term b{display:block;margin-bottom:2px}
+.note{border-left:3px solid var(--stress);padding:10px 14px;background:var(--surface);border-radius:0 12px 12px 0;max-width:72ch}
+.ask{background:var(--surface);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+@media (prefers-reduced-motion:no-preference){.drift{animation:drift 14s ease-in-out infinite alternate}}
+@keyframes drift{to{transform:translate(10px,14px)}}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:10px">
+  <span class="eyebrow">Round 7 · two choices before building</span>
+  <h1>A calmer background, and steps</h1>
+  <p class="lead">Pick one background and say yes or no to each steps piece. Numbers on this page are examples, not your data.</p>
+</header>
+
+<!-- 1. Background -->
+<section>
+  <span class="eyebrow">1 · The background behind every screen</span>
+  <h2>How much colour behind the cards?</h2>
+  <div class="row" id="bgRow"></div>
+  <div class="tw"><table>
+    <thead><tr><th>Option</th><th>What you get</th><th>What it costs later</th></tr></thead>
+    <tbody>
+      <tr><td>A · Today's blobs</td><td>Green, blue and orange glows; Today turns warmer when something is off.</td><td>Nothing. Stays as busy as it is now.</td></tr>
+      <tr class="rec"><td>B · Much softer <span class="pick">Recommended</span></td><td>One faint wash at the top, about a third as strong. The glass cards still look like glass. The warm glow on an off day stays, but quieter.</td><td>Nothing. The calm-background idea (shifting with stress) can still build on it later.</td></tr>
+      <tr><td>C · Plain</td><td>Flat background, no colour at all. Calmest.</td><td>Glass cards turn into plain grey boxes. "Something's off" loses its warm glow, so only the card says it.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 2. Steps -->
+<section>
+  <span class="eyebrow">2 · Steps, in three places</span>
+  <h2>Steps on Today, in the Journal and in Body</h2>
+  <p>The band already sends the day's step count with every read. It is stored but not shown yet. No goal, no streak, no best: just the number, and in Body your normal.</p>
+
+  <div class="row">
+    <div class="col">
+      <span class="cap">Today · a small card under Heart rate</span>
+      <div class="phone" id="todaySteps"></div>
+      <span class="sub">Today's count so far, with the time of the last read. No "usual by now": comparing a half-day to a whole day invites chasing.</span>
+    </div>
+    <div class="col">
+      <span class="cap">Body · a Steps card</span>
+      <div class="phone" id="bodySteps"></div>
+      <span class="sub">Steps per day for 4 weeks over your normal (shaded, moves with you). Tap opens the full chart: week, month, 3 months.</span>
+    </div>
+  </div>
+
+  <h3 style="margin-top:12px">Journal · each day's card</h3>
+  <div class="note"><p><b>You dropped hourly steps on 27 October.</b> A steps-by-hour chart on the Journal card would bring that back, so it is drawn both ways. Without it, the card just gets one line.</p></div>
+  <div class="row">
+    <div class="col">
+      <span class="cap">J1 · One line <span class="pick">Recommended</span></span>
+      <div class="phone short" style="width:300px"><div class="screen" id="j1"></div></div>
+      <span class="sub">The day's total, next to what the card already shows. Keeps your 27 October call.</span>
+    </div>
+    <div class="col">
+      <span class="cap">J2 · With steps by hour</span>
+      <div class="phone short" style="width:300px"><div class="screen" id="j2"></div></div>
+      <span class="sub">Small bars per hour under the total. Brings hourly steps back, and makes every Journal card taller.</span>
+    </div>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Piece</th><th>What you get</th><th>What it costs later</th></tr></thead>
+    <tbody>
+      <tr class="rec"><td>Today card <span class="pick">Recommended</span></td><td>Steps so far, under Heart rate. Tap opens the Body steps chart.</td><td>One more card on Today. Updates only when the band is read, so it can lag by up to the read gap.</td></tr>
+      <tr class="rec"><td>Body card <span class="pick">Recommended</span></td><td>Daily steps over a moving normal, like the Stress card.</td><td>Nothing new to store.</td></tr>
+      <tr class="rec"><td>J1 · Journal line <span class="pick">Recommended</span></td><td>The day's total on its card.</td><td>Nothing new to store.</td></tr>
+      <tr><td>J2 · Journal hourly bars</td><td>When in the day you moved.</td><td>Reverses your 27 October call. Needs hourly steps pulled out of the stored band files and kept in a new table: a database change.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Words on this page</span>
+  <div class="terms">
+    <div class="term"><b>Blobs</b>Soft blurred circles of the data colours behind the cards. They give the glass something to show through.</div>
+    <div class="term"><b>Glass card</b>The see-through cards every screen uses. Over a plain background they read as grey boxes.</div>
+    <div class="term"><b>Your normal</b>The shaded band: your last 4 weeks, so it moves as you change. Inside it is fine, never a target.</div>
+    <div class="term"><b>Last read</b>Steps come from the band's daily summary, so the number is as fresh as the last time Vesel read the band.</div>
+  </div>
+</section>
+
+<section class="ask">
+  <h3>What to answer</h3>
+  <p>Background: A, B or C. Steps: Today card yes/no, Body card yes/no, Journal J1 or J2. "ok" takes everything marked Recommended.</p>
+</section>
+</main>
+
+<script>
+const blobsToday=`<div class="blobs drift">
+ <div class="blob" style="background:var(--recovery);opacity:.28;width:240px;height:240px;left:-110px;top:-40px"></div>
+ <div class="blob" style="background:var(--sleep);opacity:.28;width:215px;height:215px;right:-110px;top:150px"></div>
+ <div class="blob" style="background:var(--stress);opacity:.28;width:190px;height:190px;left:-30px;bottom:-40px"></div></div>`;
+const blobsSoft=`<div class="blobs">
+ <div class="blob" style="background:var(--sleep);opacity:.10;width:300px;height:200px;left:-20px;top:-90px"></div>
+ <div class="blob" style="background:var(--recovery);opacity:.08;width:180px;height:160px;left:-80px;top:-40px"></div></div>`;
+const blobsPlain=``;
+
+const line=(name,c,n0,n1,v,hollow)=>`<div class="lr"><span>${name}</span><div class="track">
+ <div class="n" style="background:${c};left:${n0}%;width:${n1-n0}%"></div>
+ <div class="dot" style="left:${v}%;background:${hollow?'var(--surface)':c};${hollow?`border-color:${c}`:''}"></div></div></div>`;
+const linesCard=`<div class="card"><div class="lbl"><span>Last night</span><span>›</span></div>
+ ${line('Recovery','var(--recovery)',35,100,62)}${line('Sleep','var(--sleep)',30,72,55)}${line('Stress','var(--stress)',0,58,40)}</div>`;
+const hrPts=[72,70,66,64,68,74,80,77,71,69,73,82,88,79,74,72,70];
+const spark=(pts,c)=>{const w=220,h=34,mx=Math.max(...pts),mn=Math.min(...pts);
+ const d=pts.map((p,i)=>`${i?'L':'M'}${(i/(pts.length-1)*w).toFixed(1)} ${(h-3-(p-mn)/(mx-mn)*(h-6)).toFixed(1)}`).join(' ');
+ return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}"><path d="${d}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/></svg>`};
+const hrCard=`<div class="card"><div class="lbl"><span>Heart rate</span><span>›</span></div>
+ <div class="big">72<small>bpm · resting 54</small></div>${spark(hrPts,'var(--stress)')}</div>`;
+const stepsCard=(isNew)=>`<div class="card ${isNew?'new':''}"><div class="lbl"><span>Steps</span><span>›</span></div>
+ <div class="big">6,240<small>so far · read 14:32</small></div></div>`;
+
+const today=(blobs,extra='')=>`${blobs}<div class="screen"><div class="t">Today</div><div class="d">Wednesday 28 October</div>${linesCard}${hrCard}${extra}
+ <div class="card"><div class="lbl"><span>Reading</span></div><div style="font-size:12px">Why resting heart rate drifts up after a late meal</div></div></div>`;
+
+const opts=[['A · Today\'s blobs',blobsToday,'What you see now.'],['B · Much softer',blobsSoft,'One faint wash at the top.',true],['C · Plain',blobsPlain,'No colour behind the cards.']];
+document.getElementById('bgRow').innerHTML=opts.map(([n,b,s,rec])=>`<div class="col"><span class="cap">${n}${rec?' <span class="pick">Recommended</span>':''}</span>
+ <div class="phone">${today(b)}</div><span class="sub">${s}</span></div>`).join('');
+
+document.getElementById('todaySteps').innerHTML=today(blobsSoft,stepsCard(true));
+
+// Body: 28 days of steps over a moving normal band
+const days=[8210,9420,6110,11040,7480,10230,12800,7020,8890,9930,5620,10410,9120,13240,6870,8340,9710,7260,11520,8010,4980,9640,10120,7730,8850,12110,9300,6240];
+const chart=()=>{const W=230,H=120,pad=16,top=8,mx=14000,bw=(W-pad)/days.length;
+ const y=v=>top+(H-top-14)*(1-v/mx);
+ let lo=[],hi=[];days.forEach((_,i)=>{const s=days.slice(Math.max(0,i-27),i+1),m=s.reduce((a,b)=>a+b,0)/s.length;
+  const sd=Math.sqrt(s.reduce((a,b)=>a+(b-m)**2,0)/s.length)||1500;lo.push(m-sd);hi.push(m+sd)});
+ const x=i=>pad+i*bw+bw/2;
+ const band=`M${hi.map((v,i)=>`${x(i)} ${y(v)}`).join(' L')} L${lo.map((v,i)=>`${x(i)} ${y(v)}`).reverse().join(' L')} Z`;
+ const bars=days.map((v,i)=>`<rect x="${(pad+i*bw+1.2).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw-2.4).toFixed(1)}" height="${(H-14-y(v)).toFixed(1)}" rx="1.5" fill="var(--steps)" opacity="${i===days.length-1?.45:.85}"/>`).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%"><path d="${band}" fill="var(--accent)" opacity=".16"/>${bars}
+  <text x="0" y="${y(10000)+3}">10k</text><text x="0" y="${y(5000)+3}">5k</text>
+  <text x="${pad}" y="${H-2}">1 Oct</text><text x="${W-28}" y="${H-2}">Today</text></svg>`};
+document.getElementById('bodySteps').innerHTML=`${blobsSoft}<div class="screen"><div class="t">Body</div><div class="d">Last 4 weeks</div>
+ <div class="card"><div class="lbl"><span>Heart fitness</span><span>›</span></div><div style="font-size:13px">About your age</div></div>
+ <div class="card new"><div class="lbl"><span>Steps</span><span>›</span></div><div style="font-size:12px;color:var(--muted)">Your normal 7,100–11,300 a day</div>${chart()}
+  <div style="font-size:11px;color:var(--muted)">Today's bar is lighter: the day isn't over.</div></div>
+ <div class="card"><div class="lbl"><span>Stress</span><span>›</span></div><div style="font-size:12px;color:var(--muted)">High-stress minutes per day</div></div></div>`;
+
+const jHead=`<div class="card" style="gap:8px"><div class="lbl"><span style="color:var(--text);font-size:13px">Tue 27 October</span><span>›</span></div>
+ ${line('Recovery','var(--recovery)',35,100,70)}${line('Sleep','var(--sleep)',30,72,48)}${line('Stress','var(--stress)',0,58,30)}`;
+const jSteps=`<div class="lr new" style="grid-template-columns:62px 1fr;border-radius:4px"><span>Steps</span><span style="font-weight:600;font-variant-numeric:tabular-nums">8,850</span></div>`;
+const hourly=[0,0,0,0,0,0,40,620,880,310,150,420,960,380,210,170,540,1240,690,330,280,120,90,0];
+const hourBars=()=>{const W=250,H=44,bw=W/24,mx=1300;return `<svg class="chart new" viewBox="0 0 ${W} ${H+10}" width="100%">${hourly.map((v,i)=>`<rect x="${(i*bw+1).toFixed(1)}" y="${(H-v/mx*H).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${(v/mx*H).toFixed(1)}" rx="1" fill="var(--steps)"/>`).join('')}
+ <text x="0" y="${H+9}">00</text><text x="${W/2-5}" y="${H+9}">12</text><text x="${W-12}" y="${H+9}">24</text></svg>`};
+document.getElementById('j1').innerHTML=jHead+jSteps+'</div>';
+document.getElementById('j2').innerHTML=jHead+jSteps+hourBars()+'</div>';
+</script>

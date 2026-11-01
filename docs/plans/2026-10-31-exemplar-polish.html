@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vesel Exemplar Polish</title>
+<style>
+/* Layout: plan approval page, boxes first, mockups, phase line, reference lists. Look from docs/design/system.md (Clear glass). */
+:root{
+  --paper:#F3F3F1; --card:#FFFFFF; --ink:#111113; --ink-soft:#55555B; --line:#E2E2DE;
+  --link:#2F5FE0; --link-ink:#2F5FE0; --ok:#22844A; --ok-tint:#E6F2EA; --link-band:#7FA2FF;
+  /* derived */
+  --hot:#9A5412; --hot-ink:#9A5412; --on-hot:#FFFFFF; --hot-tint:#F7ECDD; --warn-tint:#F7EDCB;
+  --line-strong:#87878A; --cell:#EDEDEA; --off:#ECECE9;
+  --tint-a:#E8EEFC; --tint-b:#E7F3EC; --tint-c:#F3ECE6;
+  --band:#111113; --on-band:#F2F2F4; --on-band-soft:#A1A1AA;
+  --display:-apple-system,"SF Pro Display",system-ui,sans-serif; --sans:-apple-system,"SF Pro Text",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-tile:12px; --r-card:24px; --r-sheet:32px;
+  --app-bg:#F3F3F1; --app-surface:#FFFFFF; --app-text:#111113; --app-muted:#55555B; --app-primary:#111113; --app-on-primary:#FFFFFF; --app-sleep:#3B6CF6; --app-recovery:#2F9E5B; --app-warn:#D9621B;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0E0F11; --card:#1A1C20; --ink:#F2F2F4; --ink-soft:#A1A1AA; --line:#2C2F35;
+  --link:#7FA2FF; --link-ink:#7FA2FF; --ok:#4ADE80; --ok-tint:#16271D; --link-band:#7FA2FF;
+  --hot:#E0A060; --hot-ink:#E0A060; --on-hot:#1F1408; --hot-tint:#2E2418; --warn-tint:#322B16;
+  --line-strong:#6E7078; --cell:#16181C; --off:#16181B;
+  --tint-a:#1A2236; --tint-b:#17261D; --tint-c:#2A211A;
+  --band:#08090A; --on-band:#F2F2F4; --on-band-soft:#A1A1AA;
+  --app-bg:#0E0F11; --app-surface:#1A1C20; --app-text:#F2F2F4; --app-muted:#A1A1AA; --app-primary:#F2F2F4; --app-on-primary:#111113; --app-sleep:#7FA2FF; --app-recovery:#4CC27D; --app-warn:#FF9A52;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E0F11; --card:#1A1C20; --ink:#F2F2F4; --ink-soft:#A1A1AA; --line:#2C2F35;
+  --link:#7FA2FF; --link-ink:#7FA2FF; --ok:#4ADE80; --ok-tint:#16271D; --link-band:#7FA2FF;
+  --hot:#E0A060; --hot-ink:#E0A060; --on-hot:#1F1408; --hot-tint:#2E2418; --warn-tint:#322B16;
+  --line-strong:#6E7078; --cell:#16181C; --off:#16181B;
+  --tint-a:#1A2236; --tint-b:#17261D; --tint-c:#2A211A;
+  --band:#08090A; --on-band:#F2F2F4; --on-band-soft:#A1A1AA;
+  --app-bg:#0E0F11; --app-surface:#1A1C20; --app-text:#F2F2F4; --app-muted:#A1A1AA; --app-primary:#F2F2F4; --app-on-primary:#111113; --app-sleep:#7FA2FF; --app-recovery:#4CC27D; --app-warn:#FF9A52;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.55 var(--sans);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:40px 0}
+header.hero{padding-block:24px 36px;display:grid;gap:18px}
+.eyebrow{font:600 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--link-ink)}
+h1{font:700 clamp(2.2rem,5vw,3.4rem)/1.08 var(--display);margin:0;text-wrap:balance;max-width:20ch}
+h2{font:700 clamp(1.4rem,3vw,1.9rem)/1.15 var(--display);margin:0;text-wrap:balance}
+.lede{font-size:1.15rem;color:var(--ink-soft);max-width:62ch;margin:0}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.facts{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.92rem}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--hot)} .dot.ok{background:var(--ok)}
+nav.toc{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.92rem}
+nav.toc a{color:var(--ink-soft);text-decoration:none;border-bottom:1px solid var(--line-strong)}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--link-ink);border-color:var(--link)}
+section.sheet{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sheet);padding:clamp(20px,3vw,36px);margin-block:0 22px;display:grid;gap:16px;min-width:0}
+.head{display:grid;gap:8px} .head p{margin:0;color:var(--ink-soft);max-width:70ch}
+.num{font:600 13px var(--sans);color:var(--link-ink);letter-spacing:.06em}
+figure{margin:0;display:grid;gap:10px;min-width:0}
+.fig{overflow-x:auto;background:var(--paper);border-radius:var(--r-card);padding:14px}
+.fig svg{display:block;width:100%;height:auto;min-width:820px}
+figcaption{font-size:.92rem;color:var(--ink-soft);max-width:75ch}
+.bx{fill:var(--card);stroke:var(--line-strong);stroke-width:1.2}
+.bxHot{fill:var(--card);stroke:var(--hot);stroke-width:2}
+.bxOk{fill:var(--card);stroke:var(--ok);stroke-width:2}
+.bxOff{fill:var(--cell);stroke:var(--line-strong);stroke-dasharray:4 3}
+.tx{fill:var(--ink);font:600 13px var(--sans)} .txL{fill:var(--ink);font:600 15px var(--sans)}
+.ts{fill:var(--ink-soft);font:400 12px var(--sans)} .tm{fill:var(--ink-soft);font:400 11px var(--mono)} .tmH{fill:var(--hot-ink);font:600 11px var(--mono)}
+.ln{stroke:var(--ink-soft);stroke-width:1.5;fill:none} .lnHot{stroke:var(--hot);stroke-width:2.2;fill:none}
+.mk{fill:var(--ink-soft)} .mkHot{fill:var(--hot)}
+.zA{fill:var(--tint-a)} .zB{fill:var(--tint-b)}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card)}
+table{border-collapse:collapse;width:100%;font-size:.94rem;min-width:640px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);background:var(--cell)}
+tr:last-child td{border-bottom:0}
+.st{display:inline-block;font:600 12px var(--sans);padding:2px 9px;border-radius:999px;white-space:nowrap}
+.st.ok{background:var(--ok-tint);color:var(--ok)} .st.todo{background:var(--hot-tint);color:var(--hot-ink)} .st.warn{background:var(--warn-tint);color:var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.card{background:var(--paper);border-radius:var(--r-card);padding:16px 18px;display:grid;gap:6px;align-content:start;min-width:0;border:1px solid transparent}
+.card.hot{border:2px solid var(--hot);background:var(--hot-tint)}
+.card h3{font:600 1rem/1.3 var(--sans);margin:0}
+.card p{margin:0;font-size:.93rem;color:var(--ink-soft)}
+.card .raise{font-size:.85rem;color:var(--link-ink)}
+.card.hot .raise{color:var(--hot-ink);font-weight:600}
+a{color:var(--link-ink)}
+/* mockups */
+.screens{display:flex;gap:16px;overflow-x:auto;padding:4px}
+.phone{flex:0 0 240px;background:var(--app-bg);border:1px solid var(--line);border-radius:28px;padding:20px 16px;min-height:420px;display:flex;flex-direction:column;gap:12px;font-family:var(--sans);color:var(--app-text);position:relative;overflow:hidden}
+.phone::before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(var(--app-sleep),transparent 70%);opacity:.12}
+.phone .lbl{font:600 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.phone .center{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;align-items:center}
+.phone .ico{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--app-muted);display:grid;place-items:center;font-size:20px;color:var(--app-muted)}
+.phone h4{font:700 20px/1.25 var(--display);margin:0}
+.phone p{margin:0;font-size:14px;line-height:1.4;color:var(--app-muted)}
+.pill{background:var(--app-primary);color:var(--app-on-primary);border-radius:999px;padding:10px 22px;font:600 15px var(--sans);display:inline-block}
+.glass{background:var(--app-surface);opacity:.96;border-radius:20px;padding:14px;display:grid;gap:6px}
+.glass .t{font:600 13px var(--sans);color:var(--app-muted)}
+.glass .v{font:700 22px var(--display)}
+.skel{height:10px;border-radius:6px;background:var(--line)}
+.row{display:flex;justify-content:space-between;font-size:14px}
+.err{display:flex;gap:10px;align-items:flex-start}
+.err .w{color:var(--app-warn);font-size:18px;line-height:1}
+.link{font:600 14px var(--sans);color:var(--app-text)}
+.lock{background:#1b2333;color:#fff}
+.lock .clock{font:700 56px/1 var(--display);text-align:center;margin-top:16px}
+.lock .date{text-align:center;font-size:14px;opacity:.85}
+.arcs{display:flex;gap:18px;justify-content:center;margin-top:12px}
+.arc{width:58px;height:58px;border-radius:50%;border:5px solid rgba(255,255,255,.85);border-bottom-color:transparent;display:grid;place-items:center;font:600 11px var(--sans)}
+.arc.red{border-color:rgba(255,255,255,.25);border-bottom-color:transparent}
+.redact{width:26px;height:8px;border-radius:4px;background:rgba(255,255,255,.4)}
+.cap{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:auto}
+footer.band{background:var(--band);color:var(--on-band);margin-top:30px;padding-block:40px}
+footer .in{max-width:1180px;margin:0 auto;padding-inline:16px;display:grid;gap:22px}
+footer h2{color:var(--on-band)}
+footer ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.92rem}
+footer code{color:var(--on-band-soft)}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+ol.ref{margin:0;padding-left:1.4em;display:grid;gap:6px;font-size:.95rem}
+ol.ref li span{color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="ahHot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mkHot" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs></svg>
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">Vesel · plan · 31 Oct 2026</div>
+  <h1>Polish Vesel before it goes public</h1>
+  <p class="lede">Make the code something an iOS developer would point to as a good example, then flip the repo public under Apache 2.0.</p>
+  <div class="facts">
+    <span class="chip"><span class="dot"></span>Draft, needs your OK</span>
+    <span class="chip"><span class="dot ok"></span>Reviewed: 15 fixes applied</span>
+    <span class="chip">8 steps, one pull request each</span>
+    <span class="chip">Repo stays private until done</span>
+  </div>
+  <nav class="toc"><a href="#boxes">Read this</a><a href="#screens">New screens</a><a href="#lock">Lock screen</a><a href="#order">Order</a><a href="#decisions">Decisions</a><a href="#risks">Risks</a><a href="#verify">Checks</a></nav>
+</header>
+
+<section class="sheet" id="boxes">
+  <div class="head"><span class="num">READ THIS</span><h2>The four things that matter</h2></div>
+  <div class="cards">
+    <div class="card"><h3>What you get</h3><p>The six gaps from the review get closed: previews, testable screens, no silent errors, no fake band in your real app, no crash points, automatic checks on GitHub. Plus the switch to Apache 2.0.</p></div>
+    <div class="card"><h3>What changes on your phone</h3><p>Almost nothing. Two new calm screens appear only when something goes wrong (drawn below). Everything else looks and works the same.</p></div>
+    <div class="card hot"><h3>Your call: 3 quick answers</h3><p>1. Order: finish your morning work first, then this? 2. Are the words on the new screens OK? 3. Hide health numbers on the lock screen?</p><span class="raise">Answer in chat: "ok", or "2: change X"</span></div>
+    <div class="card"><h3>I assumed</h3><p>GitHub may not have the newest Mac build machines yet. Until it does, the Mac app checks keep running on your Mac only. And GitHub tests on its newest iPhone Simulator, not exactly your iOS 26.5.</p></div>
+  </div>
+</section>
+
+<section class="sheet" id="screens">
+  <div class="head"><span class="num">NEW SCREENS</span><h2>When the data can't be opened or read</h2><p>Today the app closes, or shows grey placeholders forever. After: it says so calmly. It never offers to delete anything.</p></div>
+  <div class="screens">
+    <div class="phone"><span class="lbl">Today: before</span>
+      <div class="glass"><div class="skel" style="width:40%"></div><div class="skel"></div><div class="skel" style="width:70%"></div></div>
+      <div class="glass"><div class="skel" style="width:30%"></div><div class="skel"></div></div>
+      <div class="cap">Stays grey forever. No hint why.</div></div>
+    <div class="phone"><span class="lbl">Today: after, a read failed</span>
+      <div class="glass"><div class="err"><span class="w">⚠︎</span><div><div style="font:600 15px var(--sans)">Couldn't show this</div><p>Vesel couldn't read this just now. Your data is still on this phone.</p></div></div><div style="text-align:right"><span class="pill" style="padding:7px 16px;font-size:14px">Try again</span></div></div>
+      <div class="glass"><div class="t">Heart rate</div><div class="v">58 bpm</div></div>
+      <div class="cap">One card per screen, never per section. Not shown when the app is just in the background.</div></div>
+    <div class="phone"><span class="lbl">Start: can't open</span>
+      <div class="center"><div class="ico">🔒</div><h4>Vesel can't open your data right now</h4><p>Your data is still on this phone. Unlock your iPhone, then try again.</p><span class="pill">Try again</span></div>
+      <div class="cap">Also retries by itself after unlock, even in the background.</div></div>
+    <div class="phone"><span class="lbl">Start: older app</span>
+      <div class="center"><div class="ico">↑</div><h4>Vesel needs an update</h4><p>Your data on this phone was saved by a newer version of Vesel. Install the newer version to open it. Nothing has been deleted.</p></div>
+      <div class="cap">No button. Only after installing an older build.</div></div>
+    <div class="phone"><span class="lbl">Start: build set up wrong</span>
+      <div class="center"><div class="ico">⚙︎</div><h4>Vesel isn't set up right</h4><p>This build is missing its shared data folder. Rebuild it with your own bundle prefix (see the README).</p></div>
+      <div class="cap">For people building their own copy.</div></div>
+  </div>
+</section>
+
+<section class="sheet" id="lock">
+  <div class="head"><span class="num">OPTIONAL · YOUR CALL</span><h2>Lock screen widgets: hide numbers while locked?</h2><p>Anyone holding your locked phone sees your recovery and sleep today. iOS can blur them until you unlock. Recommended: yes, it's one small change.</p></div>
+  <div class="screens">
+    <div class="phone lock"><span class="lbl" style="color:#cbd3e1">Today</span><div class="clock">7:42</div><div class="date">Saturday 31 October</div>
+      <div class="arcs"><div class="arc">Low</div><div class="arc">6h 50</div></div><div class="cap" style="color:#cbd3e1">Visible to anyone.</div></div>
+    <div class="phone lock" style="outline:2px solid var(--hot)"><span class="lbl" style="color:#cbd3e1">After (recommended)</span><div class="clock">7:42</div><div class="date">Saturday 31 October</div>
+      <div class="arcs"><div class="arc red"><div class="redact"></div></div><div class="arc red"><div class="redact"></div></div></div><div class="cap" style="color:#cbd3e1">Blurred until Face ID unlocks.</div></div>
+  </div>
+</section>
+
+<section class="sheet" id="order">
+  <div class="head"><span class="num">ORDER · YOUR CALL</span><h2>Finish the morning work first, then polish</h2><p>The polish rewires the same files your morning changes touch. Landing the morning step first avoids redoing it.</p></div>
+  <figure><div class="fig"><svg viewBox="0 0 1100 230" role="img" aria-label="Order of the eight polish steps around the calmer morning work">
+    <rect class="zB" x="10" y="10" width="1080" height="60" rx="14"/>
+    <text class="ts" x="24" y="32">Anytime</text>
+    <rect class="bxOk" x="110" y="22" width="180" height="38" rx="10"/><text class="tx" x="122" y="40">A1 licence + docs</text><text class="tm" x="122" y="54">Apache 2.0, NOTICE</text>
+    <rect class="bxOk" x="310" y="22" width="180" height="38" rx="10"/><text class="tx" x="322" y="40">A2 GitHub checks</text><text class="tm" x="322" y="54">.github/workflows</text>
+    <rect class="zA" x="10" y="86" width="1080" height="130" rx="14"/>
+    <text class="ts" x="24" y="108">In order</text>
+    <rect class="bxHot" x="24" y="120" width="130" height="52" rx="10"/><text class="tx" x="36" y="142">Morning, part 1</text><text class="tmH" x="36" y="160">already built</text>
+    <rect class="bx" x="180" y="120" width="120" height="52" rx="10"/><text class="tx" x="192" y="142">B packages</text><text class="tm" x="192" y="160">fake band out</text>
+    <rect class="bx" x="320" y="120" width="120" height="52" rx="10"/><text class="tx" x="332" y="142">C1 app start</text><text class="tm" x="332" y="160">recovery screen</text>
+    <rect class="bx" x="460" y="120" width="120" height="52" rx="10"/><text class="tx" x="472" y="142">C2 seams</text><text class="tm" x="472" y="160">testable models</text>
+    <rect class="bx" x="600" y="120" width="130" height="52" rx="10"/><text class="tx" x="612" y="142">C3 errors+tests</text><text class="tm" x="612" y="160">"Couldn't show"</text>
+    <rect class="bx" x="750" y="120" width="100" height="52" rx="10"/><text class="tx" x="762" y="142">D previews</text><text class="tm" x="762" y="160">#Preview</text>
+    <rect class="bx" x="870" y="120" width="90" height="52" rx="10"/><text class="tx" x="882" y="142">E format</text><text class="tm" x="882" y="160">swift-format</text>
+    <rect class="bxHot" x="975" y="120" width="105" height="52" rx="10"/><text class="tx" x="985" y="142">Go public</text><text class="tmH" x="985" y="160">your go</text>
+    <path class="lnHot" d="M154 146 H178" marker-end="url(#ahHot)"/><path class="ln" d="M300 146 H318" marker-end="url(#ah)"/><path class="ln" d="M440 146 H458" marker-end="url(#ah)"/><path class="ln" d="M580 146 H598" marker-end="url(#ah)"/><path class="ln" d="M730 146 H748" marker-end="url(#ah)"/><path class="ln" d="M850 146 H868" marker-end="url(#ah)"/><path class="ln" d="M960 146 H973" marker-end="url(#ah)"/>
+    <path class="ln" d="M520 172 V200 H230" marker-end="url(#ah)"/><text class="ts" x="240" y="196">Morning parts 2 and 3 build on top after C2</text>
+  </svg></div><figcaption>Each box is one pull request with its own checks. The Solid Vibes iOS skill comes after "Go public".</figcaption></figure>
+</section>
+
+<section class="sheet" id="decisions">
+  <div class="head"><span class="num">REFERENCE · SKIP IF YOU LIKE</span><h2>Decisions</h2></div>
+  <ol class="ref">
+    <li>Apache 2.0; contributors still give their rights to your UG. <span>yours</span></li>
+    <li>Eight steps, one pull request each. <span>agent's</span></li>
+    <li>Morning part 1 first; parts 2–3 after C2. <span>agent's, needs your OK</span></li>
+    <li>The fake band is compiled only into test builds; a check fails the real build if it sneaks in. <span>agent's</span></li>
+    <li>Each screen's model gets only what it uses. No extra framework. <span>agent's</span></li>
+    <li>Data won't open: a calm screen, never delete or reset, retries by itself. <span>agent's · hard to undo · touches your data</span></li>
+    <li>Words on the start screens (drawn above). <span>agent's, needs your OK</span></li>
+    <li>Words on the "Couldn't show this" card. <span>agent's, needs your OK</span></li>
+    <li>No licence header in every file; one LICENSE and NOTICE file. <span>agent's</span></li>
+    <li>GitHub checks run on GitHub's Macs, no secrets needed. <span>agent's</span></li>
+    <li>Code formatting goes last, in one commit, so it doesn't clash with other work. <span>agent's</span></li>
+    <li>Optional: lock screen widgets hidden while locked; server log line made safe. <span>agent's recommendation</span></li>
+  </ol>
+</section>
+
+<section class="sheet" id="risks">
+  <div class="head"><h2>Risks</h2></div>
+  <ol class="ref">
+    <li>App start changes: a mistake could stop the app working in the background after a restart. <span>Covered by a test and your phone check.</span></li>
+    <li>Fake band move: a mistake could break the Simulator. <span>Shows as a failed check.</span></li>
+    <li>Rewiring every screen (C2) could change what a screen shows. <span>Shows in the new tests and previews.</span></li>
+    <li>Not touched: anything leaving the phone, the phone ↔ Mac link, database changes, deleting data, pairing.</li>
+  </ol>
+</section>
+
+<section class="sheet" id="verify">
+  <div class="head"><h2>How we'll know it works</h2></div>
+  <div class="tbl"><table>
+    <tr><th>Check</th><th>Who</th></tr>
+    <tr><td>All existing tests plus new screen tests pass, locally and on GitHub</td><td><span class="st ok">automatic</span></td></tr>
+    <tr><td>Real (Release) build contains no fake band</td><td><span class="st ok">automatic</span></td></tr>
+    <tr><td>Every screen opens in Xcode's preview with sample data</td><td><span class="st ok">automatic</span></td></tr>
+    <tr><td>Restart the iPhone, don't open Vesel: band still syncs in the background after unlock</td><td><span class="st todo">you, on the phone</span></td></tr>
+    <tr><td>App looks and behaves the same as today</td><td><span class="st todo">you, on the phone</span></td></tr>
+  </table></div>
+</section>
+</div>
+<footer class="band"><div class="in"><h2>Go deeper</h2><ul>
+  <li><code>docs/plans/2026-10-31-exemplar-polish.md</code>: the full plan</li>
+  <li><code>docs/how-it-works/storage-problems.md</code>: the new screens' behaviour</li>
+  <li><code>docs/design/system.md</code>: the look used here</li>
+</ul></div></footer>
+</body>
+</html>

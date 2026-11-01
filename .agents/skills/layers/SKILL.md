@@ -1,0 +1,39 @@
+---
+name: layers
+description: Use when a change adds a screen, a widget, a module, or code that crosses between the app, the band, storage, analysis and sync.
+---
+
+# Layers
+
+- `VeselCore`: models and analysis. Pure Swift, no I/O, no imports of the other modules.
+- `VeselStorage`: the database. Depends on VeselCore only.
+- `VeselWearable`: the `WearableSource` protocol and the Polar implementation. The only module that imports PolarBleSdk.
+- `VeselSync`: the upload queue to the owner's Mac.
+- `mac/`: `VeselBackupKit` holds the Mac app's logic (no UI, no `Process`); the app target composes it. The Mac app never imports the iOS packages.
+- The app and widget targets compose these. Screens never touch Bluetooth or the network directly.
+- A new wearable is a new `WearableSource`, never a branch inside the Polar code.
+- Polar SDK calls to the band run one at a time, never in parallel (Polar's sync guideline).
+- All band calls go through `BandSync` (sync, live heart rate, pairing, first-time setup, factory reset), which queues them one at a time and pauses the live stream for every sync. Never enable SDK mode on the band. Never call `setPolarUserDeviceSettings`: it rebuilds the band's general settings from location only and can switch off its inactivity alert.
+- `ios/Vesel/Theme/` is also compiled into the widget extension and its tests (`ios/project.yml`): Theme views take plain values, never app types such as `AppEnvironment` or a screen model.
+- Widgets read one `WidgetSnapshot` through `AppDatabase.readSnapshot` (read-only, never migrates, closed after the read); line states are worked out by VeselStorage/VeselCore inside `readSnapshot`; still no analysis in widget code. Logic the app and widgets share lives in VeselCore or VeselStorage.
+- A range line's state and where its normal and dot sit always come from `InRange` (VeselCore); views only draw `LineScale`. Never draw a score as a line or a ring.
+- Today always shows today. A page (`PageRoute` = kind, day, period; every thing has one `SignalPage`: Recovery, Sleep, Stress, Heart rate, Steps and the overnight signals) gets its day in its route and never reads `days`, except `days.firstDay` to start its row of pages at the first day with data; its D part's model takes the day. Only Journal reads `AppEnvironment.days` (the picked day, `DaySelection`); it opens a page with the day in the route. `PageRoute` is registered on every tab's stack with `pageDestinations`, and a screen pushes a page with `@Environment(\.openPage)`. A page's W, M and 3M windows come from `PeriodWindow` (VeselCore). The night shown for a day comes from `shownNight` (VeselStorage), never from a screen's own query.
+- Observations that depend on the shown day run in `.task(id:)` keyed on scene phase and `days.day` (`ObserveKey`), and a model shows a loaded value only for the day it was read for.
+- Day labels for VoiceOver (calendar and week strip) come from one helper, `DayLabels` in `ios/Vesel/Days/`; the strip reads its week with `observeDayLines` like the calendar.
+- `ios/Vesel/AppEnvironment.swift` is the one place that wires the database and the band for the app. `AppRouter` routes notification and widget taps. `AppStartup` decides between the app and the recovery screen (`StorageProblemView`), and tries again at the first unlock and each time Vesel comes to the front. BGTask handlers register before launch ends, even without an environment.
+- Screen models take only the parts they use (the database, the clock, stores such as `UnitsStore`, `SyncStatusStore` and `DaySelection`, closures for app actions), never `AppEnvironment`. Views get `AppEnvironment` from their parent and build their models in `init`. No view observes the database.
+- Every screen observation runs through `ReadProblem`: a failure shows the screen's one `ReadProblemCard` (a page's period page shows it in its part's place), never one per section. A cancelled read or a database paused in the background (`AppDatabase.isPaused`) is never a problem. Helpers with no screen (units, the first day, the battery) keep their last value and start again when Vesel comes to the front.
+- Every screen and widget has a `#Preview` under `#if DEBUG`. Screens use `PreviewHost` and `PreviewEnvironment` (`ios/Vesel/Preview/`): an in-memory database filled once with the fake band's records and a fixed clock, never the sync pipeline. Widgets use `VeselEntry.previewStates()`; Theme views preview with plain values only. Previews never reach Release.
+- Profile changes after pairing go through `SyncPipeline.writeProfile` → `BandSync.firstTimeUse` (no other setter; it pauses live heart rate like every band write); band first, then the database. A units switch never writes the profile; an unchanged field keeps its stored metric value (`ProfileDraft`).
+- Day buckets come from `DayBuckets` (VeselCore), from the zone's midnight, never across it.
+- Every line of one day's readings is `ReadingLineChart` (Theme); every signal over weeks is `SignalChart` inside the thing's page (`SignalPage`) with the moving normal band, never a second page or chart.
+- Every chart is on a thing's page (D · W · M · 3M) or is a glance that opens that page, or is exempt for a stated reason; a new chart says which.
+- A signal page is one vertical scroll: the title and the D · W · M · 3M switch stay put over a horizontal paged row of period pages keyed (period, day) from `PeriodWindow.pages`; a sideways drag anywhere on the period content pages. The current page and one on each side build their part and observe the database (a skeleton further out); each part gives its meaning through `\.setPageMeaning`, and the title shows the current page's. The bar title follows the one vertical scroll; off-screen pages are hidden from VoiceOver. Page charts scrub after a short hold (`chartScrub(_:style: .holdThenDrag)`, a UIKit long press that fails if the finger moves first); no chart has its own swipe. A SwiftUI `DragGesture` or `LongPressGesture.sequenced` on a chart inside a `ScrollView` swallows the page's scroll. Glances keep the instant scrub.
+- Learning lines come from `LearningText` (VeselCore), never from a screen's own wording.
+- Meaning text lives only in `Glossary` (VeselCore); screens pass a `MeaningRequest` and never write their own meaning copy; term links use `vesel-term:` and never leave the app.
+- Advice text lives only in `WhatHelps` (VeselCore); screens pass topics and never write their own tips.
+- Whether Today shows I'm up or Evaluating comes from `TodayState.morningCard` (VeselCore); a stored last night ends the morning whatever the band says.
+- Sync progress reaches the screens only as `SyncProgress` in `SyncStatusStore` (counts, never values); `BandSync` reports it after each fetch and never changes the fetch, store and clear order for it.
+- Screen models read through GRDB `ValueObservation` (`Observations.swift`); they never call `BandSync` except through `SyncPipeline`.
+- On the path-driven stacks, push with a route value, never a destination `NavigationLink`. Loop & settings and the screens pushed from it end their `ZStack` with `TopFade()`: without it the band data report opened with its first row under the bar.
+- The tab bar's ring reads the band through `observeBand()`; low battery is `BandInfo.isBatteryLow`.

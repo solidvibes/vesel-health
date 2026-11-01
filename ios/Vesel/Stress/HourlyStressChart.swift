@@ -1,0 +1,98 @@
+import Charts
+import SwiftUI
+import VeselCore
+
+/// Stress level per hour of the day, coloured calm / moderate / high, with a legend (colour is never the only sign).
+/// On the page a finger moves a line over the bars and the page's header reads that hour (`scrubText`).
+struct HourlyStressChart: View {
+    let hours: [StressHour]
+    let day: DayKey
+    let zone: TimeZone
+    /// Journal's glance: bars only, no axes, legend or finger, 48 pt tall.
+    var compact = false
+    var takeLaunchScrub: () -> ScrubTime? = { nil }
+    var scrub: ChartScrubStyle = .immediate
+    @Binding var selection: Date?
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    static func word(_ band: StressLevel) -> String { band.word.capitalizedFirst }
+
+    /// The hour `moment` falls in and its bar: "High, 72", "no reading" for an hour with none.
+    static func scrubText(at moment: Date, hours: [StressHour], zone: TimeZone) -> (hour: String, level: String) {
+        let hour = HourlyStepsTime.hour(of: moment, zone: zone)
+        let level = hours.first { $0.hour == hour }.map { "\(word($0.band)), \(Formatters.whole($0.level))" }
+        return (Formatters.hourRange(hour), level ?? "no reading")
+    }
+
+    private func start(_ hour: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        return calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day.start(in: zone))!
+    }
+
+    var body: some View {
+        if compact {
+            bars
+                .chartLegend(.hidden)
+                .chartYAxis(.hidden)
+                .chartXAxis(.hidden)
+                .frame(height: 48)
+        } else {
+            full
+        }
+    }
+
+    private var bars: some View {
+        let selectedHour = selection.map { HourlyStepsTime.hour(of: $0, zone: zone) }
+        return Chart {
+            ForEach(hours) { hour in
+                BarMark(
+                    x: .value("Hour", start(hour.hour), unit: .hour),
+                    y: .value("Level", max(hour.level, 3))
+                )
+                .foregroundStyle(by: .value("Stress", Self.word(hour.band)))
+                .opacity(selectedHour == nil || selectedHour == hour.hour ? 1 : 0.35)
+                .cornerRadius(3)
+                .accessibilityLabel(Formatters.hourRange(hour.hour))
+                .accessibilityValue("\(Self.word(hour.band)), level \(Formatters.whole(hour.level)) of 100")
+            }
+            if let selectedHour { ScrubRule(date: start(selectedHour).addingTimeInterval(1800)) }
+        }
+        .chartForegroundStyleScale(domain: ["Calm", "Moderate", "High"], range: [Theme.Palette.success, Theme.Palette.stress, Theme.Palette.error])
+        .chartXScale(domain: start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound))
+        .chartYScale(domain: 0...100)
+    }
+
+    private var full: some View {
+        let domain = start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound)
+        let text = selection.map { moment -> String in
+            let found = Self.scrubText(at: moment, hours: hours, zone: zone)
+            return "\(found.hour) · \(found.level)"
+        }
+        return
+            bars
+            .chartScrub($selection, style: scrub)
+            .chartYAxis {
+                AxisMarks(values: [0, StressThresholds.moderateFrom, StressThresholds.highFrom, 100]) { value in
+                    AxisGridLine()
+                    if !typeSize.isAccessibilitySize {
+                        AxisValueLabel { if let number = value.as(Double.self) { Text(Formatters.whole(number)) } }
+                    }
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: stride(from: StressThresholds.daytimeHours.lowerBound, to: StressThresholds.daytimeHours.upperBound, by: 4).map(start)) {
+                    value in
+                    AxisGridLine()
+                    AxisValueLabel { if let date = value.as(Date.self) { Text(Formatters.hourLabel(date, zone: zone)) } }
+                }
+            }
+            .chartLegend(position: .bottom, alignment: .leading, spacing: Theme.Spacing.s12)
+            .frame(height: typeSize.isAccessibilitySize ? 360 : 200)
+            .scrubAccessibility($selection, domain: domain, step: 3600, label: "Stress per hour", value: text ?? "")
+            .onAppear {
+                guard selection == nil else { return }
+                selection = takeLaunchScrub()?.moment(in: domain, zone: zone)
+            }
+    }
+}

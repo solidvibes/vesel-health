@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(ios/LocalFixtures/**)",
+      "Read(server/certs/**)",
+      "Read(**/*.sqlite)",
+      "Read(**/*.sqlite-wal)",
+      "Read(**/*.sqlite-shm)",
+      "Read(**/.env)",
+      "Read(**/*.p8)",
+      "Read(**/*.p12)",
+      "Read(**/*.mobileprovision)",
+      "Read(Signing.local.xcconfig)"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>app.vesel.server</string>
+    <key>UserName</key>
+    <string>__USER__</string>
+    <key>WorkingDirectory</key>
+    <string>__SERVER_DIR__</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__UV__</string>
+        <string>run</string>
+        <string>--frozen</string>
+        <string>--no-dev</string>
+        <string>uvicorn</string>
+        <string>vesel_server.app:create_app</string>
+        <string>--factory</string>
+        <string>--host</string>
+        <string>0.0.0.0</string>
+        <string>--port</string>
+        <string>8443</string>
+        <string>--ssl-certfile</string>
+        <string>__DATA__/certs/cert.pem</string>
+        <string>--ssl-keyfile</string>
+        <string>__DATA__/certs/key.pem</string>
+        <string>--no-access-log</string>
+        <string>--no-server-header</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>VESEL_SERVER_HOME</key>
+        <string>__DATA__</string>
+    </dict>
+    <key>Umask</key>
+    <integer>63</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__DATA__/server.log</string>
+    <key>StandardErrorPath</key>
+    <string>__DATA__/server.log</string>
+</dict>
+</plist>

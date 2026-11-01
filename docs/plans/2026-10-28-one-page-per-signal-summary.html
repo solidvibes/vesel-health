@@ -1,0 +1,131 @@
+<title>Vesel Round 9</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: phones in a row per idea (Steps D/W/M, Recovery D/M, Today), then the four choices. */
+:root{--bg:#F3F3F1;--surface:#FFFFFF;--text:#111113;--muted:#55555B;--line:#DCDCD8;--accent:#2F5FE0;--recovery:#2F9E5B;--sleep:#3B6CF6;--stress:#D9621B;--steps:#55555B;--pick:#22844A;--pickBg:#E6F3EB;--phone:#1b1b1d;
+--sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;--display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E0F11;--surface:#1A1C20;--text:#F2F2F4;--muted:#A1A1AA;--line:#2A2C31;--accent:#7FA2FF;--recovery:#4CC27D;--sleep:#7FA2FF;--stress:#FF9A52;--steps:#A1A1AA;--pick:#4ADE80;--pickBg:#16301f;--phone:#3a3b3f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E0F11;--surface:#1A1C20;--text:#F2F2F4;--muted:#A1A1AA;--line:#2A2C31;--accent:#7FA2FF;--recovery:#4CC27D;--sleep:#7FA2FF;--stress:#FF9A52;--steps:#A1A1AA;--pick:#4ADE80;--pickBg:#16301f;--phone:#3a3b3f;color-scheme:dark}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.45}
+main{max-width:1080px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:48px}
+h1{font-family:var(--display);font-size:34px;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:24px;margin:0}
+p{margin:0;max-width:68ch}
+section{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.cap{font-weight:600}
+.sub{color:var(--muted);font-size:13px;text-align:center;max-width:250px}
+.phone{width:250px;max-width:100%;border-radius:36px;border:7px solid var(--phone);background:var(--bg);padding:38px 12px 16px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+.phone::before{content:"";position:absolute;right:-60px;top:-80px;width:240px;height:180px;border-radius:50%;background:var(--sleep);opacity:.09;filter:blur(36px)}
+.phone>*{position:relative}
+.t{font-family:var(--display);font-size:24px;font-weight:700}
+.seg{display:flex;background:var(--line);border-radius:9px;padding:2px;font-size:11px}
+.seg span{flex:1;text-align:center;padding:4px 0;border-radius:7px}
+.seg .on{background:var(--surface);font-weight:700}
+.hd .k{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.hd .v{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.hd .v small{font-size:13px;color:var(--muted);font-weight:500}
+.hd .d{font-size:12px;color:var(--muted)}
+.card{background:var(--surface);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.tiny{font-size:11px;color:var(--muted)}
+.nav{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.lr{display:flex;flex-direction:column;gap:6px}
+.lr .top{display:flex;justify-content:space-between;align-items:baseline}
+.track{position:relative;height:7px;border-radius:4px;background:var(--line)}
+.track .n{position:absolute;top:0;bottom:0;border-radius:4px;opacity:.4}
+.track .dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2.5px solid}
+svg{display:block;max-width:100%}
+.chart text{fill:var(--muted);font-size:9px;font-family:var(--sans)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.pick{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--pick);background:var(--pickBg);padding:2px 8px;border-radius:99px;white-space:nowrap}
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.term{background:var(--surface);border-radius:14px;padding:12px 14px;min-width:0}
+.term b{display:block}
+</style>
+<main>
+<header style="display:flex;flex-direction:column;gap:8px">
+  <span class="eyebrow">Round 9 · one page per thing</span>
+  <h1>Every page works like Apple Health</h1>
+  <p style="color:var(--muted);font-size:17px">One chart, a D · W · M · 3M switch, a big number above it. Same page from Today, Journal and Body. Numbers are examples.</p>
+</header>
+
+<section>
+  <span class="eyebrow">Steps · the same page, three switches</span>
+  <div class="row" id="steps"></div>
+  <p class="tiny" style="font-size:13px;text-align:center;margin:0 auto">Touch and hold, then slide: the big number shows that bar. Swipe or ‹ › moves a day, week or month. Tap a day in W or M → that day's D.</p>
+</section>
+
+<section>
+  <span class="eyebrow">One value a night · Recovery, HRV, resting heart rate, breathing, skin temperature</span>
+  <div class="row" id="rec"></div>
+</section>
+
+<section>
+  <span class="eyebrow">Today · bigger lines</span>
+  <div class="row" id="today"></div>
+</section>
+
+<section>
+  <span class="eyebrow">Four choices for you</span>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Choice</th><th>Recommended</th><th>What it costs later</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Body loses its own "4 weeks / 3 months" switch. Its cards always show 4 weeks; tapping opens the page on M.</td><td><span class="pick">Yes</span> one switch, one place</td><td>Nothing; the switch is still on every page.</td></tr>
+      <tr><td>2</td><td>Scrubbing starts with a short touch-and-hold, so a quick swipe can change the period.</td><td><span class="pick">Yes</span></td><td>Scrubbing feels a touch slower everywhere. If the swipe clashes with iPhone's swipe-back, only ‹ › change the period.</td></tr>
+      <tr><td>3</td><td>Recovery over a week or month says the most common word ("Mostly OK"), never a count of good nights.</td><td><span class="pick">Yes</span></td><td>None. A count ("22 of 28 OK") would be a score to chase.</td></tr>
+      <tr><td>4</td><td>On D, one-value-a-night things show 7 nights with that night highlighted.</td><td><span class="pick">Yes</span></td><td>Simplest. The richer option (the night's own heart-rate or temperature line) can come later.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Words</span>
+  <div class="terms">
+    <div class="term"><b>D · W · M · 3M</b>Day, week, month (4 weeks), 3 months. Each ends today; ‹ goes back one.</div>
+    <div class="term"><b>Average a day</b>Plain average of days that have a number. No arrows, no best day.</div>
+    <div class="term"><b>Shaded band</b>Your normal from the 4 weeks before each day. Moves with you.</div>
+    <div class="term"><b>What goes</b>The separate chart page Body opened. One page per thing now.</div>
+  </div>
+</section>
+</main>
+<script>
+const seg=on=>`<div class="seg">${['D','W','M','3M'].map(s=>`<span class="${s===on?'on':''}">${s}</span>`).join('')}</div>`;
+const W=226;
+const bars=(vals,h,{mx,band,hi,c='var(--steps)',labels=[]}={})=>{const n=vals.length,bw=W/n;mx=mx||Math.max(...vals)*1.1;
+ const y=v=>h-v/mx*h;
+ return `<svg class="chart" viewBox="0 0 ${W} ${h+12}" width="100%">${band?`<rect x="0" y="${y(band[1])}" width="${W}" height="${y(band[0])-y(band[1])}" fill="var(--accent)" opacity=".14"/>`:''}
+ ${vals.map((v,i)=>v?`<rect x="${(i*bw+bw*.15).toFixed(1)}" y="${y(v).toFixed(1)}" width="${(bw*.7).toFixed(1)}" height="${(h-y(v)).toFixed(1)}" rx="${Math.min(3,bw*.3).toFixed(1)}" fill="${c}" opacity="${hi===undefined||hi===i?.9:.35}"/>`:'').join('')}
+ <line x1="0" x2="${W}" y1="${h+.5}" y2="${h+.5}" stroke="var(--line)"/>${labels.map(([x,t])=>`<text x="${x}" y="${h+11}">${t}</text>`).join('')}</svg>`};
+const hourly=[0,0,0,0,0,0,40,620,880,310,150,420,960,380,210,170,540,1240,690,330,280,120,90,0];
+const week=[8210,9420,6110,11040,7480,10230,8850];
+const month=[8210,9420,6110,11040,7480,10230,12800,7020,8890,9930,5620,10410,9120,13240,6870,8340,9710,7260,11520,8010,4980,9640,10120,7730,8850,12110,9300,8850];
+const hd=(k,v,u,d)=>`<div class="hd"><div class="k">${k}</div><div class="v">${v}<small> ${u}</small></div><div class="d">${d}</div></div>`;
+const page=(title,on,head,chart,below='')=>`<div class="tiny">‹ Back</div><div class="t">${title}</div>${seg(on)}${head}${chart}<div class="nav"><span>‹</span><span>›</span></div>${below}`;
+document.getElementById('steps').innerHTML=[
+ ['D · a day', page('Steps','D',hd('Total','8,850','steps','Tue 27 Oct'),bars(hourly,100,{labels:[[0,'00'],[106,'12'],[212,'24']]}),'<div class="card"><div class="tiny">From the Loop\'s daily count. Hours with no bar: no steps or band off.</div></div>'),'The Steps page you have now, with the switch on top.'],
+ ['D · scrubbing', page('Steps','D',hd('17:00–18:00','1,240','steps','Tue 27 Oct'),bars(hourly,100,{hi:17,labels:[[0,'00'],[106,'12'],[212,'24']]})),'Hold and slide: the big number becomes that hour.'],
+ ['W · a week', page('Steps','W',hd('Average','8,760','steps a day','21–27 Oct'),bars(week,100,{band:[7100,11300],labels:[[6,'W'],[38,'T'],[71,'F'],[103,'S'],[135,'S'],[168,'M'],[200,'T']]})),'A bar per day over your normal. Tap a day → D.'],
+ ['M · 4 weeks', page('Steps','M',hd('Average','9,190','steps a day','1–28 Oct'),bars(month,100,{band:[7100,11300],labels:[[0,'1 Oct'],[190,'28 Oct']]})),'Body opens here.'],
+].map(([n,h,s])=>`<div class="col"><span class="cap">${n}</span><div class="phone">${h}</div><span class="sub">${s}</span></div>`).join('');
+
+const dots=(vals,h,hi)=>{const n=vals.length,bw=W/n,mn=40,mx=100,y=v=>h-(v-mn)/(mx-mn)*h;
+ return `<svg class="chart" viewBox="0 0 ${W} ${h+12}" width="100%"><rect x="0" y="${y(85)}" width="${W}" height="${y(55)-y(85)}" fill="var(--recovery)" opacity=".14"/>
+ <path d="${vals.map((v,i)=>`${i?'L':'M'}${(i*bw+bw/2).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--recovery)" stroke-width="1.5" opacity=".6"/>
+ ${vals.map((v,i)=>`<circle cx="${(i*bw+bw/2).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${hi===i?6:3.5}" fill="${v<55?'var(--surface)':'var(--recovery)'}" stroke="var(--recovery)" stroke-width="2"/>`).join('')}
+ <line x1="0" x2="${W}" y1="${h+.5}" y2="${h+.5}" stroke="var(--line)"/></svg>`};
+const rec7=[72,64,58,49,66,70,61];
+const rec28=[70,68,72,64,58,61,66,74,69,63,52,60,71,67,65,58,62,70,73,66,59,48,64,72,58,49,66,61];
+document.getElementById('rec').innerHTML=[
+ ['Recovery · D', page('Recovery','D',hd('Night of 27 Oct','OK','',''),dots(rec7,100,6),'<div class="card"><div class="tiny">The night\'s details stay below: what fed into it, what helps.</div></div>'),'7 nights, that night big. (Choice 4)'],
+ ['Recovery · M', page('Recovery','M',hd('Last 4 weeks','Mostly OK','',''),dots(rec28,100)),'A word, never "22 of 28". (Choice 3)'],
+].map(([n,h,s])=>`<div class="col"><span class="cap">${n}</span><div class="phone">${h}</div><span class="sub">${s}</span></div>`).join('');
+
+const lr=(name,val,c,n0,n1,v,hollow,big)=>`<div class="lr"><div class="top"><span style="font-weight:600;font-size:${big?17:12}px;${big?'':'color:var(--muted)'}">${name}</span><span style="font-weight:600;font-size:${big?17:12}px">${val}</span></div><div class="track"><div class="n" style="background:${c};left:${n0}%;width:${n1-n0}%"></div><div class="dot" style="left:${v}%;border-color:${c};background:${hollow?'var(--surface)':c}"></div></div></div>`;
+const lines=big=>`<div class="card" style="gap:${big?14:10}px;padding:14px">${lr('Recovery','Poor','var(--stress)',60,100,38,true,big)}${lr('Sleep','7 h 52 m','var(--sleep)',33,67,57,false,big)}${lr('Stress','High','var(--stress)',0,50,82,true,big)}</div>`;
+document.getElementById('today').innerHTML=[['Now',false],['Bigger',true]].map(([n,b])=>`<div class="col"><span class="cap">${n}</span><div class="phone"><div class="t">Today</div><div class="tiny">Sun 25 Oct</div>${lines(b)}</div></div>`).join('');
+</script>

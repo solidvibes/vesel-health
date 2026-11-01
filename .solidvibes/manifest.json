@@ -1,0 +1,21 @@
+{
+  "generator": "solidvibes init",
+  "note": "solidvibes:generated. Made by solidvibes init; replaced the next time it runs.",
+  "sv": "0.1.0",
+  "profile": { "name": "blank", "version": "0.1.0" },
+  "agents": ["claude"],
+  "generated": [
+    { "path": ".solidvibes/.gitignore", "source": "sv 0.1.0", "version": "0.1.0", "hash": "sha256:ee086a80cec2c5288a74ae36fa725a85a3c2f23ade9b67cfe555fe1367d5c34f" },
+    { "path": ".solidvibes/agents.md", "source": "sv 0.1.0 (setup/agents/)", "version": "0.1.0", "hash": "sha256:212e9a2bf34e59b10e9d5ffa105133c029d3651cccbfcebc2cc1738a8675bc5b" },
+    { "path": ".solidvibes/factory-contract.md", "source": "sv 0.1.0 (setup/templates/factory-contract.md)", "version": "0.1.0", "hash": "sha256:5ee455cfc9eac228c236e83170a58505b750c6318b9face0d4cf47cb60a340ac" },
+    { "path": "AGENTS.md", "block": "audience", "source": "sv 0.1.0 (setup/templates/AGENTS.md)", "version": "0.1.0", "hash": "sha256:246d14263530d3f0cec24fefaf39381bfef44847666e5d5fc43bf2be763cf7c0" },
+    { "path": "AGENTS.md", "block": "routing", "source": "sv 0.1.0 (setup/templates/AGENTS.md)", "version": "0.1.0", "hash": "sha256:1f631049e44062f2ab14a70750b4307ebc597760476bc9e22439389d9dd51d55" },
+    { "path": "AGENTS.md", "block": "visuals", "source": "sv 0.1.0 (setup/templates/AGENTS.md)", "version": "0.1.0", "hash": "sha256:3d8e609d2e67ee2ff6618d5a65adaa2b444f186797f6ce502b068ca9acafb122" },
+    { "path": "docs/CONVENTIONS.md", "source": "sv 0.1.0 (setup/templates/docs/CONVENTIONS.md)", "version": "0.1.0", "hash": "sha256:421cc86eedd3c0b41ab86f72d33e93b28f99adc1557be41137eb5783584593f7" }
+  ],
+  "links": [
+    { "path": ".claude/skills/data", "target": "../../.agents/skills/data" },
+    { "path": ".claude/skills/layers", "target": "../../.agents/skills/layers" },
+    { "path": ".claude/skills/testing", "target": "../../.agents/skills/testing" }
+  ]
+}

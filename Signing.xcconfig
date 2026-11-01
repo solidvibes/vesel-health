@@ -1,0 +1,4 @@
+DEVELOPMENT_TEAM =
+VESEL_BUNDLE_PREFIX = app.vesel
+CODE_SIGN_IDENTITY[sdk=macosx*] = -
+#include? "Signing.local.xcconfig"

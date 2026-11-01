@@ -1,0 +1,140 @@
+# The checks every pull request and every push to main must pass.
+# Close to, not the same as, the contract's full checks in AGENTS.md: CI runs the app's
+# tests on an iOS 27 Simulator, while the local checks use iOS 26.5.
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The newest Xcode 27 on the xcode-27 image (macOS 27). The macos-26 image has no Xcode 27,
+  # and the Mac app and VeselBackupKit need macOS 27.
+  XCODE: /Applications/Xcode_27.2.app
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: vesel
+          persist-credentials: false
+      - name: Fetch the Solid Vibes tool (public, MIT)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: solidvibes/solid-vibes
+          ref: 3f22d84d25efb864d6aaa05cb56b085c5cd5ba57 # 0.1.2
+          path: solid-vibes
+          persist-credentials: false
+      - run: bash solid-vibes/bin/solidvibes lint vesel
+
+  packages:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s "$XCODE"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/Packages/*/Package.resolved', 'mac/Packages/*/Package.resolved') }}
+      - run: git ls-files -z '*.swift' | xargs -0 xcrun swift-format lint --strict
+      - run: swift test --package-path ios/Packages/VeselCore
+      - run: swift test --package-path ios/Packages/VeselStorage
+      - run: swift test --package-path ios/Packages/VeselSync
+
+  backup-kit:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s "$XCODE"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/Packages/*/Package.resolved', 'mac/Packages/*/Package.resolved') }}
+      - run: swift test --package-path mac/Packages/VeselBackupKit
+
+  ios:
+    runs-on: xcode-27
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s "$XCODE"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/Packages/*/Package.resolved', 'mac/Packages/*/Package.resolved') }}
+      - name: Install XcodeGen 2.46.0 (checksum verified)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+      - run: xcodegen generate
+        working-directory: ios
+      # The image has no iPhone 17 Pro Max; iPhone 17 is on its iOS 27.0 runtime.
+      - run: >-
+          xcodebuild test -project Vesel.xcodeproj -scheme Vesel
+          -destination 'platform=iOS Simulator,name=iPhone 17'
+          -collect-test-diagnostics never -quiet
+        working-directory: ios
+      # Release fails if the fake band or its fixtures are still in the app ("Leave the fake band out of Release").
+      - run: >-
+          xcodebuild build -project Vesel.xcodeproj -scheme Vesel -configuration Release
+          -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO -quiet
+        working-directory: ios
+
+  mac:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo xcode-select -s "$XCODE"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/Packages/*/Package.resolved', 'mac/Packages/*/Package.resolved') }}
+      - name: Install XcodeGen 2.46.0 (checksum verified)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+      - run: xcodegen generate
+        working-directory: mac
+      - run: xcodebuild build -project VeselBackup.xcodeproj -scheme VeselBackup -destination 'platform=macOS' -quiet
+        working-directory: mac
+
+  server:
+    # macOS because the server's setup.sh uses scutil and shasum.
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.13.6"
+          working-directory: server
+      - run: uv run pytest
+        working-directory: server

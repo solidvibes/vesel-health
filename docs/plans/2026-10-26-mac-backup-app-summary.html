@@ -1,0 +1,357 @@
+<title>Vesel Backup Plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* One calm column: system picture, the menu in each state, the few boxes to read, then reference. Vesel "Clear glass" look. */
+:root{
+  --bg:#F3F3F1; --surface:rgba(255,255,255,0.66); --solid:#FFFFFF; --line:rgba(17,17,19,0.10);
+  --fg:#111113; --muted:#55555B; --accent:#2F5FE0; --warn:#B4500F; --warn-bg:rgba(217,98,27,0.10);
+  --leaf:#2F9E5B; --sky:#3B6CF6; --ember:#D9621B; --err:#C42B1C; --ink:#111113; --on-ink:#FFFFFF; --bar:#E6E6E3;
+  --font:-apple-system,"SF Pro Text",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0F11; --surface:rgba(40,42,48,0.66); --solid:#1A1C20; --line:rgba(255,255,255,0.10);
+  --fg:#F2F2F4; --muted:#A1A1AA; --accent:#7FA2FF; --warn:#FF9A52; --warn-bg:rgba(255,154,82,0.12);
+  --leaf:#4CC27D; --sky:#7FA2FF; --ember:#FF9A52; --err:#FF7B6E; --ink:#F2F2F4; --on-ink:#111113; --bar:#24262B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E0F11; --surface:rgba(40,42,48,0.66); --solid:#1A1C20; --line:rgba(255,255,255,0.10);
+  --fg:#F2F2F4; --muted:#A1A1AA; --accent:#7FA2FF; --warn:#FF9A52; --warn-bg:rgba(255,154,82,0.12);
+  --leaf:#4CC27D; --sky:#7FA2FF; --ember:#FF9A52; --err:#FF7B6E; --ink:#F2F2F4; --on-ink:#111113; --bar:#24262B; color-scheme:dark}
+*{box-sizing:border-box}
+html{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.5;padding:40px 16px 64px;overflow-x:hidden;position:relative}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.14;pointer-events:none;z-index:0}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:44px;position:relative;z-index:1}
+h1{font-size:clamp(28px,5vw,42px);line-height:1.1;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:22px;margin:0;letter-spacing:-.01em}
+p{margin:0}
+.lede{color:var(--muted);font-size:18px;max-width:62ch}
+.muted{color:var(--muted)}
+.glass{background:var(--surface);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid var(--line);border-radius:24px}
+
+/* System picture */
+.sys{padding:20px;display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:8px}
+.node{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:14px 10px;border-radius:18px;cursor:default;outline:none}
+.node svg{width:48px;height:48px;stroke:var(--fg);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.node b{font-size:15px}
+.node .hint{font-size:13px;color:var(--muted);max-width:22ch;max-height:0;overflow:hidden;opacity:0;transition:opacity .2s,max-height .2s}
+.node:hover .hint,.node:focus .hint{max-height:80px;opacity:1}
+.wire{position:relative;width:110px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.wire .track{width:100%;height:2px;background:var(--line);position:relative;overflow:hidden;border-radius:2px}
+.wire .dot{position:absolute;top:-3px;width:8px;height:8px;border-radius:4px;background:var(--leaf);animation:flow 2.2s linear infinite}
+.wire .dot.d2{animation-delay:1.1s}
+.wire span{font-size:11px;color:var(--muted);margin-top:6px;white-space:nowrap}
+@keyframes flow{from{left:-8px}to{left:100%}}
+@media (prefers-reduced-motion:reduce){.wire .dot{animation:none;left:45%}}
+@media (max-width:720px){.sys{grid-template-columns:1fr}.wire{margin:0 auto;height:44px}}
+
+/* Menu mockups */
+.menus{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.shot{display:flex;flex-direction:column;gap:10px;min-width:0}
+.mbar{height:26px;border-radius:8px;background:var(--bar);display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 12px;font-size:12px;color:var(--muted)}
+.mbar svg{width:18px;height:18px;stroke:var(--fg);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mbar .here{padding:2px 4px;border-radius:5px;background:var(--line)}
+.panel{background:var(--solid);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-left:auto;width:100%;max-width:300px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
+.panel .title{font-weight:700;font-size:14px}
+.status{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:flex-start}
+.status svg{flex:none;width:14px;height:14px;margin-top:2px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px}
+.sw{width:32px;height:18px;border-radius:9px;background:var(--line);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:7px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.sw.on{background:var(--leaf)}.sw.on::after{left:16px}
+hr{border:none;border-top:1px solid var(--line);margin:2px 0;width:100%}
+.counts{font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.counts b{font-variant-numeric:tabular-nums;text-align:right}
+.item{font-size:13px}
+.item.dim{color:var(--muted)}
+.btn{align-self:flex-start;font:600 12px var(--font);padding:5px 12px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--fg)}
+.btn.p{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.qr{width:180px;height:180px;margin:4px auto;display:block;border-radius:8px;background:#fff;padding:8px}
+.warnline{font-size:12px;color:var(--warn);font-weight:600}
+.caption{font-size:14px;color:var(--muted)}
+.caption b{color:var(--fg)}
+
+/* Boxes */
+.boxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.box{padding:20px 22px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.box h3{margin:0;font-size:17px}
+.box p{color:var(--muted);font-size:15px}
+.box.attn{border:2px solid var(--warn);background:var(--warn-bg)}
+.tag{align-self:flex-start;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:10px;background:var(--warn);color:var(--bg)}
+
+/* Terms */
+.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 24px;font-size:14px}
+.terms b{display:block}
+.terms span{color:var(--muted)}
+
+/* Reference */
+.ref{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px}
+.ref ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.ref li::marker{color:var(--muted);font-variant-numeric:tabular-nums}
+.who{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.hard{color:var(--warn);font-weight:700}
+.you{color:var(--warn);font-weight:600}
+</style>
+
+<div class="blob" aria-hidden="true" style="width:520px;height:520px;left:-160px;top:80px;background:var(--leaf)"></div>
+<div class="blob" aria-hidden="true" style="width:480px;height:480px;right:-160px;top:700px;background:var(--sky)"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="drive" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 13.5h.01M10 13.5h.01"/></symbol>
+    <symbol id="drive-on" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 13.5h.01"/><circle cx="18" cy="6" r="4" style="fill:var(--bar)"/><path d="M16.2 6l1.3 1.3 2.4-2.6"/></symbol>
+    <symbol id="drive-warn" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 13.5h.01"/><circle cx="18" cy="6" r="4" style="fill:var(--bar)"/><path d="M18 4v2.4M18 8.2h.01"/></symbol>
+    <symbol id="drive-plus" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2.5"/><path d="M7 13.5h.01"/><circle cx="18" cy="6" r="4" style="fill:var(--bar)"/><path d="M18 4.2v3.6M16.2 6h3.6"/></symbol>
+  </defs>
+</svg>
+
+<main>
+  <header style="display:flex;flex-direction:column;gap:12px">
+    <span class="muted" style="font-size:14px;font-weight:600">Plan for approval · 26 October</span>
+    <h1>Vesel Backup, a menu bar app for your Mac</h1>
+    <p class="lede">A small icon at the top of your MacBook's screen. It runs the backup, shows that it's working, and pairs your iPhone without Terminal. The 2014 Mac mini keeps the Terminal set-up; both pair the same way.</p>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:14px" aria-labelledby="sys">
+    <h2 id="sys">How it works</h2>
+    <div class="sys glass" role="img" aria-label="iPhone sends a copy over home Wi-Fi to the Vesel Backup app on the Mac, which writes it to one backup file">
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>
+        <b>iPhone · Vesel</b>
+        <span class="hint">Holds all your data. After each sync it sends what's new. Away from home it keeps it for later.</span>
+      </div>
+      <div class="wire"><div class="track"><i class="dot"></i><i class="dot d2"></i></div><span>home Wi-Fi, encrypted</span></div>
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 19.5h20"/><path d="M14 6.5h5" /></svg>
+        <b>Mac · Vesel Backup</b>
+        <span class="hint">The menu bar app. While it's open it runs the backup server; it opens by itself when you log in.</span>
+      </div>
+      <div class="wire"><div class="track"><i class="dot"></i><i class="dot d2"></i></div><span>stores each row once</span></div>
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>
+        <b>Backup file</b>
+        <span class="hint">One file on your Mac, outside iCloud. The menu reads it to count what's there.</span>
+      </div>
+    </div>
+    <div class="sys glass" role="img" aria-label="Or: iPhone sends a copy over home Wi-Fi to the 2014 Mac mini, where the Terminal set-up runs the backup at boot, into the same kind of backup file">
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>
+        <b>iPhone · Vesel</b>
+        <span class="hint">The same app, the same pairing code. It doesn't know which way the Mac runs the backup.</span>
+      </div>
+      <div class="wire"><div class="track"><i class="dot"></i><i class="dot d2"></i></div><span>home Wi-Fi, encrypted</span></div>
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="7" rx="2"/><path d="M8 12.5h.01"/></svg>
+        <b>Mac mini · Terminal set-up</b>
+        <span class="hint">The 2014 Mac mini can't run the app. A script pairs it once; the backup then starts by itself at every boot. No menu.</span>
+      </div>
+      <div class="wire"><div class="track"><i class="dot"></i><i class="dot d2"></i></div><span>stores each row once</span></div>
+      <div class="node" tabindex="0">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>
+        <b>Backup file</b>
+        <span class="hint">Same folder and file as on the MacBook.</span>
+      </div>
+    </div>
+    <p class="muted" style="font-size:14px">Top: your MacBook with the app. Bottom: the Mac mini later. Hover or tap a part for one line about it. No cloud anywhere. Same encrypted link, certificate and key either way.</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px" aria-labelledby="menus">
+    <h2 id="menus">The menu, in each state</h2>
+    <div class="menus">
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive-on"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Menu when on: status On, switch on, last backup today 07:42, counts per data type, Pair again, Open at login on">
+          <span class="title">Vesel Backup</span>
+          <span class="status"><svg style="stroke:var(--leaf)" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>On · my-mac.local</span>
+          <div class="row"><span>Backup server</span><span class="sw on"></span></div>
+          <hr>
+          <div class="row"><span class="muted">Last backup</span><span>today 07:42</span></div>
+          <div class="counts">
+            <b>212</b><span>nights of sleep</span>
+            <b>210</b><span>Nightly Recharge nights</span>
+            <b>1 204 380</b><span>heart-rate readings</span>
+            <b>8 912 004</b><span>beat-to-beat readings</span>
+            <b>61 020</b><span>skin temperature readings</span>
+            <b>214</b><span>days of activity</span>
+            <b>9</b><span>alerts</span>
+            <b>3 118</b><span class="muted">other rows</span>
+          </div>
+          <hr>
+          <span class="item">Pair again…</span>
+          <div class="row"><span>Open at login</span><span class="sw on"></span></div>
+          <span class="item dim">Quit Vesel Backup</span>
+        </div>
+        <p class="caption"><b>On.</b> The icon has a tick. Numbers are example values, counted straight from the backup file.</p>
+      </div>
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Menu when off: status Off, switch off, last backup yesterday, counts still shown">
+          <span class="title">Vesel Backup</span>
+          <span class="status">Off · your iPhone keeps everything until it's back on</span>
+          <div class="row"><span>Backup server</span><span class="sw"></span></div>
+          <hr>
+          <div class="row"><span class="muted">Last backup</span><span>yesterday 22:05</span></div>
+          <div class="counts">
+            <b>211</b><span>nights of sleep</span>
+            <b>1 190 112</b><span>heart-rate readings</span>
+            <b>9</b><span>alerts</span>
+            <b>…</b><span class="muted">and the rest</span>
+          </div>
+          <hr>
+          <span class="item">Pair again…</span>
+          <div class="row"><span>Open at login</span><span class="sw on"></span></div>
+          <span class="item dim">Quit Vesel Backup</span>
+        </div>
+        <p class="caption"><b>Off.</b> Plain icon. You switched it off; it stays off after a restart until you switch it on.</p>
+      </div>
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive-warn"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Menu with a problem: the backup stopped unexpectedly, with Try again and Show log">
+          <span class="title">Vesel Backup</span>
+          <span class="status" style="color:var(--err)"><svg style="stroke:var(--err)" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5h.01"/></svg>The backup stopped unexpectedly three times.</span>
+          <div style="display:flex;gap:8px"><button class="btn p" type="button">Try again</button><button class="btn" type="button">Show log</button></div>
+          <hr>
+          <div class="row"><span class="muted">Last backup</span><span>today 07:42</span></div>
+          <hr>
+          <span class="item">Pair again…</span>
+          <div class="row"><span>Open at login</span><span class="sw on"></span></div>
+          <span class="item dim">Quit Vesel Backup</span>
+        </div>
+        <p class="caption"><b>Problem.</b> Icon with an exclamation mark. Other problems, each with one fix: uv isn't installed (copy the install line), or something else uses the backup port.</p>
+      </div>
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive-plus"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Menu when not paired yet: Not paired yet, Pair phone button, Open at login">
+          <span class="title">Vesel Backup</span>
+          <span class="status">Not paired yet</span>
+          <p style="font-size:13px" class="muted">Keeps a copy of your iPhone's data on this Mac, over home Wi-Fi only.</p>
+          <button class="btn p" type="button">Pair phone…</button>
+          <hr>
+          <div class="row"><span>Open at login</span><span class="sw on"></span></div>
+          <span class="item dim">Quit Vesel Backup</span>
+        </div>
+        <p class="caption"><b>Not paired yet.</b> Icon with a plus. The first time you open the app.</p>
+      </div>
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive-warn"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Menu when the Terminal set-up already runs the backup on this Mac: explanation, How to switch, last backup and counts, no switch and no pairing">
+          <span class="title">Vesel Backup</span>
+          <span class="status">The Terminal set-up runs the backup on this Mac.</span>
+          <button class="btn" type="button">How to switch</button>
+          <hr>
+          <div class="row"><span class="muted">Last backup</span><span>today 07:42</span></div>
+          <div class="counts">
+            <b>212</b><span>nights of sleep</span>
+            <b>…</b><span class="muted">and the rest</span>
+          </div>
+          <hr>
+          <div class="row"><span>Open at login</span><span class="sw on"></span></div>
+          <span class="item dim">Quit Vesel Backup</span>
+        </div>
+        <p class="caption"><b>Terminal set-up found.</b> Only if both ways end up on one Mac. The app starts nothing and doesn't pair; it still shows what's backed up.</p>
+      </div>
+
+      <div class="shot">
+        <div class="mbar" aria-hidden="true"><span>Wi-Fi</span><span class="here"><svg><use href="#drive-plus"/></svg></span><span>Mon 08:14</span></div>
+        <div class="panel" role="img" aria-label="Pairing view: a QR code, instructions to scan it in Vesel on the iPhone, a warning not to share it, and Done">
+          <span class="title">Pair your iPhone</span>
+          <svg class="qr" viewBox="0 0 29 29" aria-hidden="true" shape-rendering="crispEdges">
+            <rect width="29" height="29" fill="#fff"/>
+            <g fill="#111113">
+              <path d="M0 0h7v7H0zM22 0h7v7h-7zM0 22h7v7H0z"/>
+              <path d="M1 1h5v5H1zM23 1h5v5h-5zM1 23h5v5H1z" fill="#fff"/>
+              <path d="M2 2h3v3H2zM24 2h3v3h-3zM2 24h3v3H2z"/>
+              <path d="M9 1h1v2H9zM11 0h2v1h-2zM14 2h2v2h-2zM17 1h1v3h-1zM19 0h1v2h-1zM9 5h3v1H9zM13 6h1v2h-1zM16 5h2v1h-2zM19 4h1v3h-1zM10 8h2v2h-2zM0 9h3v1H0zM4 9h2v2H4zM8 10h1v3H8zM14 9h3v1h-3zM18 9h2v2h-2zM22 9h1v2h-1zM25 8h3v1h-3zM1 12h2v2H1zM5 13h2v1H5zM11 12h3v2h-3zM15 12h1v3h-1zM17 13h3v1h-3zM23 12h2v2h-2zM27 11h2v2h-2zM0 16h1v2H0zM3 15h3v1H3zM9 15h2v2H9zM12 16h2v1h-2zM18 16h1v3h-1zM20 15h3v1h-3zM25 15h1v2h-1zM2 19h2v1H2zM6 18h1v2H6zM10 19h3v1h-3zM14 18h2v2h-2zM21 18h2v2h-2zM26 19h3v1h-3zM9 22h2v1H9zM12 23h1v3h-1zM14 21h3v1h-3zM18 22h2v2h-2zM22 22h3v3h-3zM23 23h1v1h-1z"/>
+              <path d="M9 26h2v2H9zM14 25h1v4h-1zM16 27h3v1h-3zM20 25h2v1h-2zM26 26h2v3h-2zM24 27h1v2h-1zM17 24h1v2h-1z"/>
+            </g>
+          </svg>
+          <p style="font-size:13px">On your iPhone: Vesel › Loop &amp; settings › Set up backup, then scan this.</p>
+          <span class="warnline">This code is the key to your backup. Don't photograph or share it.</span>
+          <button class="btn p" type="button">Done</button>
+        </div>
+        <p class="caption"><b>Pairing.</b> The code shows only here, and is gone when you click Done or the menu closes. (Drawing only; not a real code.)</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="boxes" aria-label="What to look at">
+    <div class="box glass">
+      <h3>What you get</h3>
+      <p>Open Vesel Backup once from Applications. Pair your iPhone from the menu. From then on it opens when you log in and the icon tells you if it's on, off or stuck.</p>
+    </div>
+    <div class="box attn">
+      <span class="tag">Your answer, recorded</span>
+      <h3>Both ways stay</h3>
+      <p>MacBook: the app. 2014 Mac mini: the Terminal set-up, unchanged. Both make the pairing code with the same script, so the iPhone works with either.</p>
+    </div>
+    <div class="box glass">
+      <h3>Pairing again means a new code</h3>
+      <p>Your Mac keeps only a fingerprint of the key, so the old code can't be shown twice. Pair again gives a new code; your iPhone scans it and nothing is sent twice.</p>
+    </div>
+    <div class="box glass">
+      <h3>I assumed</h3>
+      <p>One Mac runs one way, never both; the app steps aside if it finds the Terminal set-up. uv stays installed on your MacBook (it is now). The phone keeps saying "Mac mini".</p>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px" aria-labelledby="terms">
+    <h2 id="terms">Words on this page</h2>
+    <div class="terms">
+      <div><b>Menu bar app</b><span>An app that lives as an icon at the top right of the Mac's screen, with no window.</span></div>
+      <div><b>Backup server</b><span>The small program that receives copies from your iPhone and stores them.</span></div>
+      <div><b>Pairing code (QR)</b><span>Tells your iPhone how to find this Mac and the secret key to use.</span></div>
+      <div><b>uv</b><span>A free tool already on your Mac that gives the server its own Python.</span></div>
+      <div><b>Terminal set-up</b><span>The script-and-background-service way from before. Kept for the Mac mini, which can't run the app.</span></div>
+      <div><b>Open at login</b><span>macOS starts the app when you log in, so you don't forget it.</span></div>
+      <div><b>Backup port</b><span>The numbered door (8443) your iPhone knocks on at home.</span></div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:18px" aria-labelledby="refh">
+    <div><h2 id="refh">Reference</h2><p class="muted" style="font-size:14px">Skip unless you want the detail. Answer by number: "ok", "3: …", "risk 2 accepted".</p></div>
+    <div class="ref">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="who">Decisions</span>
+        <ol>
+          <li><span class="who">Yours</span> On the MacBook (and any newer Mac) the menu bar app runs the backup while it's open, and opens at login. Replaces "starts at boot" there only.</li>
+          <li><span class="who">Yours</span> The menu shows on/off and status, last backup and counts, Pair phone with the code on screen, and Open at login.</li>
+          <li><span class="who">Yours</span> Keep both ways: the Terminal set-up stays for the 2014 Mac mini, headless. Same code, same folder; the app explains a Terminal set-up it finds.</li>
+          <li><span class="who">Mine</span> <span class="hard">Hard to undo:</span> one script makes the certificate and key for both ways; the app carries it and runs it. Tested against the written rules with both versions of the Mac's encryption tool.</li>
+          <li><span class="who">Mine</span> The server travels inside the app; uv gives it Python. Without uv the menu says what to install.</li>
+          <li><span class="who">Mine</span> Every pairing in the app makes a new key; the certificate stays, so nothing is re-sent.</li>
+          <li><span class="who">Mine</span> The pairing code is shown on screen only, never saved.</li>
+          <li><span class="who">Mine</span> Counts are read straight from the backup file; the phone's upload format doesn't change.</li>
+          <li><span class="who">Mine</span> If the Terminal set-up is installed on the same Mac, the app starts nothing and doesn't pair; the README says how to switch.</li>
+        </ol>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="who">Risks</span>
+        <ol>
+          <li><b>Certificate and key (phone ↔ Mac link).</b> Made by the same script on both Macs and checked in tests; files readable only by you; the key stored only as a fingerprint.</li>
+          <li><b>Secrets.</b> The pairing code never touches disk, logs or the clipboard; logs hold only method, path, status and row count.</li>
+          <li>The server only runs while you're logged in and the Mac is awake. The phone waits and catches up; nothing is lost.</li>
+          <li>When the MacBook is on another Wi-Fi with the server on, the port is visible there too. Every request needs the key and the link is encrypted; switch it off if you like.</li>
+          <li>The first start needs internet once to fetch Python's parts (no health data).</li>
+          <li>Both ways on one Mac would fight over the backup port. The app checks for the Terminal set-up and steps aside.</li>
+        </ol>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="who">How we'll know it works</span>
+        <ol>
+          <li>All tests pass, the Mac app builds, the server tests still pass, and a new test checks the pairing script on both encryption tools.</li>
+          <li>On this Mac with a test folder: pair, scan into the iPhone Simulator, rows arrive, counts show up; pair again and the old key is refused.</li>
+          <li>Every menu state is screenshotted, including "Terminal set-up found"; file permissions and logs are checked for leaks.</li>
+          <li>Quit and off really stop the server; a crash leaves no second copy running.</li>
+          <li><span class="you">You:</span> install it, pair your real iPhone at home, see "Last backup" update after a sync.</li>
+          <li><span class="you">You:</span> log out and in: it opens by itself and is on.</li>
+          <li><span class="you">You, later:</span> on the Mac mini, the Terminal steps as written today.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>

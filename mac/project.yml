@@ -1,0 +1,78 @@
+name: VeselBackup
+options:
+  deploymentTarget:
+    macOS: "27.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: ../Signing.xcconfig
+  Release: ../Signing.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGN_STYLE: Automatic
+packages:
+  VeselBackupKit:
+    path: Packages/VeselBackupKit
+targets:
+  VeselBackup:
+    type: application
+    platform: macOS
+    sources:
+      - VeselBackup
+    dependencies:
+      - package: VeselBackupKit
+    preBuildScripts:
+      - name: Copy the backup server
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          set -euo pipefail
+          dest="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/server"
+          mkdir -p "$dest"
+          rsync -a --delete --exclude __pycache__ --exclude .venv --exclude tests --exclude .pytest_cache \
+            --include pyproject.toml --include uv.lock --include .python-version --include setup.sh \
+            --include 'vesel_server/' --include 'vesel_server/**' --exclude '*' \
+            "${PROJECT_DIR}/../server/" "$dest/"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).backup
+        PRODUCT_NAME: Vesel Backup
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Vesel Backup
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.healthcare-fitness
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Vesel Backup receives your iPhone's backup over your home Wi-Fi, and nowhere else."
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+  VeselBackupSnapshots:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - VeselBackupSnapshots
+      - path: VeselBackup
+        excludes:
+          - VeselBackupApp.swift
+          - Assets.xcassets
+    dependencies:
+      - package: VeselBackupKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).backup.snapshots
+schemes:
+  VeselBackup:
+    build:
+      targets:
+        VeselBackup: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - VeselBackupSnapshots
+        - package: VeselBackupKit/VeselBackupKitTests

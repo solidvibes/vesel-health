@@ -1,0 +1,52 @@
+# Credentials (never commit)
+.env
+*.p8
+*.p12
+*.mobileprovision
+
+# Miscellaneous
+*.log
+*.pyc
+*.swp
+.DS_Store
+.history
+
+# IDE
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# iOS
+ios/Vesel.xcodeproj/
+ios/Vesel/Info.plist
+ios/VeselWidgets/Info.plist
+ios/build/
+**/.build/
+**/.swiftpm/
+ios/LocalFixtures/
+
+# Mac
+mac/VeselBackup.xcodeproj/
+mac/build/
+
+# Server
+server/.venv/
+server/certs/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Signing (your own team and bundle prefix)
+Signing.local.xcconfig
+
+# Build output and caches
+**/build/
+**/DerivedData/
+**/__pycache__/
+.pytest_cache/
+
+# Local tools
+.claude/settings.local.json
+.claude/worktrees/
+docs/.obsidian/

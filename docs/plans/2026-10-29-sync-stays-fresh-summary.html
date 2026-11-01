@@ -1,0 +1,364 @@
+<title>Why Vesel Goes Stale</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one narrow column of glass cards over a faint top-right wash, like the app itself. */
+:root {
+  --bg: #F3F3F1; --surface: #FFFFFF; --text: #111113; --muted: #55555B;
+  --accent: #2F5FE0; --error: #C42B1C; --success: #22844A;
+  --recovery: #2F9E5B; --sleep: #3B6CF6; --stress: #D9621B;
+  --line: rgba(17,17,19,.10); --track: rgba(17,17,19,.07);
+  --wash: rgba(59,108,246,.10); --wash2: rgba(47,158,91,.07);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E0F11; --surface: #1A1C20; --text: #F2F2F4; --muted: #A1A1AA;
+  --accent: #7FA2FF; --error: #FF7B6E; --success: #4ADE80;
+  --recovery: #4CC27D; --sleep: #7FA2FF; --stress: #FF9A52;
+  --line: rgba(242,242,244,.12); --track: rgba(242,242,244,.08);
+  --wash: rgba(127,162,255,.12); --wash2: rgba(76,194,125,.07); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E0F11; --surface: #1A1C20; --text: #F2F2F4; --muted: #A1A1AA;
+  --accent: #7FA2FF; --error: #FF7B6E; --success: #4ADE80;
+  --recovery: #4CC27D; --sleep: #7FA2FF; --stress: #FF9A52;
+  --line: rgba(242,242,244,.12); --track: rgba(242,242,244,.08);
+  --wash: rgba(127,162,255,.12); --wash2: rgba(76,194,125,.07); color-scheme: dark }
+
+body { background: var(--bg); color: var(--text); font: 17px/1.45 var(--font);
+  background-image: radial-gradient(60% 40% at 100% 0%, var(--wash), transparent 70%), radial-gradient(40% 30% at 90% 0%, var(--wash2), transparent 70%);
+  background-repeat: no-repeat; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px; }
+h1 { font: 700 34px/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 700 22px/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 600 17px/1.3 var(--font); margin: 0; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 60ch; }
+.eyebrow { font: 600 13px/1.3 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.card { background: color-mix(in srgb, var(--surface) 72%, transparent); border: 1px solid var(--line); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 14px; backdrop-filter: blur(20px); }
+.card.attn { border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.small { font: 500 13px/1.35 var(--font); color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.grid2 > * { min-width: 0; }
+
+/* System picture */
+.sys { display: grid; grid-template-columns: 1fr 1.4fr 1fr; align-items: center; gap: 8px; }
+.part { border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: center; background: var(--surface); cursor: default; position: relative; outline: none; }
+.part:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+.part svg { width: 34px; height: 34px; display: block; margin: 0 auto 6px; stroke: var(--text); fill: none; stroke-width: 1.6; }
+.part b { font: 600 15px/1.3 var(--font); display: block; }
+.part .tip { display: none; font: 500 13px/1.35 var(--font); color: var(--muted); margin-top: 6px; }
+.part:hover .tip, .part:focus .tip { display: block; }
+.wire { position: relative; height: 44px; }
+.wire::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--line); }
+.wire .label { position: absolute; left: 0; right: 0; top: -2px; text-align: center; font: 500 12px/1.3 var(--font); color: var(--muted); }
+.dot { position: absolute; top: calc(50% - 6px); width: 12px; height: 12px; border-radius: 50%; background: var(--sleep); animation: travel 3.2s linear infinite; }
+.dot:nth-child(3) { background: var(--recovery); animation-delay: -1.1s; }
+.dot:nth-child(4) { background: var(--stress); animation-delay: -2.2s; }
+@keyframes travel { 0% { left: 0; opacity: 0 } 10% { opacity: 1 } 90% { opacity: 1 } 100% { left: calc(100% - 12px); opacity: 0 } }
+
+/* The 30-second window */
+.window { display: flex; flex-direction: column; gap: 10px; }
+.rowlab { display: flex; justify-content: space-between; font: 600 13px/1.3 var(--font); color: var(--muted); }
+.bar { position: relative; height: 28px; border-radius: 10px; background: var(--track); overflow: hidden; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 10px; }
+.give .fill { width: 38%; background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.need .fill { width: 0; background: color-mix(in srgb, var(--sleep) 60%, transparent); animation: grow 6s ease-in-out infinite; }
+.cut { position: absolute; top: -6px; bottom: -6px; left: 38%; border-left: 2px solid var(--error); }
+.cut span { position: absolute; top: -18px; left: 4px; font: 600 12px/1 var(--font); color: var(--error); white-space: nowrap; }
+.wrapbar { position: relative; padding-top: 14px; }
+@keyframes grow { 0% { width: 0 } 45% { width: 38% } 55% { width: 38% } 100% { width: 38% } }
+
+/* Pieces: before vs after */
+.pieces { display: flex; flex-direction: column; gap: 6px; }
+.piece { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--track); font: 500 15px/1.3 var(--font); }
+.piece .st { font: 600 13px/1 var(--font); display: inline-flex; align-items: center; gap: 6px; }
+.ok { color: var(--success); } .no { color: var(--error); } .wait { color: var(--muted); }
+.cutline { display: flex; align-items: center; gap: 8px; color: var(--error); font: 600 12px/1 var(--font); }
+.cutline::before, .cutline::after { content: ""; flex: 1; border-top: 2px solid var(--error); }
+.result { font: 600 15px/1.3 var(--font); padding-top: 4px; }
+
+/* Garmin vs Polar timeline */
+.day { position: relative; height: 34px; border-radius: 10px; background: var(--track); }
+.tick { position: absolute; top: 7px; width: 4px; height: 20px; border-radius: 2px; }
+.g .tick { background: var(--recovery); }
+.p .tick { background: var(--sleep); width: 10px; }
+.p .tick.fail { background: transparent; border: 2px solid var(--error); width: 10px; height: 16px; top: 7px; }
+.hours { display: flex; justify-content: space-between; font: 500 12px/1 var(--font); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Terms */
+dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; }
+dt { font: 600 15px/1.35 var(--font); }
+dd { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 520px) { dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 8px; } .sys { grid-template-columns: 1fr; } .wire { height: 36px; transform: rotate(90deg); width: 60px; margin: 6px auto; } .wire .label { display: none; } }
+@media (prefers-reduced-motion: reduce) { .dot, .need .fill { animation: none; } .need .fill { width: 38%; } .dot { left: 45%; } }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <span class="eyebrow">Vesel · syncing</span>
+    <h1>Why your numbers go stale</h1>
+    <p class="lede">The Polar Loop keeps everything it measures and waits for the phone to come and collect it. iOS only lets Vesel collect for a short time, and today Vesel saves nothing until it has collected everything.</p>
+  </header>
+
+  <section class="card">
+    <h2>How data gets from the Loop to your phone</h2>
+    <div class="sys" aria-label="The Loop sends readings to Vesel on the iPhone over Bluetooth, only when iOS lets Vesel run">
+      <div class="part" tabindex="0">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></svg>
+        <b>Polar Loop</b>
+        <span class="small">holds the readings</span>
+        <span class="tip">Measures all day and keeps it all on the band until the phone collects it.</span>
+      </div>
+      <div class="wire"><span class="label">Bluetooth, only while iOS lets Vesel run</span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="part" tabindex="0">
+        <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 18.5h4"/></svg>
+        <b>iPhone · Vesel</b>
+        <span class="small">collects, saves, shows</span>
+        <span class="tip">Collects from the Loop, saves on the phone, then clears what it saved from the Loop.</span>
+      </div>
+    </div>
+    <p class="small">Hover or tap a part for one line on what it does.</p>
+  </section>
+
+  <section class="card">
+    <h2>The problem: 30 seconds isn't enough</h2>
+    <p>When Vesel isn't on screen, iOS gives it about 30 seconds before it has to stop. Collecting everything since the last read often takes longer than that.</p>
+    <div class="window">
+      <div class="rowlab"><span>Time iOS gives Vesel</span><span>about 30 s</span></div>
+      <div class="bar give"><div class="fill"></div></div>
+      <div class="rowlab"><span>Time a full read needs</span><span>often longer</span></div>
+      <div class="wrapbar"><div class="bar need"><div class="fill"></div></div><div class="cut"><span>iOS stops Vesel here</span></div></div>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <span class="eyebrow">Today</span>
+      <h3>All or nothing</h3>
+      <div class="pieces">
+        <div class="piece">Last night<span class="st wait">collected, not saved</span></div>
+        <div class="piece">Steps<span class="st wait">collected, not saved</span></div>
+        <div class="piece">Skin temperature<span class="st wait">collected, not saved</span></div>
+        <div class="cutline">iOS stops here</div>
+        <div class="piece">Heart rate<span class="st no">✕ not reached</span></div>
+        <div class="piece">Beat-to-beat<span class="st no">✕ not reached</span></div>
+      </div>
+      <p class="result no">Saved: nothing. The next read starts over, with even more to collect.</p>
+    </div>
+    <div class="card attn">
+      <span class="eyebrow">After the fix</span>
+      <h3>Save as you go</h3>
+      <div class="pieces">
+        <div class="piece">Last night<span class="st ok">✓ saved</span></div>
+        <div class="piece">Steps<span class="st ok">✓ saved</span></div>
+        <div class="piece">Skin temperature<span class="st ok">✓ saved</span></div>
+        <div class="cutline">iOS stops here</div>
+        <div class="piece">Heart rate<span class="st wait">next read</span></div>
+        <div class="piece">Beat-to-beat<span class="st wait">next read</span></div>
+      </div>
+      <p class="result ok">Saved: last night, steps, skin temperature. Heart rate and beat-to-beat are the slowest, so they come last and catch up in longer reads.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Why Garmin doesn't have this, and the Polar app did</h2>
+    <div class="window">
+      <div class="rowlab"><span>Garmin: the watch sends small updates on its own</span></div>
+      <div class="day g" aria-label="Many small updates spread across the day">
+        <span class="tick" style="left:4%"></span><span class="tick" style="left:11%"></span><span class="tick" style="left:17%"></span><span class="tick" style="left:24%"></span><span class="tick" style="left:31%"></span><span class="tick" style="left:38%"></span><span class="tick" style="left:45%"></span><span class="tick" style="left:52%"></span><span class="tick" style="left:59%"></span><span class="tick" style="left:66%"></span><span class="tick" style="left:73%"></span><span class="tick" style="left:80%"></span><span class="tick" style="left:87%"></span><span class="tick" style="left:94%"></span>
+      </div>
+      <div class="rowlab" style="margin-top:8px"><span>Polar Loop: waits until the phone asks</span></div>
+      <div class="day p" aria-label="A few big reads; most are cut off by iOS">
+        <span class="tick" style="left:8%"></span><span class="tick fail" style="left:34%"></span><span class="tick fail" style="left:58%"></span><span class="tick fail" style="left:90%"></span>
+      </div>
+      <div class="hours"><span>07:00</span><span>10:00</span><span>13:00</span><span>16:00</span><span>19:00</span></div>
+      <p class="small"><span class="ok">■</span> small update, done quickly &nbsp; <span style="color:var(--sleep)">■</span> full read that finished &nbsp; <span class="no">□</span> full read cut off, nothing saved</p>
+    </div>
+    <div class="grid2">
+      <div><h3>Garmin</h3><p class="small">Many tiny updates through the day. Each one finishes well inside the time iOS gives, so nothing gets stuck.</p></div>
+      <div><h3>Polar Loop</h3><p class="small">One big collection, and only when the phone asks. The Polar app works the same way, which is why it went stale too. Vesel kept that shape, so it still does.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>A few words used here</h2>
+    <dl>
+      <dt>Read</dt><dd>Vesel collecting new readings from the Loop over Bluetooth.</dd>
+      <dt>In the background</dt><dd>Vesel running while you're in another app or the screen is off. iOS decides when and for how long.</dd>
+      <dt>Save</dt><dd>Writing the readings into the database on your phone, so Today shows them.</dd>
+      <dt>Clear the Loop</dt><dd>Removing readings from the band once they're safely on the phone, so the band never fills up.</dd>
+    </dl>
+  </section>
+
+  <header style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+    <span class="eyebrow">The plan · for your approval</span>
+    <h2 style="font-size:28px">Sync stays fresh</h2>
+    <p class="lede">Read the five boxes. The numbered lists further down are reference, if you want them.</p>
+  </header>
+
+  <section class="grid2">
+    <div class="card">
+      <span class="eyebrow">What you get</span>
+      <h3>Numbers from the last hour or two</h3>
+      <p class="small">Every read keeps what it got. Vesel gets more chances to read during the day, plus a long read at night while the phone charges.</p>
+    </div>
+    <div class="card">
+      <span class="eyebrow">What you do</span>
+      <h3>Nothing, mostly</h3>
+      <p class="small">Tap Sync now or I'm up and you can leave the app at once: iOS shows a small card while the read finishes.</p>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Stays safe</span>
+      <h3>Nothing is deleted from the Loop too early</h3>
+      <p class="small">Vesel clears the Loop only after a whole read: every part came back and the connection never dropped. Anything less clears nothing.</p>
+    </div>
+    <div class="card">
+      <span class="eyebrow">I assumed</span>
+      <h3>A little extra Loop battery is fine</h3>
+      <p class="small">More reads cost the band some battery. The Syncing page shows how often Vesel read, so you can see it.</p>
+    </div>
+  </section>
+
+  <section class="card attn">
+    <span class="eyebrow" style="color:var(--accent)">Needs your answer</span>
+    <h2>Four questions</h2>
+    <div class="qs">
+      <div class="q"><b>1 · Read at fixed times?</b><p class="small">The Loop never asks for a read on a schedule. You set up the "Sync Vesel" Shortcut at, say, 12:00, 16:00 and 20:00 in the Shortcuts app. <em>Recommended: yes.</em> Or: a one-line tip on the Syncing page instead.</p></div>
+      <div class="q"><b>2 · More reads, a little more band battery?</b><p class="small">Maybe a read every hour or two on a normal day. <em>Recommended: yes.</em></p></div>
+      <div class="q"><b>3 · Are the words OK?</b><p class="small">Shown in the pictures below: the new Syncing rows, the reminder, the iOS card.</p></div>
+      <div class="q"><b>4 · Is the Loop's own "sit still" alert on?</b><p class="small">Vesel can't switch it on; only the Polar app can, and opening it sends your Loop's data to Polar's cloud.</p>
+        <table class="opts">
+          <tr><th>Choice</th><th>What you get</th><th>What it costs</th></tr>
+          <tr class="rec"><td>a · Check first <span class="pill">Recommended</span></td><td>Sit still about an hour. If the Loop buzzes, reminders just work.</td><td>Nothing.</td></tr>
+          <tr><td>b · Turn it on in Polar Flow once</td><td>Reminders work.</td><td>One upload of your data to Polar's cloud.</td></tr>
+          <tr><td>c · Skip reminders</td><td>No reminders.</td><td>Nothing.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>A day after the fix</h2>
+    <div class="window">
+      <div class="day after" aria-label="Reads through the day after the fix">
+        <span class="mk ci" style="left:10%"></span><span class="mk sc" style="left:41.7%"></span><span class="mk ci" style="left:30%"></span><span class="mk ci" style="left:55%"></span><span class="mk sc" style="left:75%"></span><span class="mk ci" style="left:66%"></span><span class="mk sc" style="left:100%;transform:translateX(-100%)"></span>
+        <span class="night"></span>
+      </div>
+      <div class="hours"><span>07:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>night</span></div>
+      <p class="small"><span style="color:var(--recovery)">■</span> the Loop checks in (sits still, exercise, battery) &nbsp; <span style="color:var(--accent)">■</span> your Shortcut at a set time &nbsp; <span style="color:var(--sleep)">▬</span> long read while charging</p>
+      <p class="small">Each one saves what it gets. Times here are an example; the Loop decides when it checks in.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>What you'll see</h2>
+    <div class="grid2 mocks">
+      <figure>
+        <figcaption class="small">iOS card, after you tap Sync now and leave</figcaption>
+        <div class="phone">
+          <div class="sysnote">
+            <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <div style="flex:1;min-width:0"><b>Reading your Loop</b><span>Keeps going if you leave Vesel</span><div class="prog"><i></i></div></div>
+            <span class="x" aria-label="Cancel">✕</span>
+          </div>
+        </div>
+      </figure>
+      <figure>
+        <figcaption class="small">Stand-up reminder, switch on, no sound</figcaption>
+        <div class="phone">
+          <div class="sysnote">
+            <div class="ic app">V</div>
+            <div style="flex:1;min-width:0"><b>Time to move</b><span>Your Loop says you've been still for a while.</span></div>
+            <span class="small">now</span>
+          </div>
+        </div>
+      </figure>
+      <figure>
+        <figcaption class="small">Loop &amp; settings · Alerts · new switch, off</figcaption>
+        <div class="phone list">
+          <div class="lrow"><span>Low recovery</span><span class="tg on"></span></div>
+          <div class="lrow"><span>Long high stress</span><span class="tg on"></span></div>
+          <div class="lrow"><span>Stand-up reminders</span><span class="tg"></span></div>
+        </div>
+      </figure>
+      <figure>
+        <figcaption class="small">Syncing page · recent syncs, two new starts</figcaption>
+        <div class="phone list">
+          <div class="lrow"><span>14:05 · your Loop checked in</span><span class="ok small">done</span></div>
+          <div class="lrow"><span>12:00 · Shortcut</span><span class="ok small">done</span></div>
+          <div class="lrow"><span>03:12 · long read while charging</span><span class="ok small">done</span></div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="card ref">
+    <h2>Reference</h2>
+    <h3>Decisions</h3>
+    <ol>
+      <li><b>Yours:</b> save as you go, quick things first, a long read when iOS allows.</li>
+      <li><b>Yours:</b> stand-up reminders, off until you turn them on.</li>
+      <li><b>Yours:</b> Sync now and I'm up keep reading after you leave the app.</li>
+      <li>Order: last night, steps, activity, skin temperature, then heart rate and beat-to-beat, the slowest two.</li>
+      <li>An empty day is only believed after a whole read with no dropped connection; Polar's software can report a drop as "no data".</li>
+      <li>After a day you didn't wear the Loop, newer sleep and steps wait for one whole read; after that they come in as usual.</li>
+      <li>A day counts as not worn only after two empty reads at least an hour apart. <em>Hard to undo: no.</em></li>
+      <li>Opening Vesel reads again if the last read didn't finish, even within 5 minutes.</li>
+      <li>Reminders: silent, nothing 22:00–07:00, never on Today, dropped if older than 5 minutes.</li>
+      <li>Vesel never changes the Loop's own settings.</li>
+    </ol>
+    <h3>Risks</h3>
+    <ol>
+      <li><b>Deleting data from the Loop</b> (a sensitive area). Shows as: a day missing on the phone. Guarded by the rules in 5–6 and tests that cut reads off on purpose.</li>
+      <li>The Loop may send fewer check-ins than hoped. Shows as: few "checked in" rows. Then the Shortcut times carry the day.</li>
+      <li>Heart rate with a backlog may only catch up when Vesel is open or at night. Shows as: steps fresh, heart rate later.</li>
+      <li>The iOS card's progress moves per part, so a long heart-rate read can look stuck and iOS may end it. Shows as: "didn't finish" on the Syncing page; nothing is cleared.</li>
+    </ol>
+    <h3>How we'll know it works</h3>
+    <ol>
+      <li>Automatic tests, including reads cut off at every step: nothing is cleared that isn't on the phone.</li>
+      <li>The app on the Simulator: reading list and the new switch.</li>
+      <li><b>Only you, on your iPhone:</b> over a day, "checked in" rows and Today's steps no older than an hour or two.</li>
+      <li><b>Only you:</b> after a night charging, a "long read while charging" row that ended "done".</li>
+      <li><b>Only you:</b> tap Sync now, leave at once: the iOS card shows, and the read ends "done". Once more after a few days without reading.</li>
+      <li><b>Only you:</b> sit still until the Loop buzzes: "Time to move" on the phone.</li>
+    </ol>
+  </section>
+</div>
+<style>
+.qs { display: flex; flex-direction: column; gap: 14px; }
+.q { display: flex; flex-direction: column; gap: 4px; }
+.q b { font: 600 15px/1.3 var(--font); }
+.opts { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+.opts th, .opts td { text-align: left; padding: 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.opts th { font: 600 13px/1.3 var(--font); color: var(--muted); }
+.opts tr.rec td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pill { display: inline-block; font: 600 11px/1 var(--font); padding: 3px 6px; border-radius: 6px; background: var(--accent); color: var(--surface); margin-left: 4px; }
+.day.after { height: 34px; }
+.mk { position: absolute; top: 7px; width: 6px; height: 20px; border-radius: 3px; }
+.mk.ci { background: var(--recovery); }
+.mk.sc { background: var(--accent); }
+.night { position: absolute; right: 0; top: 7px; height: 20px; width: 14%; border-radius: 6px; background: color-mix(in srgb, var(--sleep) 55%, transparent); }
+.mocks figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.phone { border-radius: 24px; padding: 14px; background: linear-gradient(160deg, color-mix(in srgb, var(--sleep) 22%, var(--bg)), var(--bg)); border: 1px solid var(--line); min-height: 96px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.sysnote { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--surface) 85%, transparent); border-radius: 18px; padding: 10px 12px; }
+.sysnote b { display: block; font: 600 14px/1.3 var(--font); }
+.sysnote span { display: block; font: 400 13px/1.3 var(--font); color: var(--muted); }
+.sysnote .ic { width: 32px; height: 32px; border-radius: 9px; background: var(--text); display: grid; place-items: center; flex: none; }
+.sysnote .ic svg { width: 20px; height: 20px; stroke: var(--surface); fill: none; stroke-width: 1.8; }
+.sysnote .ic.app { color: var(--surface); font: 700 16px/1 var(--display); }
+.sysnote .x { color: var(--muted); display: inline; }
+.prog { height: 4px; border-radius: 2px; background: var(--track); margin-top: 6px; overflow: hidden; }
+.prog i { display: block; height: 100%; width: 55%; background: var(--accent); }
+.phone.list { padding: 6px 14px; }
+.lrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; border-bottom: 1px solid var(--line); }
+.lrow:last-child { border-bottom: 0; }
+.tg { width: 40px; height: 24px; border-radius: 12px; background: var(--track); position: relative; flex: none; border: 1px solid var(--line); }
+.tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.tg.on { background: var(--success); }
+.tg.on::after { left: 18px; }
+.ref ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.ref h3 { margin-top: 6px; }
+</style>
