@@ -6,6 +6,8 @@ struct WorkoutSettingsView: View {
     @State private var model: WorkoutSettingsModel
     /// The slider's own value while dragging; follows the model otherwise.
     @State private var sensitivity: Double = 50
+    @State private var location = LocationPermission()
+    @Environment(\.openURL) private var openURL
 
     init(environment: AppEnvironment) {
         let pipeline = environment.pipeline
@@ -48,6 +50,19 @@ struct WorkoutSettingsView: View {
                         .accessibilityElement(children: .combine)
                     }
                     note("Your Loop starts and ends a workout by itself. Higher sensitivity notices workouts more easily.")
+                    section("On your phone") {
+                        toggle(
+                            "Record my route",
+                            isOn: Binding(
+                                get: { model.routeOn },
+                                set: { on in
+                                    Task { await model.setRoute(on: on) }
+                                    if on { location.ask() }
+                                }
+                            ))
+                        if model.routeOn { locationRow }
+                    }
+                    note("Only during a workout your Loop noticed. The route stays on your phone and your Mac.")
                     section("Your sports") {
                         ForEach(Array(WorkoutSport.allCases.enumerated()), id: \.element) { index, sport in
                             if index > 0 { Divider() }
@@ -135,6 +150,53 @@ struct WorkoutSettingsView: View {
         }
         .frame(minHeight: Theme.Size.row)
         .disabled(!detection.isOn)
+    }
+
+    @ViewBuilder
+    private var locationRow: some View {
+        switch location.state {
+        case .notAsked:
+            Divider()
+            AdaptiveRow {
+                Text("Needs location")
+                    .font(Theme.Typography.body)
+                    .foregroundStyle(Theme.Palette.mutedText)
+            } trailing: {
+                Button("Allow") { location.ask() }
+                    .buttonStyle(.borderless)
+                    .font(Theme.Typography.body.weight(.semibold))
+                    .tint(Theme.Palette.accent)
+                    .frame(minHeight: Theme.Size.tapTarget)
+                    .accessibilityLabel("Allow location")
+            }
+            .frame(minHeight: Theme.Size.row)
+        case .off:
+            Divider()
+            settingsRow("Location is off for Vesel in iOS Settings")
+        case .whileUsing:
+            Divider()
+            settingsRow("Routes start only while Vesel is open. Allow location Always to record from your Loop's start.")
+        case .always:
+            EmptyView()
+        }
+    }
+
+    private func settingsRow(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
+            Text(text)
+                .font(Theme.Typography.body)
+                .foregroundStyle(Theme.Palette.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+            }
+            .buttonStyle(.borderless)
+            .font(Theme.Typography.body.weight(.semibold))
+            .tint(Theme.Palette.accent)
+            .frame(minHeight: Theme.Size.tapTarget)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, Theme.Spacing.s8)
     }
 
     /// The Loop's own minimum stays pickable when it isn't one of the usual lengths.

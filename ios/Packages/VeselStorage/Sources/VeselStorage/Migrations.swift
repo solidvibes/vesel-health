@@ -245,6 +245,19 @@ extension AppDatabase {
                     );
                     """)
         }
+        // The phone's route during a workout, keyed by the Loop's start notice; joined to the workout by time.
+        migrator.registerMigration("v8") { db in
+            try db.execute(
+                sql: """
+                    CREATE TABLE workout_route (
+                        started_at INTEGER PRIMARY KEY,
+                        ended_at INTEGER,
+                        points_json TEXT NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        uploaded_at INTEGER
+                    );
+                    """)
+        }
         return migrator
     }
 }

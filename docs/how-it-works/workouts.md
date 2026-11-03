@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings are built. The route recording, the screens, the headline and the chart blocks are planned.
+**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings and the route recording are built (the background start not yet tried on the owner's iPhone). The screens, the headline and the chart blocks are planned.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 
@@ -18,7 +18,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 - **Workouts stay on the Loop.** Vesel never deletes them. Only a factory reset (Forget this Loop) clears them; "Band storage is filling up" says workouts stay on the band.
 
 ### Route (phone GPS)
-- When the Loop says a workout started and **Record my route** is on and location is allowed, the phone records its own location until the Loop says it ended (at most 6 hours, one point every 5 seconds). The route is joined to the Loop's workout by time; points outside the workout are dropped.
+- When the Loop says a workout started and **Record my route** is on and location is allowed, the phone records its own location until the Loop says it ended (at most 6 hours, one point every 5 seconds). The route is joined to the Loop's workout by time; points outside the workout are dropped. The route so far is written every minute and at the end; it is stored under its start time.
 - Location "Always" lets the route start from the Loop's notice with Vesel in the background. With "While using" it starts only when the workout begins while Vesel is open.
 - Points less exact than 25 m are dropped. Distance is the sum of the straight lines between the kept points; average speed is distance ÷ the time the route covers (first to last point). A route covering less than half the workout shows its distance and "Route covers 12 of 42 min", no speed, and isn't used to guess the sport.
 - If iOS doesn't let the phone start in time, the route starts late or not at all. The workout is complete without one. Whether a background start works is checked on the owner's iPhone.
@@ -60,7 +60,7 @@ Loop & settings → Workouts (a pushed screen):
 | Record my route | On | Phone |
 | Your sports: Running, Cycling, Swimming, Strength | All on | Phone (only for guesses and the fix sheet; the Loop has no sport list) |
 
-A band setting saves when you flip the switch, let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings.
+A band setting saves when you flip the switch, let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings. With While using only, it says routes start only while Vesel is open, with the same link.
 
 ### Stored and backed up
 - Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone. Opening a workout page with a route fetches Apple's map tiles for that area; the route is drawn on the phone.

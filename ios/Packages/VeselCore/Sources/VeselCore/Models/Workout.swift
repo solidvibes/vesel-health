@@ -146,6 +146,25 @@ public struct WorkoutChoice: Sendable, Equatable {
     }
 }
 
+/// The phone's route during one workout the Loop noticed, from the Loop's start notice to its end notice. `end` is nil while
+/// it is still being recorded (or when the recording stopped without one). Joined to the band's workout by time.
+public struct RecordedRoute: Sendable, Equatable {
+    public var start: Date
+    public var end: Date?
+    public var points: [RoutePoint]
+
+    public init(start: Date, end: Date?, points: [RoutePoint]) {
+        self.start = start
+        self.end = end
+        self.points = points
+    }
+
+    /// From the start to its end, or to its last point while it has no end.
+    public var interval: DateInterval {
+        DateInterval(start: start, end: max(start, end ?? points.last?.time ?? start))
+    }
+}
+
 /// A workout's time and its word, for drawing on a chart.
 public struct WorkoutSpan: Sendable, Equatable {
     public var range: ClosedRange<Date>

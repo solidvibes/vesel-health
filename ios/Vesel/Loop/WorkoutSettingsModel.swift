@@ -12,6 +12,8 @@ final class WorkoutSettingsModel {
     private(set) var detection: WorkoutDetection?
     private(set) var isLoaded = false
     private(set) var sports = Set(WorkoutSport.allCases)
+    /// Record my route; on until turned off.
+    private(set) var routeOn = true
     private(set) var saving = false
     /// The last band change didn't reach the Loop, so nothing changed on the phone; `failed` is what was tried.
     private(set) var failed: WorkoutDetection?
@@ -37,6 +39,7 @@ final class WorkoutSettingsModel {
     private func read() async {
         if !saving { detection = try? await database.workoutDetection() }
         sports = (try? await database.workoutSports()) ?? sports
+        routeOn = (try? await database.isRouteRecordingOn()) ?? routeOn
         isLoaded = true
     }
 
@@ -66,6 +69,16 @@ final class WorkoutSettingsModel {
             try await database.setWorkoutSports(sports)
         } catch {
             sports = was
+        }
+    }
+
+    func setRoute(on: Bool) async {
+        let was = routeOn
+        routeOn = on
+        do {
+            try await database.setRouteRecording(on)
+        } catch {
+            routeOn = was
         }
     }
 }

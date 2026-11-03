@@ -18,6 +18,7 @@ description: Use when a change reads, stores, uploads or deletes health data, to
 - Readings with data are stored as each kind arrives. Empty days, heart-rate and beat-to-beat ledger rows, and clearing only after a whole read: every fetch returned, not cancelled, no Bluetooth drop (`WearableSource.drops`). The Polar SDK reports a failed file as no data.
 - A stored day with data is never replaced by an empty re-fetch (the band returns nothing for days it has cleared).
 - Workouts are keyed by the band's session folder (`20261103/071000`) in every workout table, have no ledger and are never cleared: never call `deleteTrainingSession`. A band read never writes `workout_choice` (the owner's fix). A workout's load word comes only from `PolarLoadWord.confirmed` (Polar's own, checked on the real Loop); Vesel makes none.
+- Location is recorded only between the Loop's workout start and end notices (at most 6 hours), with Record my route on; it stays on the phone and the Mac backup (`workout_route`) and is never logged.
 - A waiting "I'm up" (`ImUpRequest`) is delivered by `SyncPipeline` before a read, only while under 6 hours old and last night isn't stored; no ordinary read ends sleep without one. Ending the night from Vesel stamps `nightEnded(at:)`.
 - The connection log (`band_link`) holds times and link words only, kept 14 days, never uploaded.
 - Never log heart-rate, sleep or any health values, tokens or certificates.

@@ -130,4 +130,47 @@ extension AppDatabase {
         let value = WorkoutSport.allCases.filter(sports.contains).map(\.rawValue).joined(separator: ",")
         try await setSettings([Self.workoutSportsKey: value])
     }
+
+    // MARK: Routes
+
+    /// Stores the route as recorded so far, replacing the earlier write of the same route (keyed by its start).
+    public func save(_ route: RecordedRoute, updatedAt: Date) async throws {
+        let record = try WorkoutRouteRecord(route, updatedAt: updatedAt)
+        try await writer.write { try record.upsert($0) }
+    }
+
+    /// The routes that overlap `interval`, in time order. One without an end counts up to its last point. A route stops after
+    /// `routeMaxHours`, so only those starting that long before `interval` are read.
+    public func routes(overlapping interval: DateInterval) async throws -> [RecordedRoute] {
+        let earliest = interval.start.addingTimeInterval(-WorkoutThresholds.routeMaxHours * 3600)
+        return try await writer.read { db in
+            try WorkoutRouteRecord
+                .filter(sql: "started_at >= ? AND started_at <= ?", arguments: [earliest.unixSeconds, interval.end.unixSeconds])
+                .order(sql: "started_at")
+                .fetchAll(db)
+                .map { try $0.model() }
+                .filter { $0.interval.intersects(interval) }
+        }
+    }
+
+    /// The route that overlaps the workout most; nil when none does.
+    public func route(for workout: Workout) async throws -> RecordedRoute? {
+        let window = DateInterval(start: workout.start, end: max(workout.start, workout.end))
+        return try await routes(overlapping: window)
+            .map { ($0, $0.interval.intersection(with: window)?.duration ?? 0) }
+            .filter { $0.1 > 0 }
+            .max { $0.1 < $1.1 }?
+            .0
+    }
+
+    /// Whether "Record my route" is on ("on" / "off"); absent means on. Not uploaded.
+    public static let workoutRouteKey = "workouts.route"
+
+    public func isRouteRecordingOn() async throws -> Bool {
+        try await setting(Self.workoutRouteKey) != "off"
+    }
+
+    public func setRouteRecording(_ on: Bool) async throws {
+        try await setSettings([Self.workoutRouteKey: on ? "on" : "off"])
+    }
 }

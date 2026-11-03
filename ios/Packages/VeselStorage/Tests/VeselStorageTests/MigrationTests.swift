@@ -15,7 +15,7 @@ struct MigrationTests {
             tables == [
                 "activity_day", "alert_event", "band", "band_ledger", "band_link", "computed_metric", "hr_sample", "nightly_recharge", "ppi_sample",
                 "ppi_session", "profile", "raw_export", "setting", "skin_temp_sample", "sleep_night", "sync_run", "workout", "workout_choice",
-                "workout_file",
+                "workout_file", "workout_route",
             ])
     }
 
@@ -37,7 +37,7 @@ struct MigrationTests {
         try AppDatabase.migrator.migrate(queue)
         try AppDatabase.migrator.migrate(queue)
         let applied = try await queue.read { try AppDatabase.migrator.appliedIdentifiers($0) }
-        #expect(applied == ["v1", "v2", "v3", "v4", "v5", "v6", "v7"])
+        #expect(applied == ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"])
     }
 
     @Test func v3AddsAlertsAndSettingsAndKeepsEveryExistingRow() async throws {

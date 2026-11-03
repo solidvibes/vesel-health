@@ -108,3 +108,30 @@ struct WorkoutChoiceRecord: UpsertRecord {
         WorkoutChoice(session: session, sport: sport.flatMap(WorkoutSport.init(rawValue:)), hidden: hidden, chosenAt: Date(unixSeconds: chosenAt))
     }
 }
+
+/// The phone's route during a workout. `updated_at` is bookkeeping: a write with no new point keeps the backup mark.
+struct WorkoutRouteRecord: UpsertRecord {
+    static let databaseTableName = "workout_route"
+    static let keyColumns: Set<String> = ["started_at"]
+    static let bookkeepingColumns: Set<String> = ["updated_at"]
+
+    var startedAt: Int64
+    var endedAt: Int64?
+    var pointsJson: String
+    var updatedAt: Int64
+
+    init(_ route: RecordedRoute, updatedAt: Date) throws {
+        startedAt = route.start.unixSeconds
+        endedAt = route.end?.unixSeconds
+        pointsJson = try StoredJSON.encode(route.points)
+        self.updatedAt = updatedAt.unixSeconds
+    }
+
+    func model() throws -> RecordedRoute {
+        RecordedRoute(
+            start: Date(unixSeconds: startedAt),
+            end: endedAt.map(Date.init(unixSeconds:)),
+            points: try StoredJSON.decode([RoutePoint].self, from: pointsJson)
+        )
+    }
+}

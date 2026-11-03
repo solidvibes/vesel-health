@@ -486,6 +486,7 @@ public enum UploadTable: String, CaseIterable, Sendable {
     case workout
     case workoutFile = "workout_file"
     case workoutChoice = "workout_choice"
+    case workoutRoute = "workout_route"
 
     fileprivate var alias: String { "t" }
 
@@ -538,6 +539,7 @@ public enum UploadTable: String, CaseIterable, Sendable {
         case .alertEvent: return "\(text("kind"))/\(text("day"))"
         case .workout, .workoutChoice: return text("session")
         case .workoutFile: return "\(text("session"))/\(text("name"))"
+        case .workoutRoute: return text("started_at")
         }
     }
 }
