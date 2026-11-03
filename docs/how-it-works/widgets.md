@@ -9,7 +9,7 @@ A glance is enough most days (decision `2026-10-26-summary-first.md`).
 
 ## How it works
 - Home-screen widgets sit on the faint wash under a surface-coloured layer (about 78 %), so labels and values keep contrast 4.5:1 or more in light and dark; a stale widget is still dimmed.
-- Home screen: small Recovery line, small Stress now, medium headline (`headline` v3, see `recovery.md`) + three lines; lock screen: a round arc and a two-line Recovery and sleep.
+- Home screen: small Recovery line, small Stress now, medium headline (`headline` v4, see `recovery.md`; it names yesterday's workout like Today's) + three lines; lock screen: a round arc and a two-line Recovery and sleep.
 - Widgets read what Vesel already stored (one quick read-only look, then close); they never talk to the band.
 - Updated after each sync that read the band (fully or partly), and asked to refresh hourly (iOS decides when).
 - More than 12 hours since the band was last read all the way through: dimmed, with the time it's from. First week: "Your usual range appears after 7 nights · N of 7" under the Recovery line (the line itself is replaced by the learning words).

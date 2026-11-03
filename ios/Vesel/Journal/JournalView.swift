@@ -146,7 +146,8 @@ struct JournalView: View {
                     openPage(PageRoute(kind: .stress, day: model.day))
                 } glance: {
                     if !hours.isEmpty {
-                        HourlyStressChart(hours: hours, day: model.day, zone: zone, compact: true, selection: .constant(nil))
+                        HourlyStressChart(
+                            hours: hours, day: model.day, zone: zone, workouts: model.heartRate.workouts(model.day), compact: true, selection: .constant(nil))
                     }
                 }
             }
@@ -168,7 +169,8 @@ struct JournalView: View {
                     let start = model.day.start(in: zone)
                     ReadingLineChart(
                         points: points, domain: start...model.day.adding(days: 1).start(in: zone), marks: [], zone: zone,
-                        color: Theme.Palette.recovery, yDomain: HeartRateCard.fitted(points), height: 44, selection: .constant(nil)
+                        color: Theme.Palette.recovery, workouts: model.heartRate.workouts(model.day), yDomain: HeartRateCard.fitted(points), height: 44,
+                        selection: .constant(nil)
                     )
                     GlanceEnds(leading: "00:00", trailing: "24:00")
                 }

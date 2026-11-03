@@ -8,6 +8,8 @@ struct HourlyStressChart: View {
     let hours: [StressHour]
     let day: DayKey
     let zone: TimeZone
+    /// Drawn behind the bars; a bar's VoiceOver value and the scrub text name the sport.
+    var workouts: [WorkoutSpan] = []
     /// Journal's glance: bars only, no axes, legend or finger, 48 pt tall.
     var compact = false
     var takeLaunchScrub: () -> ScrubTime? = { nil }
@@ -22,6 +24,14 @@ struct HourlyStressChart: View {
         let hour = HourlyStepsTime.hour(of: moment, zone: zone)
         let level = hours.first { $0.hour == hour }.map { "\(word($0.band)), \(Formatters.whole($0.level))" }
         return (Formatters.hourRange(hour), level ?? "no reading")
+    }
+
+    /// The workout that shares time with `hour`: "ride".
+    static func workout(in hour: Int, day: DayKey, zone: TimeZone, workouts: [WorkoutSpan]) -> String? {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        guard let start = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day.start(in: zone)) else { return nil }
+        return workouts.word(overlapping: start...start.addingTimeInterval(3600))
     }
 
     private func start(_ hour: Int) -> Date {
@@ -44,7 +54,9 @@ struct HourlyStressChart: View {
 
     private var bars: some View {
         let selectedHour = selection.map { HourlyStepsTime.hour(of: $0, zone: zone) }
+        let domain = start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound)
         return Chart {
+            WorkoutBlocks(ranges: workouts.clipped(to: domain), top: 100)
             ForEach(hours) { hour in
                 BarMark(
                     x: .value("Hour", start(hour.hour), unit: .hour),
@@ -54,12 +66,14 @@ struct HourlyStressChart: View {
                 .opacity(selectedHour == nil || selectedHour == hour.hour ? 1 : 0.35)
                 .cornerRadius(3)
                 .accessibilityLabel(Formatters.hourRange(hour.hour))
-                .accessibilityValue("\(Self.word(hour.band)), level \(Formatters.whole(hour.level)) of 100")
+                .accessibilityValue(
+                    "\(Self.word(hour.band)), level \(Formatters.whole(hour.level)) of 100"
+                        + (Self.workout(in: hour.hour, day: day, zone: zone, workouts: workouts).map { ", during a \($0)" } ?? ""))
             }
             if let selectedHour { ScrubRule(date: start(selectedHour).addingTimeInterval(1800)) }
         }
         .chartForegroundStyleScale(domain: ["Calm", "Moderate", "High"], range: [Theme.Palette.success, Theme.Palette.stress, Theme.Palette.error])
-        .chartXScale(domain: start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound))
+        .chartXScale(domain: domain)
         .chartYScale(domain: 0...100)
     }
 
@@ -67,7 +81,8 @@ struct HourlyStressChart: View {
         let domain = start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound)
         let text = selection.map { moment -> String in
             let found = Self.scrubText(at: moment, hours: hours, zone: zone)
-            return "\(found.hour) · \(found.level)"
+            let workout = Self.workout(in: HourlyStepsTime.hour(of: moment, zone: zone), day: day, zone: zone, workouts: workouts)
+            return "\(found.hour) · \(found.level)" + (workout.map { ", during a \($0)" } ?? "")
         }
         return
             bars

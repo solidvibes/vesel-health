@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings and the route recording are built (the background start not yet tried on the owner's iPhone). The Workout page (with the route on Apple's map) and Journal's Workouts section are built; Today's lines, the headline and the chart blocks are planned.
+**Status:** Built (`docs/plans/2026-11-03-workouts.md`). Not yet checked on the real Loop and iPhone: the Loop's sport ids, Polar's rating words, the background route start and the map offline are owner checks.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 

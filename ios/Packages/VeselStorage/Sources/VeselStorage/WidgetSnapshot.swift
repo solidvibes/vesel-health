@@ -104,7 +104,8 @@ extension AppDatabase {
         let units = try Self.units(db)
         let asleep = snapshot.latest?.value(MetricKind.sleepAsleep)
         let headline = Headline.make(
-            lines: snapshot.lines, status: snapshot.latest?.status, contributors: snapshot.latest?.contributors ?? [], asleepMinutes: asleep, units: units
+            lines: snapshot.lines, status: snapshot.latest?.status, contributors: snapshot.latest?.contributors ?? [], asleepMinutes: asleep, units: units,
+            yesterdayWorkout: snapshot.yesterdayWorkout
         )
         guard let latest = snapshot.latest else {
             return WidgetSnapshot(

@@ -59,6 +59,10 @@ struct CalmDay: View {
             guard scenePhase == .active else { return }
             await model.observeBusiestSpan()
         }
+        .task(id: ObserveKey(value: model.day, active: scenePhase == .active)) {
+            guard scenePhase == .active else { return }
+            await model.observeWorkouts()
+        }
     }
 
     private var dayLine: String { PageDayLine.day(model.day, today: model.today, zone: model.zone) }
@@ -77,7 +81,10 @@ struct CalmDay: View {
     private var scrub: HeaderText? {
         guard let selection else { return nil }
         let found = HourlyStressChart.scrubText(at: selection, hours: model.hours, zone: model.zone)
-        return HeaderText(value: found.level.capitalizedFirst, line: "\(found.hour) · \(dayLine)")
+        let workout = HourlyStressChart.workout(
+            in: HourlyStepsTime.hour(of: selection, zone: model.zone), day: model.day, zone: model.zone, workouts: model.workouts
+        ).map { " · \($0.capitalizedFirst)" } ?? ""
+        return HeaderText(value: found.level.capitalizedFirst + workout, line: "\(found.hour) · \(dayLine)")
     }
 
     /// "Today: peak 72 (high), 14:00–15:00."; a past day "On this day: …".
@@ -100,7 +107,7 @@ struct CalmDay: View {
                     .fixedSize(horizontal: false, vertical: true)
                 } else {
                     HourlyStressChart(
-                        hours: model.hours, day: report.day, zone: zone, takeLaunchScrub: model.takeLaunchScrub,
+                        hours: model.hours, day: report.day, zone: zone, workouts: model.workouts, takeLaunchScrub: model.takeLaunchScrub,
                         scrub: .holdThenDrag(slot: { HourlyStepsTime.hour(of: $0, zone: zone) }),
                         selection: $selection
                     )
@@ -110,6 +117,17 @@ struct CalmDay: View {
                     .font(Theme.Typography.small)
                     .foregroundStyle(Theme.Palette.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
+                    if !model.workouts.isEmpty {
+                        Text(
+                            "Purple: "
+                                + model.workouts.map {
+                                    "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone))–\(Formatters.clock($0.range.upperBound, zone: zone))"
+                                }.joined(separator: ", ") + ". Readings inside a workout aren't counted."
+                        )
+                        .font(Theme.Typography.small)
+                        .foregroundStyle(Theme.Palette.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

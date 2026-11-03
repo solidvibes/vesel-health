@@ -103,6 +103,23 @@ extension AppDatabase {
         }.removeDuplicates().values(in: writer)
     }
 
+    /// Each workout's time and noun over `day` (cut in `zone`, so one across midnight shows on both days), for the chart blocks;
+    /// "Not a workout" ones left out.
+    public func observeWorkoutSpans(day: DayKey, zone: TimeZone) -> some AsyncSequence<[WorkoutSpan], any Error> {
+        let window = DateInterval(start: day.start(in: zone), end: day.adding(days: 1).start(in: zone))
+        return ValueObservation.tracking { db in
+            try Self.labelled(db, try Self.workouts(db, from: day.adding(days: -1), through: day.adding(days: 1)).filter { !$0.isHidden })
+                .filter { $0.workout.interval.intersects(window) }
+                .map(\.span)
+        }.removeDuplicates().values(in: writer)
+    }
+
+    /// The noun of yesterday's workout that low recovery names, if any (`Headline.namedWorkout`).
+    static func yesterdayWorkout(_ db: Database, today: DayKey) throws -> String? {
+        let yesterday = today.adding(days: -1)
+        return Headline.namedWorkout(try labelled(db, try workouts(db, from: yesterday, through: yesterday)).map { ($0.workout, $0.label) })
+    }
+
     /// Labels each workout: the owner's fix, the Loop's sport, a guess from the phone's route or from the owner's own
     /// earlier workouts at that time of day (`WorkoutLabel`), in the workout's own time zone.
     static func labelled(_ db: Database, _ workouts: [StoredWorkout]) throws -> [LabelledWorkout] {

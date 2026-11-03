@@ -85,4 +85,25 @@ struct LabelledWorkoutTests {
         #expect(try await detail("20261103/180000")?.dayHeartRates.isEmpty == true)
         #expect(try await detail("20261103/090000") == nil)
     }
+
+    @Test func chartBlocksCoverTheDayAndTodayKnowsYesterdaysRatedWorkout() async throws {
+        // A ride from 23:30 to 00:45 local (UTC+1) on Nov 2–3, rated 3; a hidden one on Nov 3.
+        try await database.save(band("20261102/233000", start: "2026-11-02T22:30:00Z", minutes: 75, sport: 2), storedAt: now)
+        try await database.save(band("20261103/120000", start: "2026-11-03T11:00:00Z"), storedAt: now)
+        try await database.setChoice(WorkoutChoice(session: "20261103/120000", sport: nil, hidden: true, chosenAt: now))
+        let zone = TimeZone(secondsFromGMT: 3600)!
+
+        var spans: [WorkoutSpan] = []
+        for try await value in database.observeWorkoutSpans(day: day, zone: zone) {
+            spans = value
+            break
+        }
+        #expect(spans == [WorkoutSpan(range: at("2026-11-02T22:30:00Z")...at("2026-11-02T23:45:00Z"), word: "ride")])
+
+        // Rated 3, Polar's middle level: the next day's headline names it. The hidden one on Nov 3 is never named.
+        let named = try await database.writer.read { try AppDatabase.yesterdayWorkout($0, today: DayKey("2026-11-03")!) }
+        #expect(named == "ride")
+        let none = try await database.writer.read { try AppDatabase.yesterdayWorkout($0, today: DayKey("2026-11-04")!) }
+        #expect(none == nil)
+    }
 }

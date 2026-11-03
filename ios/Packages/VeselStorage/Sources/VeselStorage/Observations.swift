@@ -43,6 +43,8 @@ public struct TodaySnapshot: Sendable, Equatable {
     public var firstWeek: FirstWeek?
     /// The morning sleep report switch, so Today says how last night will arrive.
     public var morningReportOn: Bool
+    /// Today only: the noun of yesterday's workout low recovery names (`Headline.namedWorkout`); nil with none.
+    public var yesterdayWorkout: String?
 }
 
 /// Everything the Calm page shows about one day.
@@ -347,7 +349,8 @@ extension AppDatabase {
             stressNow: stressNow, stressDays: try stressBaselineDays(db, before: calmDay),
             alerts: try alertEvents(db, day: calmDay).filter(\.kind.isWarning),
             firstWeek: young ? try firstWeek(db, shownNight: latestKey, today: today, lines: lines) : nil,
-            morningReportOn: try alertSettings(db).isOn(.morningReport)
+            morningReportOn: try alertSettings(db).isOn(.morningReport),
+            yesterdayWorkout: isToday ? try yesterdayWorkout(db, today: today) : nil
         )
     }
 

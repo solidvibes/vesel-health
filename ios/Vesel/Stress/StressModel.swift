@@ -18,6 +18,8 @@ final class StressModel {
     private(set) var report: StressReport?
     private var busiestSpan: StressSpan?
     private var loadedCalm: (day: DayKey, line: LineVerdict)?
+    /// The day's workouts, for the purple blocks behind the bars.
+    private(set) var workouts: [WorkoutSpan] = []
     private let reads = ReadProblem()
     private let database: AppDatabase
     private let clock: any VeselClock
@@ -49,6 +51,12 @@ final class StressModel {
 
     /// The calm line's verdict for the day on screen; nil while it is being read.
     var shownCalm: LineVerdict? { loadedCalm.flatMap { $0.day == day ? $0.line : nil } }
+
+    func observeWorkouts() async {
+        await reads.observe {
+            for try await value in database.observeWorkoutSpans(day: day, zone: zone) { workouts = value }
+        }
+    }
 
     func observe() async {
         await reads.observe {

@@ -66,7 +66,7 @@ None.
 - Card: glass, 24 radius, 16–20 padding.
 - Metric card: label, big value with unit, change vs usual with an arrow.
 - Range line: recovery, sleep, stress, each in its data colour; Recovery turns to the stress colour when Polar says compromised or worse. A 10 pt track (muted), your normal shaded on it in the data colour at about 35 %, a 14 pt dot: filled = inside your normal, hollow (3 pt ring) = outside it, below or above. No line while still learning (the learning words instead), the faint empty track and no dot = no data. The value shows beside it as a word; colour is never the only signal (VoiceOver says the state). On the round Lock Screen spot it bends into a 270° arc with the word in the middle. The app icon keeps its one ring.
-- Workout block (Planned): behind a day's heart-rate line or stress bars, the workout's time at 18 % purple with a 3 pt full-purple top edge.
+- Workout block: behind a day's heart-rate line or stress bars, the workout's time at 18 % purple with a 3 pt full-purple top edge; under a page chart a line names it ("Purple: ride 18:30–19:45").
 - Day dots: three 6 pt dots per day (recovery, sleep, stress): filled = inside, hollow = outside, a small muted dot = learning, an empty slot = no data.
 - List row: 52 pt tall, label left, value right. Normal, pressed, disabled.
 - Tab bar: floating glass pill, up to 4 tabs.

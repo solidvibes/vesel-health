@@ -1,19 +1,21 @@
 import Foundation
 
-/// Today's sentence on recovery, sleep and calm, and one line on why, from a fixed rule table (`headline`, version 3).
+/// Today's sentence on recovery, sleep and calm, and one line on why, from a fixed rule table (`headline`, version 4).
 /// The first matching rule wins; the rules are listed in `docs/how-it-works/recovery.md`.
 public struct Headline: Sendable, Equatable {
     public static let method = "headline"
-    public static let version = 3
+    public static let version = 4
 
     public var sentence: String
     public var why: String
     public var explanation: Explanation
 
     /// `lines` holds the shown night's recovery and sleep and today's calm. Nil with no night stored and no calm judged
-    /// today: Today shows its empty state. `units` writes the skin temperature in the why line.
+    /// today: Today shows its empty state. `units` writes the skin temperature in the why line. `yesterdayWorkout` is the noun of
+    /// the workout `namedWorkout` picks from yesterday's; low recovery names it.
     public static func make(
-        lines: DayLines, status: RecoveryStatus?, contributors: [ContributorReading], asleepMinutes: Double?, units: Units = .metric
+        lines: DayLines, status: RecoveryStatus?, contributors: [ContributorReading], asleepMinutes: Double?, units: Units = .metric,
+        yesterdayWorkout: String? = nil
     ) -> Headline? {
         let recovery = lines.recovery.state
         let sleep = lines.sleep.state
@@ -45,13 +47,23 @@ public struct Headline: Sendable, Equatable {
             if driver?.contributor != .sleep, let also = sleepAlso(sleep) { parts.append(also) }
             if calm == .above { parts.append("Stress is also above your normal.") }
             if parts.isEmpty { parts.append(noneStoodOut) }
+            let named =
+                yesterdayWorkout.map {
+                    " It names yesterday's \($0): Polar rated its cardio load 3 or higher of 5, compared with your last 90 days (the highest load of yesterday's if there were several)."
+                } ?? ""
             let reason =
                 "Recovery is below your normal: \(polar), so the sentence says recovery is "
-                + "\(status.indicator == 3 ? "lower than usual" : "low"). The second line names the contributor furthest from your usual "
+                + "\(status.indicator == 3 ? "lower than usual" : "low").\(named) The second line names the contributor furthest from your usual "
                 + "(more than 1 standard deviation away), then any other line outside its normal. With none of them that far out, it says Polar weighs the readings together."
+            let joined = parts.joined(separator: " ")
+            if let yesterdayWorkout {
+                return status.indicator == 3
+                    ? headline(4, "Recovery is lower than usual after yesterday's \(yesterdayWorkout).", joined, reason, status)
+                    : headline(5, "Low recovery after yesterday's \(yesterdayWorkout).", joined, reason, status)
+            }
             return status.indicator == 3
-                ? headline(4, "Recovery is lower than usual today.", parts.joined(separator: " "), reason, status)
-                : headline(5, "Recovery is low today.", parts.joined(separator: " "), reason, status)
+                ? headline(4, "Recovery is lower than usual today.", joined, reason, status)
+                : headline(5, "Recovery is low today.", joined, reason, status)
         }
         if sleep.isOutside, let asleep = lines.sleep.scale?.value, let low = lines.sleep.normal.low, let high = lines.sleep.normal.high {
             let usual = "your usual of \(DurationText.hoursMinutes(minutes: low)) to \(DurationText.hoursMinutes(minutes: high))"
@@ -82,6 +94,15 @@ public struct Headline: Sendable, Equatable {
             "Every line with data is inside your normal and \(polar), so the sentence says things look \(okNight ? "good" : "great"). The second line names each line that is inside.",
             status
         )
+    }
+
+    /// The workout low recovery names: among yesterday's, those not hidden that Polar rated 3 or higher of 5 (its middle level
+    /// or above), the one with the highest cardio load. Nil when none has such a rating.
+    public static func namedWorkout(_ yesterday: [(workout: Workout, label: WorkoutLabel)]) -> String? {
+        yesterday
+            .filter { !$0.label.hidden && ($0.workout.cardioLoadRating ?? 0) >= 3 }
+            .max { ($0.workout.cardioLoad ?? 0) < ($1.workout.cardioLoad ?? 0) }?
+            .label.noun
     }
 
     private static let noneStoodOut = "None of last night's readings stood out on its own; Polar weighs them together."

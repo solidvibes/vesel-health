@@ -5,6 +5,8 @@ One plain sentence per entry.
 
 ## Unreleased
 
+- Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
+
 ## 0.1.0 — 2026-11-01
 
 - Pairing now says to sync Polar Flow once before the factory reset, because the reset erases anything your Loop hasn't sent yet.
