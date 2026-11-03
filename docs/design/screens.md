@@ -34,6 +34,7 @@ What it's for: "how am I doing right now?" at a glance. The app opens here. Alwa
 
 - Top to bottom: the title "Today" and the date, the "Good morning — I'm up" card (or "Evaluating your night"), the headline, the three range lines on one glass card, the Heart rate card, the Steps card, alert cards, and last the reading card (or the can't-reach card), so it appearing and folding away never moves a card above it.
 - Steps card (one button, opens the Steps page for today): "Steps" and a chevron; today's count in title size with "so far · read 14:32" beside it (the time the band was last read for today's steps; "so far" alone if no read time exists); "No steps yet today" with none; under the count, today's bars per hour so far (muted colour, 44 pt, from 00:00 to now, at least one hour wide, not touchable, nothing when there are no steps by the hour). No goal, no comparison. VoiceOver: "Steps, 6,240, so far · read 14:32", hint "Opens Steps".
+- Workout lines (Planned, `docs/how-it-works/workouts.md`): under the Steps card, one glass row per workout started today, "Run · 07:10 · 42 m · Moderate" with the sport's icon and a chevron, opening the Workout page. Nothing with none. The headline names yesterday's moderate or hard workout when recovery is off ("Low recovery after yesterday's hard ride.").
 - Alert cards; "See what changed" opens the page: low recovery and unusual resting heart rate open Recovery, long high stress opens Stress.
 - Headline sentence + one line of why (`headline` v3 covers recovery, sleep and stress; "Everything looks great today." on a good day; with no night stored but stress judged, "No sleep recorded last night." and the Stress line).
 - Three range lines (name left and value right in title3 semibold, the line under): Recovery, Sleep and Stress, each a button that opens its page for today. While a line is learning, its first-week row of checks (name, "3 more nights · Sun", a circle per night or day) takes its place, under "Getting to know you.".
@@ -48,6 +49,7 @@ What it's for: what happened on any day. Its day is the shared day (`docs/how-it
 - Top: the title is the day's date ("Tue, Oct 27", also on today); it is a button for VoiceOver, not drawn as one, and opens the month calendar (three dots per day; its bottom button reads "Today"). On a past day an ink "Back to today" pill sits beside it.
 - A week strip under it once there is data: seven days (weekday letter, date, three dots: recovery, sleep, stress), the picked day highlighted; pages end on today (today and the six days before it, then the week before that), so today's page is always full; tap a day to pick it, swipe to move a week. Each day is one VoiceOver button (same words as the calendar); "Earlier week" / "Later week" are VoiceOver actions and scroll gestures. At the largest text sizes the weekday letters drop.
 - **Night**, with the evening the night began ("Monday night, October 26"): two cards, Sleep (time asleep; under it a 44 pt strip of the night's stages with bedtime and wake time at its ends) and Recovery (Polar's word and "N of 6"; under it the recovery range line and the contributor furthest from your usual, else HRV: "HRV 46 ms" left, "usual" right). Empty: "No sleep recorded this night" (today: "No sleep recorded yet") and "Polar hasn't scored this night yet".
+- **Workouts** (Planned): between Night and Day, only when the day had one: a card per workout in time order: sport icon and word, "07:10–07:52", "42 m · Moderate", and a 44 pt heart-rate line in workout purple. One button, opens the Workout page. VoiceOver: "Run, 07:10 to 07:52, 42 minutes, moderate effort".
 - **Day**: two cards, Stress (high-stress time; today "8 m so far · Calm now"; "No stress readings" with none; under it the day's hourly bars, as on the page but 48 pt, no axes) and Heart rate (the day's lowest to highest, "48–121 bpm"; under it a 44 pt line of the day's 5-minute heart rate, 00:00 to 24:00). No live number: that is Today's.
 - A **Steps** card ends the Day section when the day has steps: label "Steps", the day's total ("8,850", "8,850 so far" today), a chevron, and small bars per hour with "00:00" and "24:00" under them (like the Heart rate glance); it opens the Steps page for that day. No card with no steps; no bars with no hourly samples.
 - Steps' card opens the Steps page (see "The pages"); no goal, no busiest hour, no best.
@@ -83,9 +85,25 @@ D: the day's cards      W, M, 3M: "How it's worked out" for the latest day
 - **Stress:** the hourly bars (calm / moderate / high) sit on top, under the header ("45 m high stress"; hold, then drag: "14:00–15:00 · High, 72"; the title opens what stress means); then the headline ("Calm now." / a past day "45 m of high stress.") and the peak window; "How it's worked out" with Your normal, then "What tends to help" when stress was above your normal. While learning: the learning wording and why.
 - **Heart rate:** for today a "Now" row on top (the live reading with the pulsing green dot, else the latest stored reading with its time, "Check the fit" without skin contact); the day's 5-minute line with sleep shaded (drag a finger for "14:05 · 72 bpm"), Lowest, Highest, Day's average, and "How it's worked out".
 
+- **Workout blocks** (Planned): on D, the Heart rate line and the Stress bars (and their glances on Today and Journal) draw each workout's time as a purple block behind the marks; a finger inside it adds the sport to the header ("14:05 · 142 bpm · Ride"); VoiceOver adds "during a ride". None on W, M, 3M.
+
 **What tends to help** (Recovery, Sleep, Stress; `docs/how-it-works/what-helps.md`): a glass card with 3 to 5 bulleted tips and the line "General advice for most people, not medical advice."; only when that page had something off, past days too; never on Today, widgets or notifications. Page order: the day's content (ending with its "How it's worked out") → What tends to help.
 
 States: full; no sleep recorded (yet); sleep without a recharge score; learning your normal; a day with no readings; something off (with the advice card).
+
+## Workout page (Planned)
+
+What it's for: one workout, explained. Opened from a Journal card or Today's workout line; pushed on that tab's stack. Not a signal page: no D · W · M · 3M, no comparison with other workouts.
+
+- Title: the sport word (opens what a workout means), and when it was guessed a chip beside it, "guessed from speed · change" or "guessed from time of day · change"; under it "Tue, Nov 3 · 07:10–07:52".
+- With a route: a 200 pt map with the route in workout purple (no places, no interaction), then "8.4 km · 11.9 km/h average" (mi and mph with US units).
+- Heart rate: the workout's line (hold, then drag: "07:31 · 152 bpm"), then Average and Highest rows.
+- Effort: "Moderate · 87"; tap opens the meaning sheet with where the number came from. No row when the Loop gave no load.
+- Calories. For a swim, "Heart rate at the wrist is less exact in water."
+- How it's worked out (opens in place).
+- The sport sheet (from the chip or the title): your sports, then "Not a workout" (it hides the workout and goes back). The choice stays.
+
+States: with a route; without; guessed sport; band's sport; no effort; swim.
 
 ## Body
 
@@ -99,7 +117,7 @@ States: full; learning (no band yet, the learning wording); no data yet ("Body s
 
 ## Loop & settings
 
-Opened from the round ring button at the end of the tab bar (pushed on Today's stack); back to Today. Band status (connection, battery). Sync: a "Syncing" row showing "Last read 9 hours ago" with a chevron (opens Syncing), Mac backup, band storage. Alerts: low recovery, long high stress, unusual resting HR, morning sleep report (each a switch). Help: one row, "What things mean", opening the glossary list (every term, grouped Sleep · Recovery · Heart · Stress · About the readings; a row opens the meaning sheet). Mac backup settings. Forget this Loop (destructive). Sync now and its error card live on Syncing.
+Opened from the round ring button at the end of the tab bar (pushed on Today's stack); back to Today. Band status (connection, battery). Sync: a "Syncing" row showing "Last read 9 hours ago" with a chevron (opens Syncing), Mac backup, band storage. Workouts (Planned): one row, "Workouts" with "On" or "Off", opening Workouts settings: Notice workouts by itself, Sensitivity (slider, "Fewer" … "More easily"), Shortest workout, Record my route (with "Location is off for Vesel in iOS Settings" and Open Settings when it is), Your sports (Running, Cycling, Swimming, Strength); a band change that didn't save shows the "Not saved" card. Alerts: low recovery, long high stress, unusual resting HR, morning sleep report (each a switch). Help: one row, "What things mean", opening the glossary list (every term, grouped Sleep · Recovery · Heart · Stress · About the readings; a row opens the meaning sheet). Mac backup settings. Forget this Loop (destructive). Sync now and its error card live on Syncing.
 
 ## Meaning sheet
 
@@ -157,5 +175,7 @@ flowchart LR
 - **Polar Loop:** on the wrist; measures heart rate, beat-to-beat intervals, sleep, skin temperature and movement, and keeps them until the phone collects them.
 - **iPhone · Vesel:** the main home of the data. Stores every reading, works out recovery, stress and baselines, runs widgets and alerts. Works anywhere.
 - **Your Mac at home (MacBook or Mac mini):** backup of everything and room for heavier analysis later. If it's off, nothing on the phone breaks.
+
+- **Planned (`docs/how-it-works/workouts.md`):** during a workout the Loop started, the iPhone records its own route with GPS (only with "Record my route" on and location allowed); the route goes only to the Mac with everything else. Showing it on a map fetches map pictures of that area from Apple (assumed; the route itself never leaves).
 
 No Polar cloud, no Apple cloud, no trackers.

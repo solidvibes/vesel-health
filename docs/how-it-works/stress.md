@@ -13,6 +13,7 @@ Polar's SDK has no daytime stress score; Vesel computes its own (decision `2026-
 - A reading needs ≥ 30 clean beats. Readings during high activity are skipped (exercise isn't stress).
 - Only readings from 06:00 to 22:00 count; night readings are sleep.
 - A reading is one session, or a 60 s slice of a longer one.
+- Workouts (Planned, `workouts.md`, `stress` version 3): a reading inside a workout the Loop recorded is skipped, unless the owner marked it "Not a workout"; How it's worked out says how many. A stored or changed workout recomputes its day.
 - Exercise: the band's high-activity mark, or a heart rate above resting + 40 % of the reserve (220 − age), within 2 minutes of the reading.
 - Each reading: ln(RMSSD), compared to your calm baseline (80th percentile of the 14 days before, never the day itself) and floor (5th percentile) → level = (baseline − value) ÷ (baseline − floor) × 100, held to 0–100. Only days with at least 10 readings go into the baseline.
 - Percentile: sort the values; position p × (n − 1), straight line between the two nearest values.

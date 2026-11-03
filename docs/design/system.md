@@ -22,6 +22,7 @@ In code: colour sets in `ios/Vesel/Assets.xcassets`, everything else in `ios/Ves
 | recovery (data) | #2F9E5B | #4CC27D |
 | sleep (data) | #3B6CF6 | #7FA2FF |
 | stress (data) | #D9621B | #FF9A52 |
+| workout (data, Planned) | #7A4FD6 | #B79BFF |
 
 Surfaces are Liquid Glass (`.glassEffect`) at about 60% over one faint wash at the top right of the screen: sleep blue at about 10% with a fainter touch of recovery green (about 7%) over it, nothing lower down. Today's "something's off" adds a stress-coloured glow at the top at about 18%.
 
@@ -65,6 +66,7 @@ None.
 - Card: glass, 24 radius, 16–20 padding.
 - Metric card: label, big value with unit, change vs usual with an arrow.
 - Range line: recovery, sleep, stress, each in its data colour; Recovery turns to the stress colour when Polar says compromised or worse. A 10 pt track (muted), your normal shaded on it in the data colour at about 35 %, a 14 pt dot: filled = inside your normal, hollow (3 pt ring) = outside it, below or above. No line while still learning (the learning words instead), the faint empty track and no dot = no data. The value shows beside it as a word; colour is never the only signal (VoiceOver says the state). On the round Lock Screen spot it bends into a 270° arc with the word in the middle. The app icon keeps its one ring.
+- Workout block (Planned): behind a day's heart-rate line or stress bars, the workout's time at 18 % purple with a 3 pt full-purple top edge.
 - Day dots: three 6 pt dots per day (recovery, sleep, stress): filled = inside, hollow = outside, a small muted dot = learning, an empty slot = no data.
 - List row: 52 pt tall, label left, value right. Normal, pressed, disabled.
 - Tab bar: floating glass pill, up to 4 tabs.
@@ -73,7 +75,7 @@ None.
 
 ## Accessibility
 
-- Contrast ≥ 4.5:1 for text (3:1 large text and chart marks). Checked: text 17:1 both modes; muted 6.4:1 light, 7.3:1 dark; accent 5.5:1 and error 5.7:1 on white; data colours ≥ 3:1 on background.
+- Contrast ≥ 4.5:1 for text (3:1 large text and chart marks). Checked: text 17:1 both modes; muted 6.4:1 light, 7.3:1 dark; accent 5.5:1 and error 5.7:1 on white; data colours ≥ 3:1 on background. Workout purple (Planned): 4.8:1 on the light background, 5.4:1 on white, 8.4:1 on the dark background, 7.4:1 on the dark surface, so it also passes as text. It is close to sleep blue and stress orange in lightness, so a workout block is never told apart by colour alone: it has a top edge, and the scrub text and VoiceOver name the sport.
 - Body 17 pt; layout holds at the largest Dynamic Type sizes.
 - Tappable things ≥ 48 × 48 pt.
 - Colour never alone: errors have an icon and words; changes have an arrow.

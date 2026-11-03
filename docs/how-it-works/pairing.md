@@ -14,6 +14,7 @@ Read the band without the Polar app or Polar's cloud (decision `2026-10-26-no-cl
 - iOS shows its own Bluetooth pairing prompt; accept it.
 - About you: birth year, height, weight, sleep goal (5–11 h) and biological sex (Male / Female; the band's sleep and calorie maths need it). It stays on the band and the phone. Other first-time-setup values use Polar's defaults: max HR 220 − age, resting HR 60, VO2max from Polar's table, training "occasional", typical day "mostly sitting".
 - Finish runs the band's first-time setup, stores the profile and the band, opens Today and runs the first sync (which sets the band's clock). If setup fails: "Setup didn't finish", Try again.
+- Planned (`workouts.md`): the first read after pairing switches on the Loop's automatic training detection, keeping its own sensitivity and shortest workout (else Polar's 50 and 10 minutes).
 - The VO2max default is the middle of the "Fair" band in Polar's table for your age group.
 - Forget this Loop (Loop & settings): final sync, then factory reset of the band. If the final sync fails, a second confirm shows the time of the last read and that anything since then will be lost ("Reset anyway"). Health history on the phone stays. Remove "Polar Loop" from iOS Bluetooth settings afterwards. If the Loop can't be reached for the reset, Vesel forgets it anyway and says to reset it by hand.
 - After forgetting, Polar Flow can pair again; Vesel then gets nothing.
