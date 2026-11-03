@@ -8,23 +8,24 @@
 Polar's SDK has no daytime stress score; Vesel computes its own (decision `2026-10-26-polar-plus-own-analysis.md`).
 
 ## How it works
-- Input: the Loop's automatic 24/7 beat-to-beat (PPI) sessions. How often the Loop records them is not known until the real band's data report is read.
+- Input: the Loop's automatic 24/7 beat-to-beat (PPI) sessions. The real Loop records them almost all the time: about 37–46 sessions an hour, each about 98 seconds, around 4,500 beats an hour (owner's backup, 26 Oct – 3 Nov). In the daytime it marks 83–92 % of beats as movement, with skin contact on.
 - Cleaning: drop beats flagged for movement or no skin contact, beats outside 300–2000 ms, and jumps over 20 % from the previous kept beat. A beat the band sent no status for is kept: unknown contact is not "no contact".
-- A reading needs ≥ 30 clean beats. Readings during high activity are skipped (exercise isn't stress).
+- A reading (`stress` version 4) is 3 minutes of local clock time (10:00–10:03, 10:03–10:06, …) with at least 30 pairs of neighbouring clean beats, gathered from every session in those minutes. A pair is two beats right after each other that were both kept; it never spans a dropped beat, so a gap is never bridged. RMSSD = √(mean of the pairs' squared differences). Readings during high activity are skipped (exercise isn't stress).
 - Only readings from 06:00 to 22:00 count; night readings are sleep.
-- A reading is one session, or a 60 s slice of a longer one.
-- Workouts (`workouts.md`, `stress` version 3): a reading that overlaps a workout the Loop recorded is skipped, unless the owner marked it "Not a workout"; How it's worked out says how many were inside workouts. A stored or changed workout, or the owner's fix, recomputes its day on the next pass. The fix on the Workout page recomputes those days at once.
-- Exercise: the band's high-activity mark, or a heart rate above resting + 40 % of the reserve (220 − age), within 2 minutes of the reading.
+- Workouts (`workouts.md`, since `stress` version 3): a reading that overlaps a workout the Loop recorded is skipped, unless the owner marked it "Not a workout"; How it's worked out says how many were inside workouts. A stored or changed workout, or the owner's fix, recomputes its day on the next pass. The fix on the Workout page recomputes those days at once.
+- Exercise: the band's high-activity mark, or a heart rate above resting + 40 % of the reserve (220 − age), within 2 minutes of the reading's 3 minutes.
 - Each reading: ln(RMSSD), compared to your calm baseline (80th percentile of the 14 days before, never the day itself) and floor (5th percentile) → level = (baseline − value) ÷ (baseline − floor) × 100, held to 0–100. Only days with at least 10 readings go into the baseline.
 - Percentile: sort the values; position p × (n − 1), straight line between the two nearest values.
 - If baseline and floor are equal, a reading below the baseline is 100 and any other is 0.
 - Calm below 34, moderate 34–66, high 67 and up, on the level rounded to a whole number as the screens show it.
-- High-stress minutes per day add up high readings (each counts until the next reading, at most 15 min; the last one for its own length).
+- High-stress minutes per day add up high readings (each counts until the next reading, at most 15 min; the last one for its own 3 minutes).
+- The hourly bar is the hour's middle reading (median; with an even count, halfway between the two middle ones). How it's worked out for the hour also gives the highest. One stressed reading no longer sets the whole hour (version 3 used the highest: 19 % of the backup's bars sat at 100; version 4: 5 %).
+- An hour with beats but no reading says why (`stress.emptyHour`, per hour: its beats, how many the band marked as movement, how many had no skin contact, and readings skipped as exercise or inside a workout). The first that applies: "inside a workout", "skipped as exercise", "band off the skin" (more than half the beats), "mostly movement" (more than half the beats), else "too few clean beats". An hour with no beats at all says only "no reading".
 - The busiest 2 hours: the most high-stress minutes in 2 hours starting at a high reading, counted the same way but cut at the end of the 2 hours. It feeds the long-high-stress alert (version 2 of `stress`).
 - "Now" = the latest reading if under 30 minutes old.
 - Needs 7 earlier days with at least 10 readings each first: "Your stress levels appear after 7 days · N of 7" (N = earlier days so far, no count on the first day).
-- The Stress page says "Based on N readings today"; hours with no reading have no bar.
-- **The Stress page** (pushed over Today, Journal or Body; its day is in its route; one page with D · W · M · 3M, see `days.md`): on D, the header ("45 m high stress", "No high stress"; today "8 m high stress" with "Today · so far"), the hourly bars (hold a finger on them, then drag: the header reads "14:00–15:00 · High, 72" or "no reading"; `-VeselScrub 14:00` starts there in the Simulator), the Stress range line without a chevron, the headline and peak line, and How it's worked out with Your normal, then "What tends to help" when calm was above your normal. The heart-rate line and Last 7 days are not on it (heart rate has its own page). While learning: the learning wording and its paragraph.
+- The Stress page says "Based on N readings today. Each bar is the hour's middle reading."; hours with no reading have no bar.
+- **The Stress page** (pushed over Today, Journal or Body; its day is in its route; one page with D · W · M · 3M, see `days.md`): on D, the header ("45 m high stress", "No high stress"; today "8 m high stress" with "Today · so far"), the hourly bars (hold a finger on them, then drag: the header reads "14:00–15:00 · High, 72", "No reading, mostly movement" (the empty hour's reason), or "No reading"; `-VeselScrub 14:00` starts there in the Simulator), the Stress range line without a chevron, the headline and peak line, and How it's worked out with Your normal, then "What tends to help" when calm was above your normal. The heart-rate line and Last 7 days are not on it (heart rate has its own page). While learning: the learning wording and its paragraph.
 - The Stress page shows the day in its route (`days.md`); a day with nothing shows as empty. A past day shows its hourly stress.
 - Today's headline stays "Calm now." (and the other "now" sentences). A past day has no "now": its headline is its high-stress minutes, "45 m of high stress." or "No high stress.", and none when the day has no stress numbers; the peak line is the same. Captions say "on this day" instead of "today".
 - Every stored number keeps its inputs: baseline, floor, readings, and what cleaning dropped. All thresholds live in `StressThresholds`.
@@ -43,3 +44,4 @@ Polar's SDK has no daytime stress score; Vesel computes its own (decision `2026-
 
 ## Open questions
 - Exact thresholds may move after the first week of the owner's real data (the starting values are the plan's).
+- On the backup, version 4 gives 84 % of worn hours (≥ 600 beats with skin contact) a bar, up from 77 %, and the calm baseline moves from 88 to 81 ms. The rest had too few still beats in the whole hour (decision `2026-11-03-steadier-stress-hours.md`).

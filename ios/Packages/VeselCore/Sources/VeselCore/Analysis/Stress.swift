@@ -18,11 +18,12 @@ public enum StressLevel: String, Sendable, Equatable {
     public var word: String { rawValue }
 }
 
-/// One reading: up to 60 seconds of clean beats. RMSSD is the root of the mean squared difference between beats.
+/// One reading: 3 minutes of clock time. RMSSD is the root of the mean squared difference between neighbouring clean beats.
 public struct StressWindow: Sendable, Equatable {
     public var start: Date
     public var seconds: Double
-    public var intervals: Int
+    /// Pairs of neighbouring clean beats.
+    public var pairs: Int
     /// Milliseconds.
     public var rmssd: Double
     /// Local hour of the day, 0 to 23, in the zone the band recorded it in.
@@ -31,33 +32,47 @@ public struct StressWindow: Sendable, Equatable {
     /// ln(RMSSD): high when calm, low under stress. RMSSD is held at 1 ms or more so the logarithm exists.
     public var value: Double { log(max(rmssd, 1)) }
 
-    public init(start: Date, seconds: Double, intervals: Int, rmssd: Double, hour: Int) {
+    public init(start: Date, seconds: Double, pairs: Int, rmssd: Double, hour: Int) {
         self.start = start
         self.seconds = seconds
-        self.intervals = intervals
+        self.pairs = pairs
         self.rmssd = rmssd
         self.hour = hour
     }
 }
 
-/// What happened to a day's beats and slices on the way to its readings.
-public struct StressCounts: Sendable, Equatable {
-    public var sessions = 0
-    public var cleaning = PPICleaningCounts()
-    public var outsideDaytime = 0
-    public var tooFewIntervals = 0
+/// What happened to one daytime hour's beats, so an hour without a reading can say why.
+public struct StressHourCounts: Sendable, Equatable {
+    public var beats = 0
+    /// Blocker on, with skin contact: the band marked the beat as movement.
+    public var movement = 0
+    public var offSkin = 0
     public var duringActivity = 0
     public var duringWorkout = 0
-    public var windows = 0
 
     public init() {}
 }
 
-/// Daytime stress from the band's beat-to-beat (PPI) sessions (`stress`, version 3: readings inside a workout are skipped).
-/// The rules are in `docs/how-it-works/stress.md`.
+/// What happened to a day's beats and 3-minute slices on the way to its readings.
+public struct StressCounts: Sendable, Equatable {
+    public var sessions = 0
+    public var cleaning = PPICleaningCounts()
+    public var outsideDaytime = 0
+    public var tooFewPairs = 0
+    public var duringActivity = 0
+    public var duringWorkout = 0
+    public var windows = 0
+    /// Daytime hours with beats, by local hour.
+    public var hours: [Int: StressHourCounts] = [:]
+
+    public init() {}
+}
+
+/// Daytime stress from the band's beat-to-beat (PPI) sessions (`stress`, version 4: 3-minute readings gathered across
+/// sessions, the hour's middle reading, and why an hour is empty). The rules are in `docs/how-it-works/stress.md`.
 public enum Stress {
     public static let method = "stress"
-    public static let version = 3
+    public static let version = 4
 
     /// The daytime readings of `sessions`, with the count of what was left out and why.
     /// `activityHeartRate` is resting + 40 % of the reserve; nil when either is unknown, and then only the band's own
@@ -66,58 +81,71 @@ public enum Stress {
         windows: [StressWindow], counts: StressCounts
     ) {
         var counts = StressCounts()
-        var windows: [StressWindow] = []
         counts.sessions = sessions.count
         let exercise = heartRates.filter { sample in
             sample.trigger == .highActivity || (activityHeartRate.map { Double(sample.bpm) > $0 } ?? false)
         }
 
+        // Slices are 3 minutes of local clock time, keyed by their number since 1970 in local time.
+        var slices: [Int: (offset: Int, differences: [Int])] = [:]
+        func key(_ time: Date, _ offset: Int) -> Int { Int(((time.timeIntervalSince1970 + Double(offset)) / StressThresholds.windowSeconds).rounded(.down)) }
         for session in sessions {
-            let (kept, cleaning) = PPICleaning.clean(session.samples)
+            let offset = session.utcOffsetSeconds
+            let (_, cleaning, pairs) = PPICleaning.clean(session.samples)
             counts.cleaning.add(cleaning)
-            guard let end = session.samples.last?.time else { continue }
             var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = TimeZone(secondsFromGMT: session.utcOffsetSeconds) ?? .gmt
-
-            func slice(_ sample: PPISample) -> Int { Int(sample.time.timeIntervalSince(session.start) / StressThresholds.windowSeconds) }
-            let bySlice = Dictionary(grouping: kept, by: slice)
-            for index in Set(session.samples.map(slice)).sorted() {
-                let start = session.start.addingTimeInterval(Double(index) * StressThresholds.windowSeconds)
-                let seconds = min(StressThresholds.windowSeconds, end.timeIntervalSince(start))
-                let hour = calendar.component(.hour, from: start)
-                guard StressThresholds.daytimeHours.contains(hour) else {
-                    counts.outsideDaytime += 1
-                    continue
+            calendar.timeZone = TimeZone(secondsFromGMT: offset) ?? .gmt
+            for sample in session.samples {
+                if slices[key(sample.time, offset)] == nil { slices[key(sample.time, offset)] = (offset, []) }
+                let hour = calendar.component(.hour, from: sample.time)
+                guard StressThresholds.daytimeHours.contains(hour) else { continue }
+                counts.hours[hour, default: StressHourCounts()].beats += 1
+                if !sample.skinContact {
+                    counts.hours[hour]?.offSkin += 1
+                } else if sample.blocker {
+                    counts.hours[hour]?.movement += 1
                 }
-                let beats = bySlice[index] ?? []
-                guard beats.count >= StressThresholds.minimumIntervals else {
-                    counts.tooFewIntervals += 1
-                    continue
-                }
-                let readingEnd = start.addingTimeInterval(seconds)
-                guard !workouts.contains(where: { $0.start < readingEnd && $0.end > start }) else {
-                    counts.duringWorkout += 1
-                    continue
-                }
-                let from = start.addingTimeInterval(-StressThresholds.activityMarginSeconds)
-                let to = start.addingTimeInterval(seconds + StressThresholds.activityMarginSeconds)
-                guard !exercise.contains(where: { $0.time >= from && $0.time <= to }) else {
-                    counts.duringActivity += 1
-                    continue
-                }
-                windows.append(StressWindow(start: start, seconds: seconds, intervals: beats.count, rmssd: rmssd(beats), hour: hour))
             }
+            for pair in pairs { slices[key(pair.time, offset)]?.differences.append(pair.difference) }
         }
-        windows.sort { $0.start < $1.start }
+
+        var windows: [StressWindow] = []
+        for (index, slice) in slices.sorted(by: { $0.key < $1.key }) {
+            let start = Date(timeIntervalSince1970: Double(index) * StressThresholds.windowSeconds - Double(slice.offset))
+            let end = start.addingTimeInterval(StressThresholds.windowSeconds)
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(secondsFromGMT: slice.offset) ?? .gmt
+            let hour = calendar.component(.hour, from: start)
+            guard StressThresholds.daytimeHours.contains(hour) else {
+                counts.outsideDaytime += 1
+                continue
+            }
+            guard slice.differences.count >= StressThresholds.minimumPairs else {
+                counts.tooFewPairs += 1
+                continue
+            }
+            guard !workouts.contains(where: { $0.start < end && $0.end > start }) else {
+                counts.duringWorkout += 1
+                counts.hours[hour]?.duringWorkout += 1
+                continue
+            }
+            let from = start.addingTimeInterval(-StressThresholds.activityMarginSeconds)
+            let to = end.addingTimeInterval(StressThresholds.activityMarginSeconds)
+            guard !exercise.contains(where: { $0.time >= from && $0.time <= to }) else {
+                counts.duringActivity += 1
+                counts.hours[hour]?.duringActivity += 1
+                continue
+            }
+            windows.append(
+                StressWindow(
+                    start: start, seconds: StressThresholds.windowSeconds, pairs: slice.differences.count, rmssd: rmssd(slice.differences), hour: hour))
+        }
         counts.windows = windows.count
         return (windows, counts)
     }
 
-    static func rmssd(_ beats: [PPISample]) -> Double {
-        let squares = zip(beats, beats.dropFirst()).map { pair -> Double in
-            let difference = Double(pair.1.intervalMs - pair.0.intervalMs)
-            return difference * difference
-        }
+    static func rmssd(_ differences: [Int]) -> Double {
+        let squares = differences.map { Double($0 * $0) }
         return (squares.reduce(0, +) / Double(squares.count)).squareRoot()
     }
 
@@ -175,7 +203,7 @@ public enum Stress {
             .init(name: "outOfRange", value: Double(counts.cleaning.outOfRange), unit: "beats"),
             .init(name: "jumps", value: Double(counts.cleaning.jumps), unit: "beats"),
             .init(name: "outsideDaytime", value: Double(counts.outsideDaytime), unit: "readings"),
-            .init(name: "tooFewBeats", value: Double(counts.tooFewIntervals), unit: "readings"),
+            .init(name: "tooFewPairs", value: Double(counts.tooFewPairs), unit: "readings"),
             .init(name: "duringExercise", value: Double(counts.duringActivity), unit: "readings"),
             .init(name: "duringWorkout", value: Double(counts.duringWorkout), unit: "readings"),
         ]
@@ -201,26 +229,41 @@ public enum Stress {
         var result = [
             metric(
                 MetricKind.stressReadings, Double(windows.count), "readings", inputs: inputs,
-                "\(windows.count) clean readings between \(pad(StressThresholds.daytimeHours.lowerBound)):00 and \(pad(StressThresholds.daytimeHours.upperBound)):00. Of \(cleaning.intervals) beats, \(cleaning.flagged) were flagged by the band (movement or no skin contact), \(cleaning.outOfRange) were outside \(StressThresholds.minimumIntervalMs)–\(StressThresholds.maximumIntervalMs) ms and \(cleaning.jumps) jumped more than \(NumberText.decimal(StressThresholds.maximumJump * 100, 0)) % from the one before. A reading is up to \(NumberText.decimal(StressThresholds.windowSeconds, 0)) seconds with at least \(StressThresholds.minimumIntervals) clean beats; \(counts.tooFewIntervals) had fewer, \(counts.duringWorkout) were inside workouts and \(counts.duringActivity) were skipped as exercise. \(learning)"
+                "\(windows.count) clean readings between \(pad(StressThresholds.daytimeHours.lowerBound)):00 and \(pad(StressThresholds.daytimeHours.upperBound)):00. Of \(cleaning.intervals) beats, \(cleaning.flagged) were flagged by the band (movement or no skin contact), \(cleaning.outOfRange) were outside \(StressThresholds.minimumIntervalMs)–\(StressThresholds.maximumIntervalMs) ms and \(cleaning.jumps) jumped more than \(NumberText.decimal(StressThresholds.maximumJump * 100, 0)) % from the one before. A reading is \(NumberText.decimal(StressThresholds.windowSeconds / 60, 0)) minutes of clock time with at least \(StressThresholds.minimumPairs) pairs of neighbouring clean beats, from every session in it; \(counts.tooFewPairs) had fewer, \(counts.duringWorkout) were inside workouts and \(counts.duringActivity) were skipped as exercise. \(learning)"
             )
         ]
         guard let ready else { return result }
 
         func range(_ hour: Int) -> String { "\(pad(hour)):00–\(pad(hour + 1)):00" }
-        for (hour, inHour) in Dictionary(grouping: windows, by: \.hour).sorted(by: { $0.key < $1.key }) {
-            let levels = inHour.map { ready.level(of: $0.value) }
-            let top = levels.max() ?? 0
-            let lowest = inHour.map(\.rmssd).min() ?? 0
+        let byHour = Dictionary(grouping: windows, by: \.hour)
+        for (hour, inHour) in byHour.sorted(by: { $0.key < $1.key }) {
+            let levels = inHour.map { ready.level(of: $0.value) }.sorted()
+            let middle = StressBaseline.percentile(levels, 0.5)
+            let top = levels.last ?? 0
             result.append(
                 metric(
-                    MetricKind.stressHourly, hour: hour, top, "of 100",
+                    MetricKind.stressHourly, hour: hour, middle, "of 100",
                     inputs: [
                         .init(name: "readings", value: Double(inHour.count), unit: "readings"),
-                        .init(name: "lowestRMSSD", value: lowest, unit: "ms"),
+                        .init(name: "highest", value: top, unit: "of 100"),
                         .init(name: "baseline", value: ready.baseline, unit: "ln RMSSD"),
                         .init(name: "floor", value: ready.floor, unit: "ln RMSSD"),
                     ],
-                    "The highest of \(inHour.count) readings from \(range(hour)) is level \(NumberText.decimal(top, 0)) (\(StressLevel(level: top).word)); its lowest RMSSD was \(NumberText.decimal(lowest, 0)) ms. Level = (baseline − ln RMSSD) ÷ (baseline − floor) × 100, held between 0 and 100, against your calm baseline of \(NumberText.decimal(exp(ready.baseline), 0)) ms and floor of \(NumberText.decimal(exp(ready.floor), 0)) ms. Calm is below \(NumberText.decimal(StressThresholds.moderateFrom, 0)), moderate \(NumberText.decimal(StressThresholds.moderateFrom, 0))–\(NumberText.decimal(StressThresholds.highFrom - 1, 0)), high \(NumberText.decimal(StressThresholds.highFrom, 0)) and up."
+                    "The middle of \(inHour.count) readings from \(range(hour)) is level \(NumberText.decimal(middle, 0)) (\(StressLevel(level: middle).word)); the highest was \(NumberText.decimal(top, 0)). Each reading is \(NumberText.decimal(StressThresholds.windowSeconds / 60, 0)) minutes of still beats. Level = (baseline − ln RMSSD) ÷ (baseline − floor) × 100, held between 0 and 100, against your calm baseline of \(NumberText.decimal(exp(ready.baseline), 0)) ms and floor of \(NumberText.decimal(exp(ready.floor), 0)) ms. Calm is below \(NumberText.decimal(StressThresholds.moderateFrom, 0)), moderate \(NumberText.decimal(StressThresholds.moderateFrom, 0))–\(NumberText.decimal(StressThresholds.highFrom - 1, 0)), high \(NumberText.decimal(StressThresholds.highFrom, 0)) and up."
+                ))
+        }
+        for (hour, hourCounts) in counts.hours.sorted(by: { $0.key < $1.key }) where byHour[hour] == nil {
+            let reason = StressEmptyHour.Reason(hourCounts)
+            result.append(
+                metric(
+                    MetricKind.stressEmptyHour, hour: hour, Double(hourCounts.beats), "beats",
+                    inputs: [
+                        .init(name: "movement", value: Double(hourCounts.movement), unit: "beats"),
+                        .init(name: "offSkin", value: Double(hourCounts.offSkin), unit: "beats"),
+                        .init(name: "duringExercise", value: Double(hourCounts.duringActivity), unit: "readings"),
+                        .init(name: "duringWorkout", value: Double(hourCounts.duringWorkout), unit: "readings"),
+                    ],
+                    "No reading from \(range(hour)). Of \(hourCounts.beats) beats, the band marked \(hourCounts.movement) as movement and \(hourCounts.offSkin) had no skin contact; \(hourCounts.duringActivity) readings were skipped as exercise and \(hourCounts.duringWorkout) were inside workouts. \(reason.sentence)"
                 ))
         }
         let high = highMinutes(of: windows, baseline: ready)
@@ -335,5 +378,68 @@ public struct StressSpan: Sendable, Equatable {
         self.start = Date(timeIntervalSince1970: start)
         end = self.start.addingTimeInterval(seconds)
         explanation = metric.explanation
+    }
+}
+
+/// A daytime hour with beats but no reading, read back from `stress.emptyHour`.
+public struct StressEmptyHour: Sendable, Equatable {
+    public enum Reason: Sendable, Equatable {
+        case workout, exercise, offSkin, movement, fewBeats
+
+        /// A workout or exercise explains the hour first; then what most of its beats were; else too few clean beats.
+        init(_ counts: StressHourCounts) {
+            if counts.duringWorkout > 0 {
+                self = .workout
+            } else if counts.duringActivity > 0 {
+                self = .exercise
+            } else if counts.offSkin * 2 > counts.beats {
+                self = .offSkin
+            } else if counts.movement * 2 > counts.beats {
+                self = .movement
+            } else {
+                self = .fewBeats
+            }
+        }
+
+        init(inputs: [Explanation.Input], beats: Double) {
+            func input(_ name: String) -> Int { Int(inputs.first { $0.name == name }?.value ?? 0) }
+            var counts = StressHourCounts()
+            counts.beats = Int(beats)
+            counts.movement = input("movement")
+            counts.offSkin = input("offSkin")
+            counts.duringActivity = input("duringExercise")
+            counts.duringWorkout = input("duringWorkout")
+            self.init(counts)
+        }
+
+        /// What the hour's scrub reads after "no reading".
+        public var phrase: String {
+            switch self {
+            case .workout: "inside a workout"
+            case .exercise: "skipped as exercise"
+            case .offSkin: "band off the skin"
+            case .movement: "mostly movement"
+            case .fewBeats: "too few clean beats"
+            }
+        }
+
+        var sentence: String {
+            switch self {
+            case .workout: "The still moments were inside a workout."
+            case .exercise: "The still moments were skipped as exercise."
+            case .offSkin: "The band was off the skin for most of it."
+            case .movement: "No still moments: the Loop marked most beats as movement."
+            case .fewBeats: "Too few clean beats for a reading."
+            }
+        }
+    }
+
+    public var hour: Int
+    public var reason: Reason
+
+    public init?(_ metric: ComputedMetric) {
+        guard metric.kind == MetricKind.stressEmptyHour, let hour = metric.hour else { return nil }
+        self.hour = hour
+        reason = Reason(inputs: metric.explanation.inputs, beats: metric.value)
     }
 }

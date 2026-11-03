@@ -6,6 +6,7 @@ One plain sentence per entry.
 ## Unreleased
 
 - Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
+- More of the hours you wear your Loop now get a stress bar, each bar shows the hour's typical reading instead of its highest, and an empty hour says why.
 
 ## 0.1.0 — 2026-11-01
 

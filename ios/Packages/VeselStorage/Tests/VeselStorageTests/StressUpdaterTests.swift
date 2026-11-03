@@ -10,7 +10,7 @@ struct StressUpdaterTests {
     let database: AppDatabase
     let updater: MetricsUpdater
 
-    /// Ten readings a day, each 30 beats alternating 1000 ms and 1000 + d ms: every difference is d, so RMSSD = d.
+    /// Ten readings a day, each 31 beats (30 pairs) alternating 1000 ms and 1000 + d ms: every difference is d, so RMSSD = d.
     static let spreads = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     /// 70 values (each of the ten seven times). Sorted index 55 is 80 and 56 is 90, so the 80th percentile is
     /// ln 80 + 0.2 × (ln 90 − ln 80) = 4.4056; the 5th percentile is ln 10 = 2.3026.
@@ -24,7 +24,7 @@ struct StressUpdaterTests {
     }
 
     /// Local 2026-10 is UTC+2 until the 25th.
-    func session(_ day: DayKey, hour: Int, minute: Int = 0, spread: Int, offset: Int = 7200, beats count: Int = 30) -> PPISession {
+    func session(_ day: DayKey, hour: Int, minute: Int = 0, spread: Int, offset: Int = 7200, beats count: Int = 31) -> PPISession {
         let start = day.start(in: utc).addingTimeInterval(Double(hour * 3600 + minute * 60 - offset))
         var elapsed = 0
         let samples = (0..<count).map { index -> PPISample in
@@ -74,7 +74,7 @@ struct StressUpdaterTests {
         let floor = try #require(input(readings, "floor"))
         #expect(abs(baseline - Self.baseline) < 1e-9)
         #expect(abs(floor - Self.floor) < 1e-9)
-        #expect(input(readings, "beats") == 90)
+        #expect(input(readings, "beats") == 93)
         #expect(input(readings, "flagged") == 0)
 
         // level = (4.4056 − ln d) ÷ (4.4056 − 2.3026) × 100
@@ -134,21 +134,25 @@ struct StressUpdaterTests {
         #expect(input(readings, "duringExercise") == 1)
     }
 
-    @Test func flaggedBeatsAreCountedAndLeaveNoReading() async throws {
+    @Test func flaggedBeatsAreCountedAndLeaveNoReadingAndTheHourSaysWhy() async throws {
         try await storeEarlierDays(1...7)
+        // 30 of 40 beats marked as movement: 9 pairs left.
         var flagged = session(day("2026-10-08"), hour: 10, spread: 20, beats: 40)
         flagged.samples = flagged.samples.enumerated().map { index, sample in
             var sample = sample
-            sample.blocker = index < 11
+            sample.blocker = index < 30
             return sample
         }
         try await database.save(flagged)
         try await updater.updateAfterSync()
         let readings = try #require(try await database.computedMetric(MetricKind.stressReadings, day: day("2026-10-08")))
         #expect(readings.value == 0)
-        #expect(input(readings, "flagged") == 11)
-        #expect(input(readings, "tooFewBeats") == 1)
+        #expect(input(readings, "flagged") == 30)
+        #expect(input(readings, "tooFewPairs") == 1)
         #expect(try await hourly("2026-10-08", 10) == nil)
+        let report = try await database.writer.read { try AppDatabase.stressReport($0, day: day("2026-10-08")) }
+        #expect(report.emptyHours.map(\.hour) == [10])
+        #expect(report.emptyHours.first?.reason == .movement)
     }
 
     @Test func aReadingAfterTheClockIsNotCounted() async throws {

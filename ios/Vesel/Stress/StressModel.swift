@@ -99,6 +99,8 @@ final class StressModel {
         }
     }
 
+    var emptyHours: [StressEmptyHour] { report?.emptyHours ?? [] }
+
     var readings: Int { Int(report?.readings?.value ?? 0) }
 
     /// Today: "Calm now.", "Moderately stressed now." or "No recent reading."; a past day: "45 m of high stress.", or nil.

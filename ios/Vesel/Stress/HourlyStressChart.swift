@@ -6,6 +6,8 @@ import VeselCore
 /// On the page a finger moves a line over the bars and the page's header reads that hour (`scrubText`).
 struct HourlyStressChart: View {
     let hours: [StressHour]
+    /// Hours with beats but no bar; the scrub text says why.
+    var emptyHours: [StressEmptyHour] = []
     let day: DayKey
     let zone: TimeZone
     /// Drawn behind the bars; a bar's VoiceOver value and the scrub text name the sport.
@@ -19,11 +21,13 @@ struct HourlyStressChart: View {
 
     static func word(_ band: StressLevel) -> String { band.word.capitalizedFirst }
 
-    /// The hour `moment` falls in and its bar: "High, 72", "no reading" for an hour with none.
-    static func scrubText(at moment: Date, hours: [StressHour], zone: TimeZone) -> (hour: String, level: String) {
+    /// The hour `moment` falls in and its bar: "High, 72"; for an hour with none "no reading, mostly movement", or
+    /// "no reading" when the band recorded nothing.
+    static func scrubText(at moment: Date, hours: [StressHour], emptyHours: [StressEmptyHour], zone: TimeZone) -> (hour: String, level: String) {
         let hour = HourlyStepsTime.hour(of: moment, zone: zone)
         let level = hours.first { $0.hour == hour }.map { "\(word($0.band)), \(Formatters.whole($0.level))" }
-        return (Formatters.hourRange(hour), level ?? "no reading")
+        let empty = emptyHours.first { $0.hour == hour }.map { "no reading, \($0.reason.phrase)" }
+        return (Formatters.hourRange(hour), level ?? empty ?? "no reading")
     }
 
     /// The workout that shares time with `hour`: "ride".
@@ -80,7 +84,7 @@ struct HourlyStressChart: View {
     private var full: some View {
         let domain = start(StressThresholds.daytimeHours.lowerBound)...start(StressThresholds.daytimeHours.upperBound)
         let text = selection.map { moment -> String in
-            let found = Self.scrubText(at: moment, hours: hours, zone: zone)
+            let found = Self.scrubText(at: moment, hours: hours, emptyHours: emptyHours, zone: zone)
             let workout = Self.workout(in: HourlyStepsTime.hour(of: moment, zone: zone), day: day, zone: zone, workouts: workouts)
             return "\(found.hour) · \(found.level)" + (workout.map { ", during a \($0)" } ?? "")
         }

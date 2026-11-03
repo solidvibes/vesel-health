@@ -80,10 +80,11 @@ struct CalmDay: View {
 
     private var scrub: HeaderText? {
         guard let selection else { return nil }
-        let found = HourlyStressChart.scrubText(at: selection, hours: model.hours, zone: model.zone)
-        let workout = HourlyStressChart.workout(
-            in: HourlyStepsTime.hour(of: selection, zone: model.zone), day: model.day, zone: model.zone, workouts: model.workouts
-        ).map { " · \($0.capitalizedFirst)" } ?? ""
+        let found = HourlyStressChart.scrubText(at: selection, hours: model.hours, emptyHours: model.emptyHours, zone: model.zone)
+        let workout =
+            HourlyStressChart.workout(
+                in: HourlyStepsTime.hour(of: selection, zone: model.zone), day: model.day, zone: model.zone, workouts: model.workouts
+            ).map { " · \($0.capitalizedFirst)" } ?? ""
         return HeaderText(value: found.level.capitalizedFirst + workout, line: "\(found.hour) · \(dayLine)")
     }
 
@@ -107,12 +108,13 @@ struct CalmDay: View {
                     .fixedSize(horizontal: false, vertical: true)
                 } else {
                     HourlyStressChart(
-                        hours: model.hours, day: report.day, zone: zone, workouts: model.workouts, takeLaunchScrub: model.takeLaunchScrub,
+                        hours: model.hours, emptyHours: model.emptyHours, day: report.day, zone: zone, workouts: model.workouts,
+                        takeLaunchScrub: model.takeLaunchScrub,
                         scrub: .holdThenDrag(slot: { HourlyStepsTime.hour(of: $0, zone: zone) }),
                         selection: $selection
                     )
                     Text(
-                        "Based on \(model.readings) readings \(model.dayWord). Hours with no bar had no reading. Hold a finger on the bars, then drag, to read one."
+                        "Based on \(model.readings) readings \(model.dayWord). Each bar is the hour's middle reading. Hold a finger on the bars, then drag, to read one, or to see why an hour has none."
                     )
                     .font(Theme.Typography.small)
                     .foregroundStyle(Theme.Palette.mutedText)
