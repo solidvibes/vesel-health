@@ -120,6 +120,46 @@ public struct WorkoutHeartRates: Sendable, Equatable, Codable {
         self.intervalMs = intervalMs
         self.bpm = bpm
     }
+
+    /// The readings as averages over short buckets, so a long workout draws as a line and not a band. The bucket is the workout's length
+    /// over about 120 points, never under 5 seconds. A bucket with no reading (0 bpm is none) is left out, so a gap stays a gap.
+    public func averaged() -> AveragedHeartRates? {
+        guard intervalMs > 0, !bpm.isEmpty else { return nil }
+        let totalSeconds = Double(bpm.count * intervalMs) / 1000
+        let bucketSeconds = max(Self.shortestBucketSeconds, Int((totalSeconds / Double(Self.targetPoints)).rounded(.up)))
+        let bucketMs = bucketSeconds * 1000
+        var sums: [Int: (sum: Int, count: Int)] = [:]
+        for (index, value) in bpm.enumerated() where value > 0 {
+            let bucket = index * intervalMs / bucketMs
+            let soFar = sums[bucket] ?? (0, 0)
+            sums[bucket] = (soFar.sum + value, soFar.count + 1)
+        }
+        let points = sums.keys.sorted().map { bucket in
+            let total = sums[bucket] ?? (0, 1)
+            return AveragedHeartRates.Point(
+                offsetSeconds: (Double(bucket) + 0.5) * Double(bucketSeconds), bpm: Double(total.sum) / Double(total.count))
+        }
+        return AveragedHeartRates(bucketSeconds: bucketSeconds, points: points)
+    }
+
+    static let shortestBucketSeconds = 5
+    static let targetPoints = 120
+}
+
+/// A workout's heart rate as bucket averages; each point sits in the middle of its bucket.
+public struct AveragedHeartRates: Sendable, Equatable {
+    public struct Point: Sendable, Equatable {
+        public var offsetSeconds: Double
+        public var bpm: Double
+
+        public init(offsetSeconds: Double, bpm: Double) {
+            self.offsetSeconds = offsetSeconds
+            self.bpm = bpm
+        }
+    }
+
+    public var bucketSeconds: Int
+    public var points: [Point]
 }
 
 /// One file of a workout, as the Polar SDK handed it over.

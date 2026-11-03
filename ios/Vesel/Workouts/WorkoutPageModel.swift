@@ -75,9 +75,8 @@ final class WorkoutPageModel {
     var heartPoints: [ReadingPoint] {
         guard let detail else { return [] }
         let workout = detail.labelled.workout
-        if let rates = workout.heartRates, rates.intervalMs > 0 {
-            let step = Double(rates.intervalMs) / 1000
-            return rates.bpm.enumerated().map { ReadingPoint(time: workout.start.addingTimeInterval(Double($0.offset) * step), value: Double($0.element)) }
+        if let averaged = workout.heartRates?.averaged() {
+            return averaged.points.map { ReadingPoint(time: workout.start.addingTimeInterval($0.offsetSeconds), value: $0.bpm) }
         }
         return detail.dayHeartRates.map { ReadingPoint(time: $0.time, value: Double($0.bpm)) }
     }

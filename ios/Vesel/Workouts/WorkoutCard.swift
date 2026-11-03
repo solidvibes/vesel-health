@@ -22,9 +22,8 @@ struct WorkoutCard: View {
     }
 
     private var points: [ReadingPoint] {
-        guard let rates = workout.heartRates, rates.intervalMs > 0 else { return [] }
-        let step = Double(rates.intervalMs) / 1000
-        return rates.bpm.enumerated().map { ReadingPoint(time: workout.start.addingTimeInterval(Double($0.offset) * step), value: Double($0.element)) }
+        guard let averaged = workout.heartRates?.averaged() else { return [] }
+        return averaged.points.map { ReadingPoint(time: workout.start.addingTimeInterval($0.offsetSeconds), value: $0.bpm) }
     }
 
     var body: some View {
