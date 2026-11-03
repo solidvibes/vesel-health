@@ -34,7 +34,7 @@ What it's for: "how am I doing right now?" at a glance. The app opens here. Alwa
 
 - Top to bottom: the title "Today" and the date, the "Good morning — I'm up" card (or "Evaluating your night"), the headline, the three range lines on one glass card, the Heart rate card, the Steps card, alert cards, and last the reading card (or the can't-reach card), so it appearing and folding away never moves a card above it.
 - Steps card (one button, opens the Steps page for today): "Steps" and a chevron; today's count in title size with "so far · read 14:32" beside it (the time the band was last read for today's steps; "so far" alone if no read time exists); "No steps yet today" with none; under the count, today's bars per hour so far (muted colour, 44 pt, from 00:00 to now, at least one hour wide, not touchable, nothing when there are no steps by the hour). No goal, no comparison. VoiceOver: "Steps, 6,240, so far · read 14:32", hint "Opens Steps".
-- Workout lines (Planned, `docs/how-it-works/workouts.md`): under the Steps card, one glass row per workout started today, "Run · 07:10 · 42 m · Moderate" with the sport's icon and a chevron, opening the Workout page. Nothing with none. The headline names yesterday's moderate or hard workout when recovery is off ("Low recovery after yesterday's hard ride.").
+- Workout lines (Planned, `docs/how-it-works/workouts.md`): under the Steps card, one glass row per workout started today, "Cycling · 07:10 · 24 min · load 172" with the sport's icon and a chevron, opening the Workout page. Nothing with none. When recovery is off the headline names yesterday's workout Polar rated medium or higher ("Low recovery after yesterday's ride.").
 - Alert cards; "See what changed" opens the page: low recovery and unusual resting heart rate open Recovery, long high stress opens Stress.
 - Headline sentence + one line of why (`headline` v3 covers recovery, sleep and stress; "Everything looks great today." on a good day; with no night stored but stress judged, "No sleep recorded last night." and the Stress line).
 - Three range lines (name left and value right in title3 semibold, the line under): Recovery, Sleep and Stress, each a button that opens its page for today. While a line is learning, its first-week row of checks (name, "3 more nights · Sun", a circle per night or day) takes its place, under "Getting to know you.".
@@ -49,7 +49,7 @@ What it's for: what happened on any day. Its day is the shared day (`docs/how-it
 - Top: the title is the day's date ("Tue, Oct 27", also on today); it is a button for VoiceOver, not drawn as one, and opens the month calendar (three dots per day; its bottom button reads "Today"). On a past day an ink "Back to today" pill sits beside it.
 - A week strip under it once there is data: seven days (weekday letter, date, three dots: recovery, sleep, stress), the picked day highlighted; pages end on today (today and the six days before it, then the week before that), so today's page is always full; tap a day to pick it, swipe to move a week. Each day is one VoiceOver button (same words as the calendar); "Earlier week" / "Later week" are VoiceOver actions and scroll gestures. At the largest text sizes the weekday letters drop.
 - **Night**, with the evening the night began ("Monday night, October 26"): two cards, Sleep (time asleep; under it a 44 pt strip of the night's stages with bedtime and wake time at its ends) and Recovery (Polar's word and "N of 6"; under it the recovery range line and the contributor furthest from your usual, else HRV: "HRV 46 ms" left, "usual" right). Empty: "No sleep recorded this night" (today: "No sleep recorded yet") and "Polar hasn't scored this night yet".
-- **Workouts** (Planned): between Night and Day, only when the day had one: a card per workout in time order: sport icon and word, "07:10–07:52", "42 m · Moderate", and a 44 pt heart-rate line in workout purple. One button, opens the Workout page. VoiceOver: "Run, 07:10 to 07:52, 42 minutes, moderate effort".
+- **Workouts** (Planned): between Night and Day, only when the day had one: a card per workout in time order: sport icon and word, "07:10–07:52", "42 min · load 87", and a 44 pt heart-rate line in workout purple. One button, opens the Workout page. VoiceOver: "Run, 07:10 to 07:52, 42 minutes, cardio load 87".
 - **Day**: two cards, Stress (high-stress time; today "8 m so far · Calm now"; "No stress readings" with none; under it the day's hourly bars, as on the page but 48 pt, no axes) and Heart rate (the day's lowest to highest, "48–121 bpm"; under it a 44 pt line of the day's 5-minute heart rate, 00:00 to 24:00). No live number: that is Today's.
 - A **Steps** card ends the Day section when the day has steps: label "Steps", the day's total ("8,850", "8,850 so far" today), a chevron, and small bars per hour with "00:00" and "24:00" under them (like the Heart rate glance); it opens the Steps page for that day. No card with no steps; no bars with no hourly samples.
 - Steps' card opens the Steps page (see "The pages"); no goal, no busiest hour, no best.
@@ -96,14 +96,14 @@ States: full; no sleep recorded (yet); sleep without a recharge score; learning 
 What it's for: one workout, explained. Opened from a Journal card or Today's workout line; pushed on that tab's stack. Not a signal page: no D · W · M · 3M, no comparison with other workouts.
 
 - Title: the sport word (opens what a workout means), and when it was guessed a chip beside it, "guessed from speed · change" or "guessed from time of day · change"; under it "Tue, Nov 3 · 07:10–07:52".
-- With a route: the route drawn by Vesel as a purple line in a 200 pt box, with start and end dots and no map behind it (nothing is fetched), then "8.4 km · 11.9 km/h average" (mi and mph with US units); a route covering less than half the workout shows "Route covers 12 of 42 min" instead of the speed.
+- With a route: a 200 pt Apple map (no points of interest, no interaction) with the route as a purple line and start and end dots, then "8.4 km · 11.9 km/h average" (mi and mph with US units); a route covering less than half the workout shows "Route covers 12 of 42 min" instead of the speed.
 - Heart rate: the workout's line (hold, then drag: "07:31 · 152 bpm"), then Average and Highest rows.
-- Effort: "Moderate · 87"; tap opens the meaning sheet with where the number came from. No row when the Loop gave no load.
+- Load: "Cardio load 172", with Polar's word beside it once confirmed ("Cardio load 172 · High"); "Training load 140" when the Loop gave only that; tap opens the meaning sheet with where the number came from. No row with neither.
 - Calories. For a swim, "Heart rate at the wrist is less exact in water."
 - How it's worked out (opens in place).
 - The sport sheet (from the chip or the title): your sports, then "Not a workout" (it hides the workout and goes back). The choice stays.
 
-States: with a route; without; guessed sport; band's sport; no effort; swim.
+States: with a route; with a route offline (the map's empty grid, route still drawn); without; guessed sport; band's sport; cardio load with and without Polar's word; training load only; no load; swim.
 
 ## Body
 
@@ -176,6 +176,6 @@ flowchart LR
 - **iPhone · Vesel:** the main home of the data. Stores every reading, works out recovery, stress and baselines, runs widgets and alerts. Works anywhere.
 - **Your Mac at home (MacBook or Mac mini):** backup of everything and room for heavier analysis later. If it's off, nothing on the phone breaks.
 
-- **Planned (`docs/how-it-works/workouts.md`):** during a workout the Loop started, the iPhone records its own route with GPS (only with "Record my route" on and location allowed); the route goes only to the Mac with everything else. Vesel draws it itself; no map service.
+- **Planned (`docs/how-it-works/workouts.md`):** during a workout the Loop started, the iPhone records its own route with GPS (only with "Record my route" on and location allowed); the route goes only to the Mac with everything else. The Workout page shows it on Apple's map: only the tiles for that area are fetched from Apple (`docs/decisions/2026-11-03-route-map.md`).
 
 No Polar cloud, no Apple cloud, no trackers.

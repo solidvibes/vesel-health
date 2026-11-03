@@ -41,7 +41,7 @@ None. Personal tool.
 - Never nag.
 - Never show a number it can't explain.
 - Never turn health into a score to chase.
-- Never add up workout effort over days or weeks: no weekly load, no bests, no streaks.
+- Workout load is not added up over days or weeks for now (no weekly load, no bests, no streaks; see `ideas/training-load-trends.md`).
 
 ## Success
 
@@ -51,5 +51,5 @@ I use it myself.
 
 - Other users, accounts, the App Store.
 - Android or the web.
-- Training plans and athlete load over time (Intervals.icu territory). Each workout's own effort, as Polar measured it, is in (`decisions/2026-11-03-workouts.md`).
+- Training plans and athlete load over time (Intervals.icu territory). Each workout's own load, as Polar measured it, is in (`decisions/2026-11-03-workouts.md`).
 - Reading data through Polar's or Apple's clouds.

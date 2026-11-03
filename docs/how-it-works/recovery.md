@@ -35,7 +35,7 @@ Polar's numbers as-is, plus a personal comparison that explains them (decision `
   | 8 | stress above | More stress than usual today. | "45 m of high stress so far; your usual is up to 30 m." |
   | 9 | every line with data is inside | "Things look good today." on Polar 4, else "Everything looks great today." | what is inside: "Recovery is good, your sleep was right in your normal, and a calm day so far." |
 
-  **Planned (`headline` version 4, `workouts.md`):** rules 4 and 5 name yesterday's Moderate or Hard workout (the highest-effort one) in the sentence: "Low recovery after yesterday's hard ride.", "Recovery is lower than usual after yesterday's moderate run." An Easy or hidden workout isn't named.
+  **Planned (`headline` version 4, `workouts.md`):** rules 4 and 5 name yesterday's workout when Polar rated it 3 or higher of 5 (the highest cardio load among those): "Low recovery after yesterday's ride.", "Recovery is lower than usual after yesterday's run." A workout without Polar's rating, or hidden, isn't named.
 
   What tends to help for what was off is on the line's page, never on Today (`what-helps.md`).
 - **Recovery sentence** (`recoverySentence`, version 1): Polar's own table, on the Recovery page's card only: 6 "You're well recovered.", 5 "Recovery is good.", 4 "Recovery is OK.", 3 "Recovery is lower than usual.", 1 or 2 "Recovery is low.", no status but a night "Polar hasn't scored your recovery yet."; the why names the contributor furthest from your usual (beyond 1 SD), then the time asleep ("HRV 38 % below your usual; 7 h 40 m asleep."), "Everything is within your usual range" when none, or the learning words.

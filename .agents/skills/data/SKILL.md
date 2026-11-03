@@ -6,7 +6,7 @@ description: Use when a change reads, stores, uploads or deletes health data, to
 # Data
 
 - The phone's SQLite database (VeselStorage) is the source of truth. Screens, widgets and alerts read from it, never from the band or the server.
-- Health data leaves the phone only to the owner's own Mac, over the pinned HTTPS connection. Any other destination needs a new decision first.
+- Health data leaves the phone only to the owner's own Mac, over the pinned HTTPS connection. Any other destination needs a new decision first. The one other network call is MapKit fetching Apple's map tiles for a workout route's area while its page shows (`docs/decisions/2026-11-03-route-map.md`): no search, geocoding or anything else from MapKit, and the route itself is drawn on the phone.
 - Uploads go only through `VeselSync.Uploader` with `PinnedSession` (public-key pin from the set-up QR, token from the Keychain). A row is marked uploaded only when the Mac acknowledged it unchanged. The server never logs bodies or tokens.
 - `server/setup.sh` is the only code that makes the certificate and token. The Vesel Backup Mac app runs it (`--qr-text`) and never logs, stores, or copies the token or QR; only `token.sha256` is on disk. The app reads the backup file only for counts, and never writes to it.
 - No analytics, crash reporting or third-party SDKs that send data. The Polar BLE SDK talks only to the band.
