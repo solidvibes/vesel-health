@@ -5,6 +5,8 @@ One plain sentence per entry.
 
 ## Unreleased
 
+- Loop & settings now lets you say which wrist you wear the Loop on, and sends it to the Loop.
+
 ## 0.1.0 — 2026-11-01
 
 - Pairing now says to sync Polar Flow once before the factory reset, because the reset erases anything your Loop hasn't sent yet.

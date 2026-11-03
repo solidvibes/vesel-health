@@ -397,6 +397,20 @@ extension AppDatabase {
 
     static let unitsKey = "units"
 
+    /// The wrist the Loop is worn on, as last taken by the Loop. Not health data; never uploaded.
+    public func setWrist(_ wrist: WristSide) async throws {
+        try await setSettings([Self.wristKey: wrist.rawValue])
+    }
+
+    /// Left unless the owner chose otherwise.
+    public func wrist() async throws -> WristSide {
+        try await writer.read { db in
+            try String.fetchOne(db, sql: "SELECT value FROM setting WHERE key = ?", arguments: [Self.wristKey]).flatMap(WristSide.init(rawValue:)) ?? .left
+        }
+    }
+
+    static let wristKey = "wrist"
+
     /// Metric unless the owner chose otherwise.
     static func units(_ db: Database) throws -> Units {
         try String.fetchOne(db, sql: "SELECT value FROM setting WHERE key = ?", arguments: [unitsKey]).flatMap(Units.init(rawValue:)) ?? .metric

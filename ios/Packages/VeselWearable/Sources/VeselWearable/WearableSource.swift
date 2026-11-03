@@ -16,6 +16,8 @@ public protocol WearableSource: Sendable {
     func pair() async throws -> PairedBand
     func cancelPairing() async
     func firstTimeUse(_ profile: Profile, now: Date) async throws
+    /// Tells the band which wrist it is worn on.
+    func setWrist(_ wrist: WristSide) async throws
     /// Tells the band a sync starts: it writes its cached 24/7 data to files.
     func startSync() async throws
     func stopSync() async throws
@@ -101,6 +103,11 @@ public enum PairingError: Error, Equatable {
     case refused
     /// Connected, but the band's first-time setup didn't go through.
     case setupFailed
+}
+
+/// The band didn't take a setting.
+public enum BandWriteError: Error, Equatable {
+    case refused
 }
 
 /// What the band stores and can clear, each covering one or more fetch kinds.

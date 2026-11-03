@@ -37,6 +37,7 @@ public actor FakeWearableSource: WearableSource {
     private var lost = false
     public private(set) var drops = 0
     public private(set) var profile: Profile?
+    public private(set) var wrist: WristSide?
     public private(set) var sleepStatus: SleepRecordingStatus = .stopped
     /// Every call in order, for tests that check what happened when.
     public private(set) var calls: [String] = []
@@ -107,6 +108,12 @@ public actor FakeWearableSource: WearableSource {
         calls.append("firstTimeUse")
         if failure == .setupFailed { throw PairingError.setupFailed }
         self.profile = profile
+    }
+
+    public func setWrist(_ wrist: WristSide) throws {
+        calls.append("setWrist")
+        if failure == .wristFailed { throw BandWriteError.refused }
+        self.wrist = wrist
     }
 
     public func startSync() throws {

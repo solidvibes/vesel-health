@@ -45,7 +45,7 @@ public enum FakeScenario: String, Sendable, CaseIterable {
 
 /// A problem the fake band acts out, picked with `-VeselFakeFailure <name>` (Simulator screenshots, tests).
 public enum FakeFailure: String, Sendable, CaseIterable {
-    case notFound, refused, setupFailed, unreachable
+    case notFound, refused, setupFailed, wristFailed, unreachable
 
     public init?(defaults: UserDefaults) {
         guard let failure = defaults.string(forKey: "VeselFakeFailure").flatMap(FakeFailure.init(rawValue:)) else { return nil }
