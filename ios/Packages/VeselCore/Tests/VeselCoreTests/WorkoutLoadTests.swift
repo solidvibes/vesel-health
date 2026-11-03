@@ -19,6 +19,7 @@ struct WorkoutLoadTests {
         #expect(load.source == .cardioLoad)
         #expect(load.polarWord == nil)
         #expect(PolarLoadWord.confirmed.isEmpty)
+        #expect([load.text, load.shortText, load.spokenText] == ["Cardio load 172", "load 172", "cardio load 172"])
 
         let explanation = WorkoutLoad.explanation(workout(cardioLoad: 172, rating: 4, trainingLoad: 140), label: band, route: nil)
         #expect(explanation.method == "workout")
@@ -35,6 +36,7 @@ struct WorkoutLoadTests {
         #expect(load.number == 140)
         #expect(load.source == .trainingLoad)
         #expect(load.polarWord == nil)
+        #expect([load.text, load.shortText, load.spokenText] == ["Training load 140", "training load 140", "training load 140"])
         #expect(WorkoutLoad.make(workout(cardioLoad: nil, rating: 3, trainingLoad: nil)) == nil)
     }
 

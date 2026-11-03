@@ -86,6 +86,9 @@ enum PreviewEnvironment {
         for (_, payloads) in Dictionary(grouping: held, by: \.day).sorted(by: { $0.key < $1.key }) {
             try await database.save(payloads, fetchedAt: clock.now)
         }
+        for reference in await band.workoutReferences() {
+            try await database.save(try await band.workout(reference), storedAt: clock.now)
+        }
         let run = try await database.startSyncRun(.manual, at: clock.now)
         try await database.finishSyncRun(run, outcome: .success, detail: nil, at: clock.now)
         try await MetricsUpdater(database: database, clock: clock).updateAfterSync()

@@ -25,6 +25,16 @@ public enum WorkoutSport: String, CaseIterable, Sendable {
         case .strength: "Strength"
         }
     }
+
+    /// The sport in a sentence: "after yesterday's ride", "during a run".
+    public var noun: String {
+        switch self {
+        case .running: "run"
+        case .cycling: "ride"
+        case .swimming: "swim"
+        case .strength: "strength session"
+        }
+    }
 }
 
 /// One workout the Loop recorded, keyed by its folder on the band ("20261103/071000"), which never changes for that workout.
@@ -78,6 +88,27 @@ public struct Workout: Sendable, Equatable {
     }
 
     public var interval: DateInterval { DateInterval(start: start, end: max(start, end)) }
+
+    /// "42 min", "1 h 15 min".
+    public var durationText: String {
+        let (hours, minutes) = hoursAndMinutes
+        if hours == 0 { return "\(minutes) min" }
+        return minutes == 0 ? "\(hours) h" : "\(hours) h \(minutes) min"
+    }
+
+    /// For VoiceOver: "42 minutes", "1 hour 15 minutes".
+    public var spokenDuration: String {
+        let (hours, minutes) = hoursAndMinutes
+        let minuteText = "\(minutes) \(minutes == 1 ? "minute" : "minutes")"
+        guard hours > 0 else { return minuteText }
+        let hourText = "\(hours) \(hours == 1 ? "hour" : "hours")"
+        return minutes == 0 ? hourText : "\(hourText) \(minuteText)"
+    }
+
+    private var hoursAndMinutes: (Int, Int) {
+        let total = Int((Double(durationSeconds) / 60).rounded())
+        return (total / 60, total % 60)
+    }
 }
 
 /// Heart rate during a workout, one value every `intervalMs`.

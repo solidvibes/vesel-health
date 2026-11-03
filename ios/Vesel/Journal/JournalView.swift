@@ -2,7 +2,8 @@ import SwiftUI
 import VeselCore
 import VeselStorage
 
-/// Journal: what happened on the picked day. Its night (sleep, recovery) and its day (calm, heart rate, steps), each the day at a glance and a link to its page.
+/// Journal: what happened on the picked day. Its night (sleep, recovery), its workouts, and its day (calm, heart rate, steps), each at a
+/// glance and a link to its page.
 struct JournalView: View {
     let environment: AppEnvironment
     @State private var model: JournalModel
@@ -11,6 +12,7 @@ struct JournalView: View {
     @State private var attempt = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openPage) private var openPage
+    @Environment(\.openWorkout) private var openWorkout
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -40,6 +42,7 @@ struct JournalView: View {
                 ReadProblemCard { attempt += 1 }
             } else {
                 night
+                if !model.workouts.isEmpty { workouts }
                 day
             }
         }
@@ -61,6 +64,22 @@ struct JournalView: View {
         .task(id: ObserveKey(value: model.day, active: scenePhase == .active, attempt: attempt)) {
             guard scenePhase == .active else { return }
             await model.observeSteps()
+        }
+        .task(id: ObserveKey(value: model.day, active: scenePhase == .active, attempt: attempt)) {
+            guard scenePhase == .active else { return }
+            await model.observeWorkouts()
+        }
+    }
+
+    /// Only on a day with a workout, between the night and the day.
+    private var workouts: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s12) {
+            JournalHeading(title: "Workouts", line: nil)
+            ForEach(model.workouts, id: \.workout.session) { labelled in
+                WorkoutCard(labelled: labelled, zone: model.zone) {
+                    openWorkout(WorkoutRoute(session: labelled.workout.session))
+                }
+            }
         }
     }
 

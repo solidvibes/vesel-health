@@ -10,6 +10,28 @@ public struct StoredWorkout: Sendable, Equatable {
     public var isHidden: Bool { choice?.hidden ?? false }
 }
 
+/// A stored workout with what it is called and the phone's route over it, worked out on read (never stored).
+public struct LabelledWorkout: Sendable, Equatable {
+    public var stored: StoredWorkout
+    public var label: WorkoutLabel
+    /// The route overlapping it most, cut to the workout; nil with none.
+    public var route: WorkoutRouteSummary?
+
+    public var workout: Workout { stored.workout }
+    public var load: WorkoutLoad? { WorkoutLoad.make(stored.workout) }
+    /// Its time and its noun, for a chart block.
+    public var span: WorkoutSpan { WorkoutSpan(range: workout.start...max(workout.start, workout.end), word: label.noun) }
+}
+
+/// Everything the Workout page shows: the workout, the owner's sports for the sport sheet, and the 24/7 heart rate during it
+/// when the Loop's workout file had none.
+public struct WorkoutDetail: Sendable, Equatable {
+    public var labelled: LabelledWorkout
+    public var sports: Set<WorkoutSport>
+    /// Empty when the workout has its own heart rate.
+    public var dayHeartRates: [HeartRateSample]
+}
+
 extension AppDatabase {
     // MARK: Workouts
 
@@ -56,12 +78,65 @@ extension AppDatabase {
         ValueObservation.tracking { db in try Self.workouts(db, from: day, through: day) }.removeDuplicates().values(in: writer)
     }
 
+    /// The workouts that started on `day`, in time order, labelled; "Not a workout" ones left out.
+    public func observeLabelledWorkouts(day: DayKey) -> some AsyncSequence<[LabelledWorkout], any Error> {
+        ValueObservation.tracking { db in
+            try Self.labelled(db, try Self.workouts(db, from: day, through: day).filter { !$0.isHidden })
+        }.removeDuplicates().values(in: writer)
+    }
+
+    /// One workout for its page, hidden or not; nil when it isn't stored.
+    public func observeWorkout(session: String) -> some AsyncSequence<WorkoutDetail?, any Error> {
+        ValueObservation.tracking { db -> WorkoutDetail? in
+            guard let stored = try Self.workouts(db, where: "w.session = ?", arguments: [session]).first,
+                let labelled = try Self.labelled(db, [stored]).first
+            else { return nil }
+            let workout = stored.workout
+            let dayHeartRates =
+                workout.heartRates == nil
+                ? try HeartRateSampleRecord
+                    .filter(sql: "ts >= ? AND ts <= ?", arguments: [workout.start.unixSeconds, workout.end.unixSeconds])
+                    .order(sql: "ts")
+                    .fetchAll(db)
+                    .map(\.model) : []
+            return WorkoutDetail(labelled: labelled, sports: try Self.workoutSports(db), dayHeartRates: dayHeartRates)
+        }.removeDuplicates().values(in: writer)
+    }
+
+    /// Labels each workout: the owner's fix, the Loop's sport, a guess from the phone's route or from the owner's own
+    /// earlier workouts at that time of day (`WorkoutLabel`), in the workout's own time zone.
+    static func labelled(_ db: Database, _ workouts: [StoredWorkout]) throws -> [LabelledWorkout] {
+        guard let first = workouts.map(\.workout.day).min(), let last = workouts.map(\.workout.day).max() else { return [] }
+        let sports = try workoutSports(db)
+        let history = try Self.workouts(db, from: first.adding(days: -WorkoutThresholds.guessHistoryDays - 1), through: last)
+            .filter { !$0.isHidden }
+            .compactMap { earlier -> (start: Date, sport: WorkoutSport)? in
+                let sport = earlier.choice?.sport ?? earlier.workout.bandSportId.flatMap(WorkoutSport.init(bandSportId:))
+                return sport.map { (earlier.workout.start, $0) }
+            }
+        return try workouts.map { stored in
+            let workout = stored.workout
+            let route = try route(db, for: workout).map {
+                WorkoutRouteSummary(points: $0.points, workout: workout.interval, durationSeconds: workout.durationSeconds)
+            }
+            let label = WorkoutLabel.make(
+                workout: workout, choice: stored.choice, route: route, history: history, sports: sports,
+                zone: TimeZone(secondsFromGMT: workout.utcOffsetSeconds) ?? .gmt
+            )
+            return LabelledWorkout(stored: stored, label: label, route: route)
+        }
+    }
+
     /// Stores the owner's fix. A band read never writes it.
     public func setChoice(_ choice: WorkoutChoice) async throws {
         try await writer.write { try WorkoutChoiceRecord(choice).upsert($0) }
     }
 
     static func workouts(_ db: Database, from first: DayKey, through last: DayKey) throws -> [StoredWorkout] {
+        try workouts(db, where: "w.day >= ? AND w.day <= ?", arguments: [first.description, last.description])
+    }
+
+    static func workouts(_ db: Database, where condition: String, arguments: StatementArguments) throws -> [StoredWorkout] {
         let rows = try Row.fetchAll(
             db,
             sql: """
@@ -70,10 +145,10 @@ extension AppDatabase {
                        w.unreadable_files, w.stored_at,
                        c.sport AS choice_sport, c.hidden AS choice_hidden, c.chosen_at AS choice_chosen_at
                 FROM workout AS w LEFT JOIN workout_choice AS c ON c.session = w.session
-                WHERE w.day >= ? AND w.day <= ?
+                WHERE \(condition)
                 ORDER BY w.start_at, w.session
                 """,
-            arguments: [first.description, last.description]
+            arguments: arguments
         )
         return try rows.map { row in
             let workout = try WorkoutRecord(row: row).model()
@@ -122,7 +197,13 @@ extension AppDatabase {
 
     /// The owner's sports; all of them until changed.
     public func workoutSports() async throws -> Set<WorkoutSport> {
-        guard let value = try await setting(Self.workoutSportsKey) else { return Set(WorkoutSport.allCases) }
+        try await writer.read { try Self.workoutSports($0) }
+    }
+
+    static func workoutSports(_ db: Database) throws -> Set<WorkoutSport> {
+        guard let value = try String.fetchOne(db, sql: "SELECT value FROM setting WHERE key = ?", arguments: [workoutSportsKey]) else {
+            return Set(WorkoutSport.allCases)
+        }
         return Set(value.split(separator: ",").compactMap { WorkoutSport(rawValue: String($0)) })
     }
 
@@ -142,21 +223,27 @@ extension AppDatabase {
     /// The routes that overlap `interval`, in time order. One without an end counts up to its last point. A route stops after
     /// `routeMaxHours`, so only those starting that long before `interval` are read.
     public func routes(overlapping interval: DateInterval) async throws -> [RecordedRoute] {
+        try await writer.read { try Self.routes($0, overlapping: interval) }
+    }
+
+    static func routes(_ db: Database, overlapping interval: DateInterval) throws -> [RecordedRoute] {
         let earliest = interval.start.addingTimeInterval(-WorkoutThresholds.routeMaxHours * 3600)
-        return try await writer.read { db in
-            try WorkoutRouteRecord
-                .filter(sql: "started_at >= ? AND started_at <= ?", arguments: [earliest.unixSeconds, interval.end.unixSeconds])
-                .order(sql: "started_at")
-                .fetchAll(db)
-                .map { try $0.model() }
-                .filter { $0.interval.intersects(interval) }
-        }
+        return try WorkoutRouteRecord
+            .filter(sql: "started_at >= ? AND started_at <= ?", arguments: [earliest.unixSeconds, interval.end.unixSeconds])
+            .order(sql: "started_at")
+            .fetchAll(db)
+            .map { try $0.model() }
+            .filter { $0.interval.intersects(interval) }
     }
 
     /// The route that overlaps the workout most; nil when none does.
     public func route(for workout: Workout) async throws -> RecordedRoute? {
-        let window = DateInterval(start: workout.start, end: max(workout.start, workout.end))
-        return try await routes(overlapping: window)
+        try await writer.read { try Self.route($0, for: workout) }
+    }
+
+    static func route(_ db: Database, for workout: Workout) throws -> RecordedRoute? {
+        let window = workout.interval
+        return try routes(db, overlapping: window)
             .map { ($0, $0.interval.intersection(with: window)?.duration ?? 0) }
             .filter { $0.1 > 0 }
             .max { $0.1 < $1.1 }?

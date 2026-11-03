@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings and the route recording are built (the background start not yet tried on the owner's iPhone). The screens, the headline and the chart blocks are planned.
+**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings and the route recording are built (the background start not yet tried on the owner's iPhone). The Workout page (with the route on Apple's map) and Journal's Workouts section are built; Today's lines, the headline and the chart blocks are planned.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 
@@ -32,7 +32,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
   3. no route: the sport you did most often within 2 hours of that time of day over the last 90 days, from workouts with a sport from the Loop or from you ("guessed from time of day");
   4. else "Workout".
   Guesses use only the sports switched on in Your sports. Ties go in the order Cycling, Running, Swimming, Strength.
-- **Your fix:** a guessed sport shows a chip "guessed from speed · change". Tapping it (or the sport) opens a sheet with your sports and "Not a workout". Your choice is kept and never replaced by a later read of the band. "Not a workout" hides it everywhere and its time counts for stress again, worked out at once.
+- **Your fix:** a guessed sport shows a chip "guessed from speed · change". Tapping it (or "Change the sport" further down the page) opens a sheet with your sports and "Not a workout". Your choice is kept and never replaced by a later read of the band. "Not a workout" hides it everywhere and its time counts for stress again, worked out at once.
 - **Load:** Polar's cardio load for that workout, as the number: "Cardio load 172". Beside it, Polar's own word for how it compares with your last 90 days (its rating 1–5), but only for ratings whose word has been confirmed on the owner's Loop; until then the number alone. When the Loop gives no cardio load, its older training-load number shows instead, labelled "Training load 140". No row with neither. Vesel makes no word of its own. Tapping it shows where it came from.
 - **Heart rate:** average and highest, from the Loop's workout record; the chart is the Loop's own readings during the workout (the 24/7 heart rate if the workout file had none).
 - **Calories:** from the Loop.
@@ -47,7 +47,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 - **Body:** nothing.
 
 ### The Workout page
-Opened from a Journal card or Today's line. Top to bottom: the sport (with the guess chip) and the date and time ("Tue, Nov 3 · 07:10–07:52"); the route on Apple's map with distance and average speed (only with a route; decision `2026-11-03-route-map.md`); the heart-rate chart with average and highest (hold, then drag, to read); load ("Cardio load 172", Polar's word when confirmed; tap for the source); calories; How it's worked out. No comparison with other workouts.
+Opened from a Journal card or Today's line. Top to bottom: the sport (with the guess chip) and the date and time ("Tue, Nov 3 · 07:10–07:52"); the route on Apple's map with distance and average speed (only with a route; decision `2026-11-03-route-map.md`); the heart-rate chart with average and highest (hold, then drag, to read); load ("Cardio load 172", Polar's word when confirmed; tap for the source); calories; "Change the sport"; How it's worked out. No comparison with other workouts. Labels, distance and speed are worked out each time the page is read, never stored.
 
 ### Workouts settings
 Loop & settings → Workouts (a pushed screen):

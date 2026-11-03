@@ -18,6 +18,8 @@ enum Theme {
         static let recovery = Color("Recovery")
         static let sleep = Color("Sleep")
         static let stress = Color("Stress")
+        /// Workout blocks, lines and the route. Never the only sign: blocks have a top edge and the sport in words.
+        static let workout = Color("Workout")
 
         /// The Recovery line follows Polar's verdict: the warm colour (the one "something's off" uses) when it is
         /// compromised or worse, the recovery green otherwise.

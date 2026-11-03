@@ -10,6 +10,9 @@ struct UnitsTests {
         #expect(Units.us.temperatureText(celsius: 34.6) == "94.3 °F")
         #expect(Units.us.temperatureDifferenceText(celsius: 0.2) == "+0.4 °F")
         #expect(Units.us.temperatureDifferenceText(celsius: -0.2) == "−0.4 °F")
+        // 8 400 m ÷ 1 609.344 = 5.22 mi; 11.9 km/h = 11 900 ÷ 1 609.344 = 7.39 mph.
+        #expect(Units.us.distanceText(meters: 8_400) == "5.2 mi")
+        #expect(Units.us.speedText(kmh: 11.9) == "7.4 mph")
     }
 
     @Test func metricShowsTheStoredValues() {
@@ -18,5 +21,7 @@ struct UnitsTests {
         #expect(Units.metric.waistText(cm: 84) == "84 cm")
         #expect(Units.metric.temperatureText(celsius: 34.6) == "34.6 °C")
         #expect(Units.metric.temperatureDifferenceText(celsius: 0.2) == "+0.2 °C")
+        #expect(Units.metric.distanceText(meters: 8_400) == "8.4 km")
+        #expect(Units.metric.speedText(kmh: 11.94) == "11.9 km/h")
     }
 }

@@ -29,6 +29,22 @@ public struct WorkoutLoad: Sendable, Equatable {
         return workout.trainingLoad.map { WorkoutLoad(number: $0, source: .trainingLoad, polarWord: nil) }
     }
 
+    /// The Workout page's row: "Cardio load 172", with Polar's word once confirmed ("Cardio load 172 · High"), or "Training load 140".
+    public var text: String {
+        switch source {
+        case .cardioLoad: (["Cardio load \(numberText)"] + [polarWord].compactMap { $0 }).joined(separator: " · ")
+        case .trainingLoad: "Training load \(numberText)"
+        }
+    }
+
+    /// In a line or on a card: "load 172", or "training load 140" when that is all the Loop gave.
+    public var shortText: String { source == .cardioLoad ? "load \(numberText)" : "training load \(numberText)" }
+
+    /// For VoiceOver: "cardio load 172", "training load 140".
+    public var spokenText: String { source == .cardioLoad ? "cardio load \(numberText)" : "training load \(numberText)" }
+
+    private var numberText: String { NumberText.decimal(number, 0) }
+
     /// Where the load, Polar's rating and the sport came from.
     public static func explanation(_ workout: Workout, label: WorkoutLabel, route: WorkoutRouteSummary?) -> Explanation {
         var inputs: [Explanation.Input] = []

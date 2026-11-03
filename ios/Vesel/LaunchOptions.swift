@@ -25,6 +25,10 @@ struct LaunchOptions {
     var page: PageKind?
     /// `-VeselPeriod d|w|m|3m` opens `-VeselPage` in that view; D when absent.
     var period: PagePeriod
+    /// `-VeselWorkout 20261025/071000` pushes that workout's page on the launch tab (Today or Journal).
+    var workout: WorkoutRoute?
+    /// `-VeselWorkoutSport` opens the sport sheet on that page.
+    var opensWorkoutSport: Bool
     /// `-VeselCalendar` opens Journal's calendar.
     var opensCalendar: Bool
     /// `-VeselFitness` opens Body with the heart fitness page pushed.
@@ -56,6 +60,8 @@ struct LaunchOptions {
         day = defaults.string(forKey: "VeselDay").flatMap(DayKey.init)
         page = defaults.string(forKey: "VeselPage").flatMap(PageKind.init(rawValue:))
         period = defaults.string(forKey: "VeselPeriod").flatMap(PagePeriod.init(launch:)) ?? .day
+        workout = defaults.string(forKey: "VeselWorkout").map(WorkoutRoute.init(session:))
+        opensWorkoutSport = ProcessInfo.processInfo.arguments.contains("-VeselWorkoutSport")
         opensCalendar = ProcessInfo.processInfo.arguments.contains("-VeselCalendar")
         opensFitness = ProcessInfo.processInfo.arguments.contains("-VeselFitness")
         if opensFitness { tab = .body }
@@ -74,6 +80,8 @@ struct LaunchOptions {
         day = nil
         page = nil
         period = .day
+        workout = nil
+        opensWorkoutSport = false
         opensCalendar = false
         opensFitness = false
         scrub = nil

@@ -62,3 +62,11 @@ public struct WorkoutLabel: Sendable, Equatable {
         return Double((parts.hour ?? 0) * 60 + (parts.minute ?? 0))
     }
 }
+
+extension WorkoutLabel {
+    /// The title and line word: "Cycling", or "Workout" without a sport.
+    public var name: String { sport?.name ?? "Workout" }
+
+    /// The word in a sentence: "ride", or "workout" without a sport.
+    public var noun: String { sport?.noun ?? "workout" }
+}
