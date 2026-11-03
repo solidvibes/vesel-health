@@ -11,6 +11,7 @@ What we test: health formulas with written-out expected numbers, migrations, the
 - Analysis (baselines, HRV, stress, alerts) gets Swift Testing tests on recorded sample data, with the expected numbers written out.
 - Storage tests run against an in-memory GRDB database.
 - Code that needs the band uses a fake `WearableSource`; tests never need a real Loop.
+- Workout mapping tests build the SDK's protobuf structs, never a real session file.
 - App screen-model tests build the model from `AppDatabase.inMemory()`, a `FixedClock` and plain closures for app actions, like `SyncingModelTests`.
 - Whether an error is a paused database is tested on GRDB's own errors in VeselStorage (`PausedTests`); the app tests can't link GRDB.
 - Server code gets pytest tests.

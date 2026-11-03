@@ -49,7 +49,7 @@ final class BandWakeHandler {
             // A read already running (a long read, Sync now) may have started before this; read afresh after it.
             await environment.pipeline.idle()
             await environment.pipeline.run(.bandEvent)
-        case .checkIn, .stillTooLong:
+        case .checkIn, .stillTooLong, .workoutStarted, .workoutEnded:
             await environment.pipeline.run(.bandCheckIn, onlyIfDue: true)
         }
     }

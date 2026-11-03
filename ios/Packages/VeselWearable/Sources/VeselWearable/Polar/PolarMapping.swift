@@ -1,5 +1,6 @@
 import Foundation
 @preconcurrency import PolarBleSdk
+import SwiftProtobuf
 import VeselCore
 
 /// Polar SDK results → one `BandPayload` per day, in the payload layout `BandPayload.content()` reads
@@ -437,4 +438,128 @@ struct DailySummaryPayload: Encodable {
     var activityClassSeconds: [String: Int]
     var dailyBalanceFeedback: String
     var readinessForSpeedAndStrengthTraining: String
+}
+
+// MARK: Workouts
+
+extension PolarMapping {
+    /// "/U/0/20261103/E/071000/TSESS.BPB" → "20261103/071000", the workout's folder on the band.
+    static func workoutSession(_ path: String) -> String? {
+        let parts = path.split(separator: "/")
+        guard parts.count >= 5, parts[0] == "U", parts[3] == "E" else { return nil }
+        return "\(parts[2])/\(parts[4])"
+    }
+
+    /// The file names a workout's reference lists: "TSESS", then per exercise "00/BASE", "00/SAMPLES", …
+    static func workoutFileNames(_ reference: PolarTrainingSessionReference) -> [String] {
+        let summary = reference.trainingDataTypes.isEmpty ? [] : ["TSESS"]
+        return summary
+            + reference.exercises.sorted { $0.index < $1.index }.flatMap { exercise in
+                Set(exercise.exerciseDataTypes.map(fileName)).sorted().map { "\(folder(exercise))/\($0)" }
+            }
+    }
+
+    /// A workout as the band gave it: every file as the SDK handed it over, plus a typed row. The SDK's presence checks are
+    /// internal, so a 0 reads as absent. A file the reference lists but that came back unparsed is noted as unreadable.
+    static func workout(_ session: PolarTrainingSession, zone: TimeZone) throws -> BandWorkout {
+        let summary = session.sessionSummary
+        let durationSeconds = seconds(summary.duration)
+        guard durationSeconds > 0, let begin = localDate(summary.start, zone: zone) else { throw WorkoutReadError.unfinished }
+        let start = begin.date
+        let end = localDate(summary.end, zone: zone).map(\.date).flatMap { $0 >= start ? $0 : nil }
+            ?? start.addingTimeInterval(TimeInterval(durationSeconds))
+
+        var files = [WorkoutFile(name: "TSESS", data: try summary.serializedBytes(partial: true))]
+        var unreadable: [String] = []
+        let exercises = session.exercises.sorted { $0.index < $1.index }
+        for exercise in exercises {
+            let folder = folder(exercise)
+            let parsed: [(String, (any SwiftProtobuf.Message)?)] = [
+                ("BASE", exercise.exerciseSummary), ("SAMPLES", exercise.samples), ("SAMPLES2", exercise.samplesAdvanced),
+                ("ROUTE", exercise.route), ("ROUTE2", exercise.routeAdvanced),
+            ]
+            let listed = Set(exercise.exerciseDataTypes.map(fileName))
+            for (file, message) in parsed {
+                if let message {
+                    files.append(WorkoutFile(name: "\(folder)/\(file)", data: try message.serializedBytes(partial: true)))
+                } else if listed.contains(file) {
+                    unreadable.append("\(folder)/\(file)")
+                }
+            }
+        }
+
+        let samples = exercises.first?.samples
+        let intervalMs = samples.map { seconds($0.recordingInterval) * 1000 + Int($0.recordingInterval.millis) } ?? 0
+        let bpm = samples?.heartRateSamples.map(Int.init) ?? []
+        let rating = Int(summary.cardioLoadInterpretation)
+
+        return BandWorkout(
+            workout: Workout(
+                session: workoutSession(session.reference.path) ?? session.reference.path,
+                start: start,
+                end: end,
+                utcOffsetSeconds: begin.offset,
+                bandSportId: present(summary.sport.value).map { Int(clamping: $0) },
+                durationSeconds: durationSeconds,
+                calories: present(summary.calories).map(Int.init),
+                cardioLoad: finite(summary.cardioLoad.exerciseLoad).flatMap { $0 == 0 ? nil : $0 },
+                cardioLoadRating: (1...5).contains(rating) ? rating : nil,
+                trainingLoad: present(summary.trainingLoad.trainingLoadVal).map(Double.init),
+                averageHeartRate: present(summary.heartRate.average).map(Int.init),
+                maxHeartRate: present(summary.heartRate.maximum).map(Int.init),
+                heartRates: intervalMs > 0 && !bpm.isEmpty ? WorkoutHeartRates(intervalMs: intervalMs, bpm: bpm) : nil,
+                fileSize: session.reference.fileSize,
+                unreadableFiles: unreadable
+            ),
+            files: files
+        )
+    }
+
+    /// The band's wall time in its own offset. A 0 offset (also when it gave none) while the phone's zone isn't at UTC is
+    /// read in the phone's zone. Nil without a date.
+    static func localDate(_ time: PbLocalDateTime, zone: TimeZone) -> (date: Date, offset: Int)? {
+        guard time.date.year > 0, time.date.month > 0, time.date.day > 0 else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let components = DateComponents(
+            year: Int(time.date.year), month: Int(time.date.month), day: Int(time.date.day),
+            hour: Int(time.time.hour), minute: Int(time.time.minute), second: Int(time.time.seconds),
+            nanosecond: Int(time.time.millis) * 1_000_000
+        )
+        guard let wall = calendar.date(from: components) else { return nil }
+        var offset = Int(time.timeZoneOffset) * 60
+        if offset == 0 {
+            offset = wallOffset(wall, in: zone)
+        }
+        return (wall.addingTimeInterval(TimeInterval(-offset)), offset)
+    }
+
+    private static func folder(_ exercise: PolarExercise) -> String {
+        exercise.path.split(separator: "/").last.map(String.init) ?? String(format: "%02d", exercise.index)
+    }
+
+    private static func fileName(_ type: PolarExerciseDataTypes) -> String {
+        switch type {
+        case .exerciseSummary: "BASE"
+        case .samples, .samplesGzip: "SAMPLES"
+        case .samplesAdvancedFormatGzip: "SAMPLES2"
+        case .route, .routeGzip: "ROUTE"
+        case .routeAdvancedFormat, .routeAdvancedFormatGzip: "ROUTE2"
+        }
+    }
+
+    private static func seconds(_ duration: PbDuration) -> Int {
+        Int(duration.hours) * 3600 + Int(duration.minutes) * 60 + Int(duration.seconds)
+    }
+
+    private static func present<T: BinaryInteger>(_ value: T) -> T? {
+        value == 0 ? nil : value
+    }
+
+    /// The offset a wall time (given as if it were UTC) had in `zone`: the earlier one in a repeated hour.
+    private static func wallOffset(_ wall: Date, in zone: TimeZone) -> Int {
+        let around = Set([zone.secondsFromGMT(for: wall.addingTimeInterval(-86400)), zone.secondsFromGMT(for: wall.addingTimeInterval(86400))])
+        return around.filter { zone.secondsFromGMT(for: wall.addingTimeInterval(TimeInterval(-$0))) == $0 }.max()
+            ?? zone.secondsFromGMT(for: wall)
+    }
 }

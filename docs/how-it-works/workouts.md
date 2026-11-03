@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Planned (`docs/plans/2026-11-03-workouts.md`, phases 1–5). Not built.
+**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, and read from the Loop with detection switched on. Not yet read on the real Loop. The route, settings, the screens, the headline and the chart blocks are planned.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 

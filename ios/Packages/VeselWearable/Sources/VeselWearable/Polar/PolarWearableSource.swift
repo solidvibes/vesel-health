@@ -9,6 +9,8 @@ public actor PolarWearableSource: WearableSource {
     private let bandEvents: PolarBandEvents
     private let clock: any VeselClock
     private var deviceId: String?
+    /// The band's workouts as last listed, by session, for reading one.
+    private var trainingSessions: [String: PolarTrainingSessionReference] = [:]
 
     public init(clock: any VeselClock) {
         var api = PolarBleApiDefaultImpl.polarImplementation(
@@ -24,6 +26,7 @@ public actor PolarWearableSource: WearableSource {
                 .feature_polar_online_streaming,
                 .feature_polar_device_control,
                 .feature_polar_file_transfer,
+                .feature_polar_training_data,
             ],
             restoreIdentifier: "app.vesel.ios.central"
         )
@@ -226,6 +229,46 @@ public actor PolarWearableSource: WearableSource {
     public func factoryReset() async throws {
         try await api.doFactoryReset(try ready())
         deviceId = nil
+    }
+
+    public func workoutDetection() async throws -> WorkoutDetection? {
+        let settings = try await api.getPolarUserDeviceSettings(identifier: try ready())
+        guard let mode = settings.automaticTrainingDetectionMode else { return nil }
+        return WorkoutDetection(
+            isOn: mode == .ON,
+            sensitivity: Int(settings.automaticTrainingDetectionSensitivity ?? 50),
+            minimumMinutes: Int((Double(settings.minimumTrainingDurationSeconds ?? 600) / 60).rounded())
+        )
+    }
+
+    /// Reads the band's settings and rewrites only training detection; never `setPolarUserDeviceSettings`, which rebuilds them.
+    public func setWorkoutDetection(_ detection: WorkoutDetection) async throws {
+        try await api.setAutomaticTrainingDetectionSettings(
+            try ready(), mode: detection.isOn, sensitivity: detection.sensitivity, minimumDuration: detection.minimumMinutes * 60
+        )
+    }
+
+    public func workoutStatus() async throws -> WorkoutStatus {
+        let info = try await api.getExerciseStatus(identifier: try ready())
+        return info.status == .inProgress || info.status == .paused ? .running(since: info.startTime) : .notRunning
+    }
+
+    public func workoutReferences() async throws -> [WorkoutReference] {
+        let references = try await api.getTrainingSessionReferences(identifier: try ready(), fromDate: nil, toDate: nil)
+        trainingSessions = [:]
+        return references.compactMap { reference in
+            guard let session = PolarMapping.workoutSession(reference.path) else { return nil }
+            trainingSessions[session] = reference
+            return WorkoutReference(
+                session: session, date: reference.date, fileSize: reference.fileSize, fileNames: PolarMapping.workoutFileNames(reference)
+            )
+        }
+    }
+
+    public func workout(_ reference: WorkoutReference) async throws -> BandWorkout {
+        guard let polar = trainingSessions[reference.session] else { throw WorkoutReadError.notListed }
+        let session = try await api.getTrainingSession(identifier: try ready(), trainingSessionReference: polar)
+        return try PolarMapping.workout(session, zone: clock.timeZone)
     }
 
     public func watchBand() async {

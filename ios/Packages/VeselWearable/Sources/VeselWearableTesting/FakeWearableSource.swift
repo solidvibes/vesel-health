@@ -40,13 +40,18 @@ public actor FakeWearableSource: WearableSource {
     public private(set) var sleepStatus: SleepRecordingStatus = .stopped
     /// Every call in order, for tests that check what happened when.
     public private(set) var calls: [String] = []
+    private var workouts: [BandWorkout]
+    /// The Loop's training detection; nil when it has none set.
+    public private(set) var detection: WorkoutDetection?
+    private var status: WorkoutStatus = .notRunning
+    private let now: @Sendable () -> Date
 
     /// `awayWait`: how long it keeps looking before saying it isn't nearby, at most the read's own wait. Zero in tests; the
     /// Simulator looks as long as the read waits, like the Loop. With an `uptime` (the same one the `BandSync` reads), its
     /// delays and hangs move that instead of taking real time.
     public init(
         scenario: FakeScenario, failure: FakeFailure? = nil, pairingDelay: Duration = .zero, liveInterval: Duration = .seconds(1),
-        awayWait: Duration = .zero, uptime: ManualUptime? = nil
+        awayWait: Duration = .zero, uptime: ManualUptime? = nil, now: @escaping @Sendable () -> Date = { Date() }
     ) throws {
         var stored: [FetchKind: [DayKey: BandPayload]] = [:]
         for kind in FetchKind.allCases {
@@ -61,7 +66,12 @@ public actor FakeWearableSource: WearableSource {
         self.liveInterval = liveInterval
         self.awayWait = awayWait
         self.uptime = uptime
+        self.now = now
+        workouts = [.firstDay, .firstNight].contains(scenario) ? [] : try Self.loadWorkouts()
         (events, eventContinuation) = AsyncStream.makeStream()
+        if scenario == .workoutRunning {
+            Task { await self.actOutWorkout() }
+        }
     }
 
     public var connectionState: ConnectionState {
@@ -195,6 +205,39 @@ public actor FakeWearableSource: WearableSource {
         calls.append("watchBand")
     }
 
+    public func workoutDetection() -> WorkoutDetection? {
+        calls.append("workoutDetection")
+        return detection
+    }
+
+    public func setWorkoutDetection(_ detection: WorkoutDetection) throws {
+        calls.append("setWorkoutDetection")
+        if failure == .workoutDetection { throw FakeBandError.refused }
+        self.detection = detection
+    }
+
+    public func workoutStatus() -> WorkoutStatus {
+        calls.append("workoutStatus")
+        return status
+    }
+
+    public func workoutReferences() -> [WorkoutReference] {
+        calls.append("workoutReferences")
+        return workouts.map { band in
+            WorkoutReference(
+                session: band.workout.session, date: band.workout.start, fileSize: band.workout.fileSize, fileNames: band.files.map(\.name)
+            )
+        }
+    }
+
+    public func workout(_ reference: WorkoutReference) throws -> BandWorkout {
+        calls.append("workout \(reference.session)")
+        guard let band = workouts.first(where: { $0.workout.session == reference.session }) else { throw WorkoutReadError.notListed }
+        if failure == .workoutTransfer, band.workout.bandSportId == nil { throw FakeBandError.disconnected }
+        if band.workout.durationSeconds == 0 { throw WorkoutReadError.unfinished }
+        return band
+    }
+
     /// A synthetic heart rate around 62 bpm, one reading per `liveInterval`.
     public func startLiveHeartRate() throws -> AsyncThrowingStream<LiveHeartRate, Error> {
         calls.append("startLiveHeartRate")
@@ -308,6 +351,48 @@ public actor FakeWearableSource: WearableSource {
         calls = []
     }
 
+    public func setDetection(_ detection: WorkoutDetection?) {
+        self.detection = detection
+    }
+
+    public func setWorkoutStatus(_ status: WorkoutStatus) {
+        self.status = status
+    }
+
+    /// Adds a workout to the band, or replaces the one with its session.
+    public func putWorkout(_ workout: BandWorkout) {
+        workouts.removeAll { $0.workout.session == workout.workout.session }
+        workouts.append(workout)
+    }
+
+    public var workoutSessions: [String] { workouts.map(\.workout.session) }
+
+    /// `workoutRunning`: the Loop starts a workout 5 s after launch and ends it 2 minutes later, then has it like the morning run.
+    private func actOutWorkout() async {
+        try? await Task.sleep(for: .seconds(5))
+        let start = now()
+        status = .running(since: start)
+        eventContinuation.yield(.workoutStarted(at: start))
+        try? await Task.sleep(for: .seconds(120))
+        let end = now()
+        status = .notRunning
+        if var band = workouts.last {
+            let format = Date.VerbatimFormatStyle(
+                format: "\(year: .defaultDigits)\(month: .twoDigits)\(day: .twoDigits)/\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased))\(minute: .twoDigits)\(second: .twoDigits)",
+                timeZone: Self.fixtureZone, calendar: Calendar(identifier: .gregorian)
+            )
+            band.workout.session = start.formatted(format)
+            band.workout.start = start
+            band.workout.end = end
+            band.workout.utcOffsetSeconds = Self.fixtureZone.secondsFromGMT(for: start)
+            band.workout.durationSeconds = Int(end.timeIntervalSince(start))
+            let seconds = band.workout.durationSeconds
+            band.workout.heartRates = band.workout.heartRates.map { WorkoutHeartRates(intervalMs: $0.intervalMs, bpm: Array($0.bpm.prefix(seconds))) }
+            workouts.append(band)
+        }
+        eventContinuation.yield(.workoutEnded(at: end))
+    }
+
     /// The scenario's own cut of the fixtures: the first nights only, or no sleep at all.
     private static func shaped(_ stored: [FetchKind: [DayKey: BandPayload]], for scenario: FakeScenario) throws -> [FetchKind: [DayKey: BandPayload]] {
         switch scenario {
@@ -393,6 +478,47 @@ public actor FakeWearableSource: WearableSource {
         fixtureZone.secondsFromGMT(for: day.start(in: fixtureZone).addingTimeInterval(12 * 3600))
     }
 
+    private struct WorkoutEntry: Decodable {
+        var session: String
+        var start: String
+        var utcOffsetSeconds: Int
+        var bandSportId: Int?
+        var durationSeconds: Int
+        var calories: Int
+        var cardioLoad: Double
+        var cardioLoadRating: Int
+        var trainingLoad: Double
+        var averageHeartRate: Int
+        var maxHeartRate: Int
+        var heartRates: WorkoutHeartRates
+        var fileSize: Int64
+        var files: [File]
+
+        struct File: Decodable {
+            var name: String
+            var data: Data
+        }
+    }
+
+    private static func loadWorkouts() throws -> [BandWorkout] {
+        guard let url = Bundle.module.url(forResource: "workouts", withExtension: "json", subdirectory: "Fixtures/normal") else {
+            throw FakeBandError.badFixture
+        }
+        return try JSONDecoder().decode([WorkoutEntry].self, from: Data(contentsOf: url)).map { entry in
+            let start = try Date(entry.start, strategy: .iso8601)
+            return BandWorkout(
+                workout: Workout(
+                    session: entry.session, start: start, end: start.addingTimeInterval(TimeInterval(entry.durationSeconds)),
+                    utcOffsetSeconds: entry.utcOffsetSeconds, bandSportId: entry.bandSportId, durationSeconds: entry.durationSeconds,
+                    calories: entry.calories, cardioLoad: entry.cardioLoad, cardioLoadRating: entry.cardioLoadRating,
+                    trainingLoad: entry.trainingLoad, averageHeartRate: entry.averageHeartRate, maxHeartRate: entry.maxHeartRate,
+                    heartRates: entry.heartRates, fileSize: entry.fileSize, unreadableFiles: []
+                ),
+                files: entry.files.map { WorkoutFile(name: $0.name, data: $0.data) }
+            )
+        }
+    }
+
     private struct Entry: Decodable {
         var day: DayKey
         var utcOffsetSeconds: Int
@@ -423,5 +549,6 @@ public actor FakeWearableSource: WearableSource {
 public enum FakeBandError: Error {
     case disconnected
     case badFixture
+    case refused
 }
 #endif

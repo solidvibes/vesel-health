@@ -58,7 +58,7 @@ struct LoopSettingsView: View {
                         ErrorCard(
                             title: "Band storage is filling up",
                             message:
-                                "Vesel clears what it has stored, up to the day before yesterday. Training sessions, sleep scores and skin-contact files aren't read by Vesel yet, so they stay on the band."
+                                "Vesel clears what it has stored, up to the day before yesterday. Vesel keeps your workouts on the Loop and doesn't read sleep scores and skin-contact files yet, so they stay on the band."
                         )
                     }
                     section("Alerts") {

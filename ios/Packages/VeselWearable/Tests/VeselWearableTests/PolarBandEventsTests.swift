@@ -1,5 +1,6 @@
 import Foundation
 @preconcurrency import PolarBleSdk
+import SwiftProtobuf
 import Testing
 @testable import VeselWearable
 
@@ -44,5 +45,28 @@ struct PolarBandEventsTests {
         #expect(event(.inactivityAlert) == .stillTooLong(at: now))
         #expect(event(.inactivityAlert, [0x08, 0x05]) == .checkIn)
         #expect(event(.inactivityAlert, [0x08]) == .checkIn)
+    }
+
+    /// The exercise notice's state (field 1: running 1, paused 2, off 3) and its start time (field 4).
+    @Test func exerciseNoticesStartAndEndAWorkout() throws {
+        let now = at("2026-10-29T10:00:00Z")
+        var start = PbLocalDateTime()
+        start.date.year = 2026
+        start.date.month = 10
+        start.date.day = 29
+        start.time.hour = 10
+        start.time.minute = 58
+        start.time.seconds = 0
+        start.time.millis = 0
+        start.timeZoneOffset = 60
+        let startBytes: [UInt8] = try start.serializedBytes()
+        func event(_ bytes: [UInt8]) -> BandEvent? {
+            PolarBandEvents.event(.exerciseStatus, parameters: Data(bytes), at: now)
+        }
+        #expect(event([0x08, 0x01, 0x22, UInt8(startBytes.count)] + startBytes) == .workoutStarted(at: at("2026-10-29T09:58:00Z")))
+        #expect(event([0x08, 0x01]) == .workoutStarted(at: now))
+        #expect(event([0x08, 0x03]) == .workoutEnded(at: now))
+        #expect(event([0x08, 0x02]) == .checkIn)
+        #expect(event([0xFF]) == .checkIn)
     }
 }

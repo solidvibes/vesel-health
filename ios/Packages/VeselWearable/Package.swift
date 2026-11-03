@@ -23,6 +23,8 @@ let package = Package(
                 "VeselCore",
                 "VeselStorage",
                 .product(name: "PolarBleSdk", package: "polar-ble-sdk"),
+                // For the workout files' `serializedBytes()`, kept as the SDK handed them over.
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ]
         ),
         .target(
@@ -37,6 +39,7 @@ let package = Package(
                 "VeselWearable",
                 "VeselWearableTesting",
                 .product(name: "PolarBleSdk", package: "polar-ble-sdk"),
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ]
         ),
     ]
