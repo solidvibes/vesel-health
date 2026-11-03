@@ -10,16 +10,17 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 ## How it works
 
 ### On the Loop
-- Vesel switches on the Loop's automatic training detection once: on the first read after this update, or after pairing. It keeps the Loop's own sensitivity and shortest workout if it has them, else Polar's defaults (sensitivity 50, 10 minutes). After that the band setting only changes from Workouts settings.
+- Vesel switches on the Loop's automatic training detection once: on the first read after this update, or after pairing (Forget this Loop resets this, so a new Loop gets it too). It keeps the Loop's own sensitivity and shortest workout if it has them, else what the Polar SDK writes when there are none (sensitivity 50, 10 minutes). After that the setting only changes from Workouts settings; the phone keeps a copy, so the screen never has to ask the Loop.
 - The Loop starts and ends a workout itself. No GPS, no tap. The Loop has no screen and Vesel can't start one.
-- Each finished workout is read on every read, and when the Loop says a workout started or ended (that notice also wakes a read, like a check-in). Read just after the Loop's sleep and daily summary parts, before the slow heart-rate and beat-to-beat downloads.
-- What is read: sport (if the Loop gave one), start, length, calories, Polar's training load, the Loop's heart rate during it (one reading every second or so), and distance and route if the band ever has them. Kept as it came off the band, plus a typed row.
-- A workout the Loop is still recording is not read until it ends. A workout whose files didn't all come back (the Polar SDK reports a failed file as missing) is read again next time.
+- Every read lists all workouts on the Loop and reads the ones Vesel doesn't have, or whose files changed size. The Loop saying a workout started or ended also wakes a read, like a check-in. Read after skin temperature, before the slow heart-rate and beat-to-beat downloads.
+- What is read: sport (if the Loop gave one), start, length, calories, Polar's training load and the Loop's heart rate during it. Every file is kept exactly as the Loop sent it (distance and route too, if it ever has them), plus a typed row with what the screens show.
+- Vesel asks the Loop whether a workout is running; that one isn't read until it ends. A workout that fails to come off the Loop is skipped and tried again on a later read (at most once an hour); the rest of the read carries on. A file that arrives but can't be read is noted and not fetched again unless the Loop's copy changes.
 - **Workouts stay on the Loop.** Vesel never deletes them. Only a factory reset (Forget this Loop) clears them; "Band storage is filling up" says workouts stay on the band.
 
 ### Route (phone GPS)
-- When the Loop says a workout started and **Record my route** is on and location is allowed ("Always"), the phone records its own location until the Loop says it ended (at most 6 hours). The route is joined to the Loop's workout by time; points outside the workout are dropped.
-- Points less exact than 25 m are dropped. Distance is the sum of the straight lines between the kept points; average speed is distance ÷ the workout's length.
+- When the Loop says a workout started and **Record my route** is on and location is allowed, the phone records its own location until the Loop says it ended (at most 6 hours, one point every 5 seconds). The route is joined to the Loop's workout by time; points outside the workout are dropped.
+- Location "Always" lets the route start from the Loop's notice with Vesel in the background. With "While using" it starts only when the workout begins while Vesel is open.
+- Points less exact than 25 m are dropped. Distance is the sum of the straight lines between the kept points; average speed is distance ÷ the time the route covers (first to last point). A route covering less than half the workout shows its distance and "Route covers 12 of 42 min", no speed, and isn't used to guess the sport.
 - If iOS doesn't let the phone start in time, the route starts late or not at all. The workout is complete without one. Whether a background start works is checked on the owner's iPhone.
 - In the Simulator, Features → Location → City Run or City Bicycle Ride plays a route while the fake band's workout runs.
 - The route stays on the phone and the Mac backup, like every reading. No place names are looked up.
@@ -27,11 +28,11 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 ### What a workout shows
 - **Sport**, first match:
   1. the Loop's own sport, when it gave one that isn't generic ("other indoor", "other outdoor" or none);
-  2. with a route: average speed over 13 km/h is cycling, else running ("guessed from speed");
+  2. with a route covering at least half the workout: average speed over 13 km/h is cycling, else running ("guessed from speed");
   3. no route: the sport you did most often within 2 hours of that time of day over the last 90 days, from workouts with a sport from the Loop or from you ("guessed from time of day");
   4. else "Workout".
   Guesses use only the sports switched on in Your sports. Ties go in the order Cycling, Running, Swimming, Strength.
-- **Your fix:** a guessed sport shows a chip "guessed from speed · change". Tapping it (or the sport) opens a sheet with your sports and "Not a workout". Your choice is kept and never replaced by a later read of the band. "Not a workout" hides it everywhere and its time counts for stress again.
+- **Your fix:** a guessed sport shows a chip "guessed from speed · change". Tapping it (or the sport) opens a sheet with your sports and "Not a workout". Your choice is kept and never replaced by a later read of the band. "Not a workout" hides it everywhere and its time counts for stress again, worked out at once.
 - **Effort:** Polar's training load for that workout (its cardio load; the older training-load number when the Loop gives only that), shown as Easy (under 60), Moderate (60–149) or Hard (150 and up), with the number. Tapping it shows where it came from: "Polar's training load for this workout: 87. Easy under 60, moderate 60–149, hard 150 and up." The cut-offs are provisional. No effort when the Loop gave no load.
 - **Heart rate:** average and highest, from the Loop's workout record; the chart is the Loop's own readings during the workout (the 24/7 heart rate if the workout file had none).
 - **Calories:** from the Loop.
@@ -46,7 +47,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 - **Body:** nothing.
 
 ### The Workout page
-Opened from a Journal card or Today's line. Top to bottom: the sport (with the guess chip) and the date and time ("Tue, Nov 3 · 07:10–07:52"); the route on a map with distance and average speed (only with a route); the heart-rate chart with average and highest (hold, then drag, to read); effort (word and number; tap for the source); calories; How it's worked out. No comparison with other workouts.
+Opened from a Journal card or Today's line. Top to bottom: the sport (with the guess chip) and the date and time ("Tue, Nov 3 · 07:10–07:52"); the route drawn as a line by Vesel (no map behind it, nothing fetched) with distance and average speed (only with a route); the heart-rate chart with average and highest (hold, then drag, to read); effort (word and number; tap for the source); calories; How it's worked out. No comparison with other workouts.
 
 ### Workouts settings
 Loop & settings → Workouts (a pushed screen):
@@ -59,10 +60,10 @@ Loop & settings → Workouts (a pushed screen):
 | Record my route | On | Phone |
 | Your sports: Running, Cycling, Swimming, Strength | All on | Phone (only for guesses and the fix sheet; the Loop has no sport list) |
 
-A band setting saves when you let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: turning it on asks iOS for location; if location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings.
+A band setting saves when you let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings.
 
 ### Stored and backed up
-- Tables: `workout` (typed, one per Loop workout, keyed by its start), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone.
+- Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone. No map service is used.
 - Worked out on read, not stored: sport guesses, effort words, distance and speed. Stress numbers that skip workouts are stored as before (`stress` version 3).
 
 ## Do / Don't
@@ -71,8 +72,10 @@ A band setting saves when you let go of the slider or pick a length: it waits fo
 - Don't replace the owner's fix with a band re-read.
 - Don't record location outside a workout the Loop started, and never log it.
 - Don't start a workout from Vesel (later, if ever).
+- Don't show the route on a map service without a decision: it would send the route's area to that service.
 
 ## Open questions
+- Show the route on Apple's map? Apple would receive the route's area (not the route or any health number). Owner's call; a decision first.
 - Does the Loop give a sport for workouts it noticed itself, and which ids for swimming and strength? Checked on the owner's Loop.
 - Does the Loop record distance or lengths when swimming? Decides the swimming case.
 - Does a background location start from the Loop's notice work? Checked on the owner's iPhone.

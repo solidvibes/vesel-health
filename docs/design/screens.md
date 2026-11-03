@@ -96,7 +96,7 @@ States: full; no sleep recorded (yet); sleep without a recharge score; learning 
 What it's for: one workout, explained. Opened from a Journal card or Today's workout line; pushed on that tab's stack. Not a signal page: no D · W · M · 3M, no comparison with other workouts.
 
 - Title: the sport word (opens what a workout means), and when it was guessed a chip beside it, "guessed from speed · change" or "guessed from time of day · change"; under it "Tue, Nov 3 · 07:10–07:52".
-- With a route: a 200 pt map with the route in workout purple (no places, no interaction), then "8.4 km · 11.9 km/h average" (mi and mph with US units).
+- With a route: the route drawn by Vesel as a purple line in a 200 pt box, with start and end dots and no map behind it (nothing is fetched), then "8.4 km · 11.9 km/h average" (mi and mph with US units); a route covering less than half the workout shows "Route covers 12 of 42 min" instead of the speed.
 - Heart rate: the workout's line (hold, then drag: "07:31 · 152 bpm"), then Average and Highest rows.
 - Effort: "Moderate · 87"; tap opens the meaning sheet with where the number came from. No row when the Loop gave no load.
 - Calories. For a swim, "Heart rate at the wrist is less exact in water."
@@ -117,7 +117,7 @@ States: full; learning (no band yet, the learning wording); no data yet ("Body s
 
 ## Loop & settings
 
-Opened from the round ring button at the end of the tab bar (pushed on Today's stack); back to Today. Band status (connection, battery). Sync: a "Syncing" row showing "Last read 9 hours ago" with a chevron (opens Syncing), Mac backup, band storage. Workouts (Planned): one row, "Workouts" with "On" or "Off", opening Workouts settings: Notice workouts by itself, Sensitivity (slider, "Fewer" … "More easily"), Shortest workout, Record my route (with "Location is off for Vesel in iOS Settings" and Open Settings when it is), Your sports (Running, Cycling, Swimming, Strength); a band change that didn't save shows the "Not saved" card. Alerts: low recovery, long high stress, unusual resting HR, morning sleep report (each a switch). Help: one row, "What things mean", opening the glossary list (every term, grouped Sleep · Recovery · Heart · Stress · About the readings; a row opens the meaning sheet). Mac backup settings. Forget this Loop (destructive). Sync now and its error card live on Syncing.
+Opened from the round ring button at the end of the tab bar (pushed on Today's stack); back to Today. Band status (connection, battery). Sync: a "Syncing" row showing "Last read 9 hours ago" with a chevron (opens Syncing), Mac backup, band storage. Workouts (Planned): one row, "Workouts" with "On" or "Off", opening Workouts settings: Notice workouts by itself, Sensitivity (slider, "Fewer" … "More easily"), Shortest workout, Record my route ("Needs location · Allow" until allowed, asking iOS only on that tap; "Location is off for Vesel in iOS Settings" and Open Settings when denied), Your sports (Running, Cycling, Swimming, Strength); a band change that didn't save shows the "Not saved" card. Alerts: low recovery, long high stress, unusual resting HR, morning sleep report (each a switch). Help: one row, "What things mean", opening the glossary list (every term, grouped Sleep · Recovery · Heart · Stress · About the readings; a row opens the meaning sheet). Mac backup settings. Forget this Loop (destructive). Sync now and its error card live on Syncing.
 
 ## Meaning sheet
 
@@ -176,6 +176,6 @@ flowchart LR
 - **iPhone · Vesel:** the main home of the data. Stores every reading, works out recovery, stress and baselines, runs widgets and alerts. Works anywhere.
 - **Your Mac at home (MacBook or Mac mini):** backup of everything and room for heavier analysis later. If it's off, nothing on the phone breaks.
 
-- **Planned (`docs/how-it-works/workouts.md`):** during a workout the Loop started, the iPhone records its own route with GPS (only with "Record my route" on and location allowed); the route goes only to the Mac with everything else. Showing it on a map fetches map pictures of that area from Apple (assumed; the route itself never leaves).
+- **Planned (`docs/how-it-works/workouts.md`):** during a workout the Loop started, the iPhone records its own route with GPS (only with "Record my route" on and location allowed); the route goes only to the Mac with everything else. Vesel draws it itself; no map service.
 
 No Polar cloud, no Apple cloud, no trackers.
