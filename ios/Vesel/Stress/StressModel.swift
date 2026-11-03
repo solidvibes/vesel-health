@@ -52,6 +52,15 @@ final class StressModel {
     /// The calm line's verdict for the day on screen; nil while it is being read.
     var shownCalm: LineVerdict? { loadedCalm.flatMap { $0.day == day ? $0.line : nil } }
 
+    /// The day's 3-minute readings with their levels; empty while learning.
+    private(set) var timeline: [StressReading] = []
+
+    func observeTimeline() async {
+        await reads.observe {
+            for try await value in database.observeStressReadings(from: day, through: day, clock: clock) { timeline = value }
+        }
+    }
+
     func observeWorkouts() async {
         await reads.observe {
             for try await value in database.observeWorkoutSpans(day: day, zone: zone) { workouts = value }

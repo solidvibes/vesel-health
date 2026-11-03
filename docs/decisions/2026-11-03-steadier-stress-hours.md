@@ -13,6 +13,7 @@ Wearing the Loop all day, the owner saw empty stress hours and bars that looked 
 - A reading is 3 minutes of clock time with at least 30 pairs of neighbouring clean beats, gathered from every session in those minutes. Only true neighbours count: a pair never spans a dropped beat.
 - The hourly bar is the hour's middle reading (median), and How it's worked out keeps the highest.
 - A worn hour with no reading says why: mostly movement, the band off the skin, exercise, a workout, or too few clean beats.
+- The Stress page draws every 3-minute reading as its own bar through the day, like Garmin's timeline, with real gaps where you moved. Journal's glance keeps the hourly bars. The owner asked for this after comparing with Garmin's stress screen.
 
 ## Why
 
