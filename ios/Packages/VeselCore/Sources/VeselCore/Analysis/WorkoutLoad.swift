@@ -53,7 +53,8 @@ public struct WorkoutLoad: Sendable, Equatable {
         case let load? where load.source == .cardioLoad:
             inputs.append(.init(name: "cardioLoad", value: load.number, unit: "load"))
             sentences.append(
-                "Cardio load \(NumberText.decimal(load.number, 0)) is Polar's own number for this workout, from your heart rate and its length, as the Loop gave it.")
+                "Cardio load \(NumberText.decimal(load.number, 0)) is Polar's own number for this workout, from your heart rate and its length, as the Loop gave it."
+            )
         case let load?:
             inputs.append(.init(name: "trainingLoad", value: load.number, unit: "load"))
             sentences.append(

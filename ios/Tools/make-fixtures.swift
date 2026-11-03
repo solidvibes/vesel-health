@@ -343,7 +343,8 @@ struct WorkoutFixture: Encodable {
     }
 }
 
-func workout(day: Int, hour: Int, minute: Int, minutes: Int, sport: Int?, steady: ClosedRange<Int>, calories: Int, load: Double, rating: Int) -> WorkoutFixture {
+func workout(day: Int, hour: Int, minute: Int, minutes: Int, sport: Int?, steady: ClosedRange<Int>, calories: Int, load: Double, rating: Int) -> WorkoutFixture
+{
     let dayStart = firstDay.addingTimeInterval(TimeInterval(day * 86400))
     let startSeconds = hour * 3600 + minute * 60
     let start = wallTime(dayStart, plusSeconds: startSeconds)
