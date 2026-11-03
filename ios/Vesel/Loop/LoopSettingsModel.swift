@@ -26,6 +26,8 @@ final class LoopSettingsModel {
     private(set) var connection: ConnectionState = .disconnected
     private(set) var lastRead: Date?
     private(set) var alerts = AlertSettings()
+    /// The Loop's training detection as last written; nil before the one-time switch-on.
+    private(set) var workoutDetection: WorkoutDetection?
     /// The owner said no to notifications in iOS: the switches can't reach them.
     private(set) var notificationsDenied = false
     var forget: ForgetStep?
@@ -83,6 +85,7 @@ final class LoopSettingsModel {
         lastRead = try? await database.lastSuccessfulSync()
         connection = await bandSync.connectionState()
         alerts = (try? await database.alertSettings()) ?? AlertSettings()
+        workoutDetection = try? await database.workoutDetection()
         notificationsDenied = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied
         if case .lost(nil) = forget { forget = .lost(lastRead: lastRead) }
         await readBackup()

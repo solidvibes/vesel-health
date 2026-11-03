@@ -111,4 +111,14 @@ struct WorkoutStorageTests {
         #expect(try await database.count("workout") == 1)
         #expect(try await database.count("workout_file") == 3)
     }
+
+    @Test func everySportIsOnUntilTheOwnerChanges() async throws {
+        #expect(try await database.workoutSports() == Set(WorkoutSport.allCases))
+
+        try await database.setWorkoutSports([.running, .strength])
+        #expect(try await database.workoutSports() == [.running, .strength])
+
+        try await database.setWorkoutSports([])
+        #expect(try await database.workoutSports().isEmpty)
+    }
 }

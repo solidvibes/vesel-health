@@ -61,6 +61,19 @@ struct LoopSettingsView: View {
                                 "Vesel clears what it has stored, up to the day before yesterday. Vesel keeps your workouts on the Loop and doesn't read sleep scores and skin-contact files yet, so they stay on the band."
                         )
                     }
+                    section("Workouts") {
+                        NavigationLink(value: TodayRoute.workoutSettings) {
+                            HStack(spacing: Theme.Spacing.s8) {
+                                ListRow(label: "Workouts", value: workoutsText)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Theme.Palette.mutedText)
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    }
                     section("Alerts") {
                         ForEach(Array(AlertKind.allCases.enumerated()), id: \.element) { index, kind in
                             if index > 0 { Divider() }
@@ -159,6 +172,11 @@ struct LoopSettingsView: View {
 
     private var lastReadText: String {
         model.lastRead.map { "Last read \(Formatters.ago($0, now: environment.clock.now))" } ?? "Not read yet"
+    }
+
+    private var workoutsText: String {
+        guard let detection = model.workoutDetection else { return "Not set up" }
+        return detection.isOn ? "On" : "Off"
     }
 
     private var backupText: String {

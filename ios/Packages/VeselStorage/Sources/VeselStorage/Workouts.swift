@@ -114,4 +114,20 @@ extension AppDatabase {
     public func storeWorkoutDetection(_ detection: WorkoutDetection) async throws {
         try await setSettings([Self.workoutDetectionKey: try StoredJSON.encode(detection), Self.workoutDetectionSetUpKey: "done"])
     }
+
+    // MARK: Workout settings on the phone
+
+    /// The sports guesses and the sport sheet may use (comma list of `WorkoutSport` raw values); absent means all. Not uploaded.
+    public static let workoutSportsKey = "workouts.sports"
+
+    /// The owner's sports; all of them until changed.
+    public func workoutSports() async throws -> Set<WorkoutSport> {
+        guard let value = try await setting(Self.workoutSportsKey) else { return Set(WorkoutSport.allCases) }
+        return Set(value.split(separator: ",").compactMap { WorkoutSport(rawValue: String($0)) })
+    }
+
+    public func setWorkoutSports(_ sports: Set<WorkoutSport>) async throws {
+        let value = WorkoutSport.allCases.filter(sports.contains).map(\.rawValue).joined(separator: ",")
+        try await setSettings([Self.workoutSportsKey: value])
+    }
 }

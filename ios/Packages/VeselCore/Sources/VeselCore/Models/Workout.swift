@@ -15,6 +15,16 @@ public enum WorkoutSport: String, CaseIterable, Sendable {
         default: return nil
         }
     }
+
+    /// The sport's name in Your sports and the sport sheet.
+    public var name: String {
+        switch self {
+        case .running: "Running"
+        case .cycling: "Cycling"
+        case .swimming: "Swimming"
+        case .strength: "Strength"
+        }
+    }
 }
 
 /// One workout the Loop recorded, keyed by its folder on the band ("20261103/071000"), which never changes for that workout.

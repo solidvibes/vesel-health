@@ -135,6 +135,23 @@ actor SyncPipeline {
         return saved
     }
 
+    /// A Workouts setting changed: once no sync is running, writes the Loop's training detection, then stores it. False when
+    /// the band didn't take it or iOS ended the time first; nothing is stored on the phone then.
+    func writeWorkoutDetection(_ detection: WorkoutDetection) async -> Bool {
+        let time = await BackgroundTime.begin("Save to your Loop", database: database) { [self] in expire() }
+        let task = Task { [self, bandSync, database] in
+            await idle()
+            try await bandSync.setWorkoutDetection(detection)
+            try Task.checkCancellation()
+            try await database.storeWorkoutDetection(detection)
+        }
+        writing = task
+        let saved = (try? await task.value) != nil
+        if writing == task { writing = nil }
+        await time.end()
+        return saved
+    }
+
     /// iOS is about to suspend Vesel: stop the sync (nothing gets cleared), the backup and a profile write that hasn't
     /// reached the band yet, and let go of the database.
     nonisolated func expire() {

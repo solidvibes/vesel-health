@@ -104,6 +104,7 @@ private struct MainTabs: View {
                         case .loopSettings: LoopSettingsView(environment: environment)
                         case .syncing: SyncingView(environment: environment)
                         case .meanings: WhatThingsMeanView()
+                        case .workoutSettings: WorkoutSettingsView(environment: environment)
                         #if DEBUG
                         case .bandDataReport: BandDataReportView(environment: environment)
                         #endif
@@ -188,6 +189,7 @@ enum TodayRoute: Hashable {
     case loopSettings
     case syncing
     case meanings
+    case workoutSettings
     #if DEBUG
     case bandDataReport
     #endif

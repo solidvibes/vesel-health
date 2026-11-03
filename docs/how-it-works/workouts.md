@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. The route recording, settings, the screens, the headline and the chart blocks are planned.
+**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. Workouts settings are built. The route recording, the screens, the headline and the chart blocks are planned.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 
@@ -55,12 +55,12 @@ Loop & settings → Workouts (a pushed screen):
 | Row | Default | Where it lives |
 |---|---|---|
 | Notice workouts by itself | On | The Loop (band first, then phone) |
-| Sensitivity, 0–100 (higher notices more easily) | The Loop's own, else 50 | The Loop |
+| Sensitivity, 0–100 in steps of 5, "Rarely" … "Easily" | The Loop's own, else 50 | The Loop |
 | Shortest workout, 5–60 min | The Loop's own, else 10 min | The Loop |
 | Record my route | On | Phone |
 | Your sports: Running, Cycling, Swimming, Strength | All on | Phone (only for guesses and the fix sheet; the Loop has no sport list) |
 
-A band setting saves when you let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings.
+A band setting saves when you flip the switch, let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings.
 
 ### Stored and backed up
 - Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone. Opening a workout page with a route fetches Apple's map tiles for that area; the route is drawn on the phone.
