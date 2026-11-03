@@ -25,11 +25,14 @@ extension AppDatabase {
     public static let sleepStatusKey = "band.sleepStatus"
 
     /// Forgets the band after its factory reset: everything still on it is gone, so its ledger rows count as cleared,
-    /// and what it last said about sleep no longer holds. History stays.
+    /// what it last said about sleep no longer holds, and the next Loop gets workout detection switched on. History stays.
     public func forgetBand(at date: Date) async throws {
         try await writer.write { db in
             _ = try BandRecord.deleteAll(db)
-            try db.execute(sql: "DELETE FROM setting WHERE key = ?", arguments: [Self.sleepStatusKey])
+            try db.execute(
+                sql: "DELETE FROM setting WHERE key IN (?, ?, ?)",
+                arguments: [Self.sleepStatusKey, Self.workoutDetectionSetUpKey, Self.workoutDetectionKey]
+            )
             try db.execute(sql: "UPDATE band_ledger SET deleted_from_band_at = ? WHERE deleted_from_band_at IS NULL", arguments: [date.unixSeconds])
         }
     }
@@ -480,6 +483,9 @@ public enum UploadTable: String, CaseIterable, Sendable {
     case rawExport = "raw_export"
     case computedMetric = "computed_metric"
     case alertEvent = "alert_event"
+    case workout
+    case workoutFile = "workout_file"
+    case workoutChoice = "workout_choice"
 
     fileprivate var alias: String { "t" }
 
@@ -530,6 +536,8 @@ public enum UploadTable: String, CaseIterable, Sendable {
             let hour: Int? = row["hour"]
             return [text("kind"), text("day"), hour.map(String.init)].compactMap { $0 }.joined(separator: "/")
         case .alertEvent: return "\(text("kind"))/\(text("day"))"
+        case .workout, .workoutChoice: return text("session")
+        case .workoutFile: return "\(text("session"))/\(text("name"))"
         }
     }
 }

@@ -200,6 +200,51 @@ extension AppDatabase {
         migrator.registerMigration("v6") { db in
             try db.execute(sql: "DELETE FROM setting WHERE key = 'alerts.morningReport'")
         }
+        // Workouts, keyed by the band's session folder. No foreign keys: the owner's choice outlives a re-read.
+        migrator.registerMigration("v7") { db in
+            try db.execute(
+                sql: """
+                    CREATE TABLE workout (
+                        session TEXT PRIMARY KEY,
+                        start_at INTEGER NOT NULL,
+                        end_at INTEGER NOT NULL,
+                        day TEXT NOT NULL,
+                        utc_offset_seconds INTEGER NOT NULL,
+                        band_sport_id INTEGER,
+                        duration_seconds INTEGER NOT NULL,
+                        calories INTEGER,
+                        cardio_load REAL,
+                        cardio_load_rating INTEGER,
+                        training_load REAL,
+                        hr_avg INTEGER,
+                        hr_max INTEGER,
+                        hr_json TEXT,
+                        file_size INTEGER NOT NULL,
+                        unreadable_files TEXT,
+                        stored_at INTEGER NOT NULL,
+                        uploaded_at INTEGER
+                    );
+                    CREATE INDEX workout_day ON workout(day);
+                    CREATE INDEX workout_start_at ON workout(start_at);
+
+                    CREATE TABLE workout_file (
+                        session TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        data BLOB NOT NULL,
+                        fetched_at INTEGER NOT NULL,
+                        uploaded_at INTEGER,
+                        PRIMARY KEY (session, name)
+                    );
+
+                    CREATE TABLE workout_choice (
+                        session TEXT PRIMARY KEY,
+                        sport TEXT,
+                        hidden INTEGER NOT NULL DEFAULT 0,
+                        chosen_at INTEGER NOT NULL,
+                        uploaded_at INTEGER
+                    );
+                    """)
+        }
         return migrator
     }
 }

@@ -22,7 +22,7 @@ Backup and room for heavier analysis later, with no cloud in between (decisions 
 
 ## What is sent
 - Every row of profile, sleep nights, Nightly Recharge, heart-rate, beat-to-beat and skin-temperature samples, activity days, the band's raw files, computed numbers and alerts that went out. Each row has its own key: the night, the day, the timestamp (a beat-to-beat session by its start), or kind/day for numbers and alerts.
-- Planned (`workouts.md`): workouts, their files as they came off the band, the owner's sport fixes and the phone's routes (`workout`, `workout_file`, `workout_choice`, `workout_route`), over the same pinned connection. The Mac menu counts "workouts" and "workout routes".
+- Workouts (`workouts.md`): each workout (`workout`, key: its folder on the Loop, "20261103/071000"), its files as they came off the band (`workout_file`, key: folder/file name, the bytes as base64) and the owner's sport fixes (`workout_choice`, key: the folder), over the same pinned connection. The Mac menu counts "workouts" and "workout routes". Planned: the phone's routes (`workout_route`).
 - Not sent: the band's details, the band ledger, sync runs and settings. An alert still due at 07:00 waits until it has gone out (it may still be dropped).
 - A row is sent again when it changes on the phone. A row marked as backed up is exactly one the Mac acknowledged and that hadn't changed since it was read.
 - Deleted rows are not removed from the Mac: format v1 has no deletions. A computed number the phone drops (its input went away) stays in the backup as it last was; the phone's numbers can always be worked out again from the stored readings.
