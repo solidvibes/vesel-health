@@ -36,6 +36,33 @@ enum StressInputs {
             .map(\.model)
     }
 
+    /// The workouts overlapping `day` in `zone` that count for stress: the owner's hidden ones ("Not a workout") are left out.
+    static func workouts(_ db: Database, day: DayKey, zone: TimeZone) throws -> [DateInterval] {
+        try Row.fetchAll(
+            db,
+            sql: """
+                SELECT w.start_at, w.end_at FROM workout AS w LEFT JOIN workout_choice AS c ON c.session = w.session
+                WHERE w.start_at < ? AND w.end_at > ? AND IFNULL(c.hidden, 0) = 0 ORDER BY w.start_at
+                """,
+            arguments: [day.adding(days: 1).start(in: zone).unixSeconds, day.start(in: zone).unixSeconds]
+        ).map { row in
+            let start = Date(unixSeconds: row["start_at"])
+            return DateInterval(start: start, end: max(start, Date(unixSeconds: row["end_at"])))
+        }
+    }
+
+    /// When the workouts overlapping `day` in `zone`, or the owner's fixes to them, last changed; nil with none.
+    static func workoutsChangedAt(_ db: Database, day: DayKey, zone: TimeZone) throws -> Int64? {
+        try Int64.fetchOne(
+            db,
+            sql: """
+                SELECT MAX(MAX(w.stored_at, IFNULL(c.chosen_at, 0))) FROM workout AS w LEFT JOIN workout_choice AS c ON c.session = w.session
+                WHERE w.start_at < ? AND w.end_at > ?
+                """,
+            arguments: [day.adding(days: 1).start(in: zone).unixSeconds, day.start(in: zone).unixSeconds]
+        )
+    }
+
     /// What counts as exercise: resting heart rate + 40 % of the reserve, from the latest nightly resting heart rate up to a day and 220 − age.
     struct ActivityLimits {
         let birthYear: Int?
@@ -94,7 +121,8 @@ extension AppDatabase {
             let found = Stress.windows(
                 sessions: try StressInputs.sessions(db, day: day),
                 heartRates: try StressInputs.heartRates(db, day: day, zone: zone),
-                activityHeartRate: limits.heartRate(on: day)
+                activityHeartRate: limits.heartRate(on: day),
+                workouts: try StressInputs.workouts(db, day: day, zone: zone)
             )
             readings += found.windows.filter { $0.start <= now }.map {
                 StressReading(start: $0.start, rmssd: $0.rmssd, level: baseline.level(of: $0.value), baseline: baseline)

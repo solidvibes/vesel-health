@@ -22,4 +22,4 @@ What we test: health formulas with written-out expected numbers, migrations, the
 - The fake band and its fixtures live in `VeselWearableTesting`, compiled only under `VESEL_FAKE_BAND` (Debug). App code imports it only under `#if DEBUG`. The Release guard in `ios/project.yml` ("Leave the fake band out of Release") must stay.
 - Changing how an analysis works bumps its method version (stored in `computed_metric`); the next read recomputes every night stored under the old version.
 - A stress level worked out outside `StressUpdater` uses that day's stored baseline and floor, never a new baseline, and re-reads when the stored `stress.readings` rows change.
-- Stress tests always include a flagged-sample (blocker or no skin contact) case and a high-activity case.
+- Stress tests always include a flagged-sample (blocker or no skin contact) case, a high-activity case and a reading inside a workout.

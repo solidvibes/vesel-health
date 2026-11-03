@@ -11,7 +11,8 @@ struct StressUpdater {
     let clock: any VeselClock
 
     /// Recent days with beats, days with beats but no numbers yet, days whose beats or heart rates were stored after
-    /// their numbers (a sync re-read them), and days stored under an older method version.
+    /// their numbers (a sync re-read them), days whose workouts or the owner's fixes to them changed after their numbers,
+    /// and days stored under an older method version.
     func touchedDays(_ db: Database, today: DayKey) throws -> Set<DayKey> {
         let withBeats = try StressInputs.daysWithBeats(db)
         let recent = today.adding(days: -(Self.recentDays - 1))
@@ -31,12 +32,39 @@ struct StressUpdater {
                     AND ledger.day IN (SELECT day FROM ppi_session)
                 """, arguments: [MetricKind.stressReadings, FetchKind.ppi.rawValue, FetchKind.heartRate.rawValue])
         touched.formUnion(late.compactMap(DayKey.init))
+        touched.formUnion(try workoutDays(db, withBeats: withBeats))
         let stale = try String.fetchAll(
             db, sql: "SELECT DISTINCT day FROM computed_metric WHERE method = ? AND method_version <> ?",
             arguments: [Stress.method, Stress.version]
         )
         touched.formUnion(stale.compactMap(DayKey.init))
         return touched
+    }
+
+    /// Days with beats and numbers that a workout overlaps, where the workout or the owner's fix changed after the numbers.
+    private func workoutDays(_ db: Database, withBeats: Set<DayKey>) throws -> Set<DayKey> {
+        let computed = Dictionary(
+            uniqueKeysWithValues: try Row.fetchAll(
+                db, sql: "SELECT day, computed_at FROM computed_metric WHERE kind = ? AND hour IS NULL", arguments: [MetricKind.stressReadings]
+            ).compactMap { row in DayKey(row["day"] as String).map { ($0, row["computed_at"] as Int64) } })
+        var days: Set<DayKey> = []
+        let zone = clock.timeZone
+        for row in try Row.fetchAll(
+            db,
+            sql: """
+                SELECT w.start_at, w.end_at, MAX(w.stored_at, IFNULL(c.chosen_at, 0)) AS changed_at
+                FROM workout AS w LEFT JOIN workout_choice AS c ON c.session = w.session
+                """)
+        {
+            let changedAt: Int64 = row["changed_at"]
+            var day = DayKey(Date(unixSeconds: row["start_at"]), in: zone)
+            let last = DayKey(Date(unixSeconds: row["end_at"]), in: zone)
+            while day <= last {
+                if withBeats.contains(day), let computedAt = computed[day], computedAt < changedAt { days.insert(day) }
+                day = day.adding(days: 1)
+            }
+        }
+        return days
     }
 
     /// Recomputes `days` and every later day within 14 days that has beats, since their baseline includes these.
@@ -57,7 +85,8 @@ struct StressUpdater {
                 var found = Stress.windows(
                     sessions: try StressInputs.sessions(db, day: day),
                     heartRates: try StressInputs.heartRates(db, day: day, zone: clock.timeZone),
-                    activityHeartRate: limits.heartRate(on: day)
+                    activityHeartRate: limits.heartRate(on: day),
+                    workouts: try StressInputs.workouts(db, day: day, zone: clock.timeZone)
                 )
                 // A reading can't be from the future (the clock can be moved back in the Simulator).
                 found.windows.removeAll { $0.start > now }
@@ -73,13 +102,17 @@ struct StressUpdater {
             let outcome = StressBaseline.make(before: day, valuesByDay: values)
             let metrics = Stress.metrics(day: day, windows: found.windows, counts: found.counts, baseline: outcome, computedAt: now)
             for metric in metrics { try ComputedMetricRecord(metric).upsert(db) }
-            // Unchanged numbers keep their old time; worked out again now, they count as newer than the readings they used.
+            // Unchanged numbers keep their old time; worked out again now, they count as newer than the readings and workouts they used.
+            let workoutsChangedAt = try StressInputs.workoutsChangedAt(db, day: day, zone: clock.timeZone) ?? 0
             try db.execute(
                 sql: """
                     UPDATE computed_metric SET computed_at = ? WHERE kind = ? AND day = ? AND hour IS NULL
-                        AND computed_at < (SELECT MAX(stored_at) FROM band_ledger WHERE day = ? AND fetch_kind IN (?, ?))
+                        AND computed_at < MAX(IFNULL((SELECT MAX(stored_at) FROM band_ledger WHERE day = ? AND fetch_kind IN (?, ?)), 0), ?)
                     """,
-                arguments: [now.unixSeconds, MetricKind.stressReadings, day.description, day.description, FetchKind.ppi.rawValue, FetchKind.heartRate.rawValue])
+                arguments: [
+                    now.unixSeconds, MetricKind.stressReadings, day.description, day.description, FetchKind.ppi.rawValue, FetchKind.heartRate.rawValue,
+                    workoutsChangedAt,
+                ])
             // An hour or total that is no longer produced goes too.
             let kept = Set(metrics.map { "\($0.kind)/\($0.hour ?? -1)" })
             for row in try Row.fetchAll(

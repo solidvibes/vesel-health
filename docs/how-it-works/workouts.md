@@ -1,6 +1,6 @@
 # Workouts
 
-**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, and read from the Loop with detection switched on. Not yet read on the real Loop. The route, settings, the screens, the headline and the chart blocks are planned.
+**Status:** Partly built (`docs/plans/2026-11-03-workouts.md`): stored and backed up, read from the Loop with detection switched on, stress skips them, and the sport, load and route are worked out in VeselCore. Not yet read on the real Loop. The route recording, settings, the screens, the headline and the chart blocks are planned.
 
 > Your Loop notices a workout by itself. Vesel reads it, shows it on the day, and uses it to explain your heart rate, stress and recovery.
 

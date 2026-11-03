@@ -47,20 +47,22 @@ public struct StressCounts: Sendable, Equatable {
     public var outsideDaytime = 0
     public var tooFewIntervals = 0
     public var duringActivity = 0
+    public var duringWorkout = 0
     public var windows = 0
 
     public init() {}
 }
 
-/// Daytime stress from the band's beat-to-beat (PPI) sessions (`stress`, version 2). The rules are in `docs/how-it-works/stress.md`.
+/// Daytime stress from the band's beat-to-beat (PPI) sessions (`stress`, version 3: readings inside a workout are skipped).
+/// The rules are in `docs/how-it-works/stress.md`.
 public enum Stress {
     public static let method = "stress"
-    public static let version = 2
+    public static let version = 3
 
     /// The daytime readings of `sessions`, with the count of what was left out and why.
     /// `activityHeartRate` is resting + 40 % of the reserve; nil when either is unknown, and then only the band's own
-    /// high-activity marks count.
-    public static func windows(sessions: [PPISession], heartRates: [HeartRateSample], activityHeartRate: Double?) -> (
+    /// high-activity marks count. A reading that overlaps one of `workouts` (the owner's hidden ones left out) is skipped.
+    public static func windows(sessions: [PPISession], heartRates: [HeartRateSample], activityHeartRate: Double?, workouts: [DateInterval]) -> (
         windows: [StressWindow], counts: StressCounts
     ) {
         var counts = StressCounts()
@@ -90,6 +92,11 @@ public enum Stress {
                 let beats = bySlice[index] ?? []
                 guard beats.count >= StressThresholds.minimumIntervals else {
                     counts.tooFewIntervals += 1
+                    continue
+                }
+                let readingEnd = start.addingTimeInterval(seconds)
+                guard !workouts.contains(where: { $0.start < readingEnd && $0.end > start }) else {
+                    counts.duringWorkout += 1
                     continue
                 }
                 let from = start.addingTimeInterval(-StressThresholds.activityMarginSeconds)
@@ -170,6 +177,7 @@ public enum Stress {
             .init(name: "outsideDaytime", value: Double(counts.outsideDaytime), unit: "readings"),
             .init(name: "tooFewBeats", value: Double(counts.tooFewIntervals), unit: "readings"),
             .init(name: "duringExercise", value: Double(counts.duringActivity), unit: "readings"),
+            .init(name: "duringWorkout", value: Double(counts.duringWorkout), unit: "readings"),
         ]
         var ready: StressBaseline?
         let learning: String
@@ -193,7 +201,7 @@ public enum Stress {
         var result = [
             metric(
                 MetricKind.stressReadings, Double(windows.count), "readings", inputs: inputs,
-                "\(windows.count) clean readings between \(pad(StressThresholds.daytimeHours.lowerBound)):00 and \(pad(StressThresholds.daytimeHours.upperBound)):00. Of \(cleaning.intervals) beats, \(cleaning.flagged) were flagged by the band (movement or no skin contact), \(cleaning.outOfRange) were outside \(StressThresholds.minimumIntervalMs)–\(StressThresholds.maximumIntervalMs) ms and \(cleaning.jumps) jumped more than \(NumberText.decimal(StressThresholds.maximumJump * 100, 0)) % from the one before. A reading is up to \(NumberText.decimal(StressThresholds.windowSeconds, 0)) seconds with at least \(StressThresholds.minimumIntervals) clean beats; \(counts.tooFewIntervals) had fewer and \(counts.duringActivity) were skipped as exercise. \(learning)"
+                "\(windows.count) clean readings between \(pad(StressThresholds.daytimeHours.lowerBound)):00 and \(pad(StressThresholds.daytimeHours.upperBound)):00. Of \(cleaning.intervals) beats, \(cleaning.flagged) were flagged by the band (movement or no skin contact), \(cleaning.outOfRange) were outside \(StressThresholds.minimumIntervalMs)–\(StressThresholds.maximumIntervalMs) ms and \(cleaning.jumps) jumped more than \(NumberText.decimal(StressThresholds.maximumJump * 100, 0)) % from the one before. A reading is up to \(NumberText.decimal(StressThresholds.windowSeconds, 0)) seconds with at least \(StressThresholds.minimumIntervals) clean beats; \(counts.tooFewIntervals) had fewer, \(counts.duringWorkout) were inside workouts and \(counts.duringActivity) were skipped as exercise. \(learning)"
             )
         ]
         guard let ready else { return result }

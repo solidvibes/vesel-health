@@ -7,8 +7,10 @@ struct StressTests {
     let tenOClock = "2026-10-26T09:00:00Z"
     let baseline = StressBaseline(baseline: 2.72, floor: 2.0, days: 7, windows: 70)
 
-    func windows(_ sessions: [PPISession], heartRates: [HeartRateSample] = [], limit: Double? = nil) -> (windows: [StressWindow], counts: StressCounts) {
-        Stress.windows(sessions: sessions, heartRates: heartRates, activityHeartRate: limit)
+    func windows(_ sessions: [PPISession], heartRates: [HeartRateSample] = [], limit: Double? = nil, workouts: [DateInterval] = []) -> (
+        windows: [StressWindow], counts: StressCounts
+    ) {
+        Stress.windows(sessions: sessions, heartRates: heartRates, activityHeartRate: limit, workouts: workouts)
     }
 
     @Test func aReadingIsTheRMSSDOfItsCleanBeats() throws {
@@ -87,6 +89,29 @@ struct StressTests {
         #expect(windows([session(alternating(30))], heartRates: [later]).windows.count == 1)
     }
 
+    @Test func readingsInsideAWorkoutAreSkipped() throws {
+        // The reading runs 09:00:00 to 09:00:30.6. A workout ending 10 s into it overlaps; one ending as it starts, or
+        // starting after it ends, doesn't.
+        func workout(_ start: String, _ end: String) -> DateInterval { DateInterval(start: at(start), end: at(end)) }
+        let inside = windows([session(alternating(30))], workouts: [workout("2026-10-26T08:30:00Z", "2026-10-26T09:00:10Z")])
+        #expect(inside.windows.isEmpty)
+        #expect(inside.counts.duringWorkout == 1)
+        #expect(windows([session(alternating(30))], workouts: [workout("2026-10-26T08:30:00Z", "2026-10-26T09:00:00Z")]).windows.count == 1)
+        #expect(windows([session(alternating(30))], workouts: [workout("2026-10-26T09:00:31Z", "2026-10-26T10:00:00Z")]).windows.count == 1)
+        // Inside a workout and at a high-activity heart rate: counted once, as the workout.
+        let alsoActive = windows(
+            [session(alternating(30))], heartRates: [HeartRateSample(time: at("2026-10-26T09:00:10Z"), bpm: 150, trigger: .highActivity)],
+            workouts: [workout("2026-10-26T08:30:00Z", "2026-10-26T09:30:00Z")])
+        #expect(alsoActive.counts.duringWorkout == 1)
+        #expect(alsoActive.counts.duringActivity == 0)
+
+        let metrics = Stress.metrics(
+            day: day("2026-10-26"), windows: inside.windows, counts: inside.counts, baseline: .learning(days: 4), computedAt: at("2026-10-26T12:00:00Z"))
+        let readings = try #require(metrics.first)
+        #expect(readings.explanation.inputs.first { $0.name == "duringWorkout" }?.value == 1)
+        #expect(readings.explanation.text.contains("1 were inside workouts"))
+    }
+
     @Test func aHeartRateAboveRestingPlusFortyPercentOfTheReserveIsExercise() {
         // The limit is passed in: resting 55, max 185, reserve 130, 55 + 0.4 × 130 = 107.
         let limit = 55 + StressThresholds.activityReserveShare * 130
@@ -154,7 +179,7 @@ struct StressTests {
         let now = try #require(byKey["stress.now/-1"])
         #expect(now.value == 0)
         #expect(now.explanation.method == "stress")
-        #expect(now.explanation.version == 2)
+        #expect(now.explanation.version == 3)
         let busiest = try #require(byKey["stress.busiestSpan/-1"].flatMap(StressSpan.init))
         #expect(busiest.minutes == 15)
         #expect(busiest.start == at("2026-10-26T09:30:00Z"))

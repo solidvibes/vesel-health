@@ -10,8 +10,12 @@ struct GlossaryTests {
         #expect(meaning.sections.first?.text.isEmpty == false)
     }
 
-    @Test func nineteenTerms() {
-        #expect(Term.allCases.count == 19)
+    @Test func twentyOneTerms() {
+        #expect(Term.allCases.count == 21)
+    }
+
+    @Test func workoutsSitWithMovement() {
+        #expect(Glossary.groups.first { $0.title == "Movement" }?.terms == [.steps, .workout, .cardioLoad])
     }
 
     @Test func heartGroupHoldsFitnessAndVO2max() {

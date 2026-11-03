@@ -6,6 +6,7 @@ public enum Term: String, CaseIterable, Sendable, Hashable {
     case hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature
     case recovery, usualRange, stress, highStress, heartRate, howTheBandKnows
     case heartFitness, vo2max, steps
+    case workout, cardioLoad
 }
 
 /// What one term means, in reading order. Written once, here; screens add only their own number for the day shown.
@@ -41,7 +42,7 @@ public enum Glossary {
         Group(title: "Recovery", terms: [.recovery, .hrv, .breathing, .skinTemperature]),
         Group(title: "Heart", terms: [.heartRate, .restingHeartRate, .lowestHeartRate, .heartFitness, .vo2max]),
         Group(title: "Stress", terms: [.stress, .highStress]),
-        Group(title: "Movement", terms: [.steps]),
+        Group(title: "Movement", terms: [.steps, .workout, .cardioLoad]),
         Group(title: "About the readings", terms: [.usualRange, .howTheBandKnows]),
     ]
 
@@ -66,6 +67,8 @@ public enum Glossary {
         case .heartFitness: heartFitness
         case .vo2max: vo2max
         case .steps: steps
+        case .workout: workout
+        case .cardioLoad: cardioLoad
         }
     }
 
@@ -384,6 +387,44 @@ public enum Glossary {
         ],
         howTheBandKnows:
             "The Loop counts steps from the movement of your wrist. Arm movement without walking, or a day without the Loop, can make a count too high or too low. Vesel shows the total as it was when it last read your band, so today's number lags.",
+        workedOut: nil
+    )
+
+    private static let workout = Meaning(
+        term: .workout, title: "Workout",
+        sections: [
+            .init(
+                "What it is",
+                "A stretch of exercise your Loop noticed by itself, from a raised heart rate and movement that lasted at least your shortest workout. It has a start, an end, your heart rate during it, calories and Polar's load."
+            ),
+            .init("Good or bad", "Neither. It is a record of what you did, not a goal to reach."),
+            .init(
+                "What it explains",
+                "A higher heart rate while it lasts, stress readings left out during it, and sometimes lower recovery the next morning."),
+            .init(
+                "The sport",
+                "From the Loop when it gave one. Otherwise Vesel guesses from your route's speed or from the sport you usually do at that time of day, and says it guessed. You can change it, or say it wasn't a workout."
+            ),
+        ],
+        howTheBandKnows:
+            "The Loop notices a workout from your heart rate and movement and records it until you slow down. It needs no phone and no GPS; the route, if any, comes from your iPhone.",
+        workedOut: nil
+    )
+
+    private static let cardioLoad = Meaning(
+        term: .cardioLoad, title: "Cardio load",
+        sections: [
+            .init("What it is", "Polar's number for how much one workout strained your heart, from your heart rate during it and how long it lasted."),
+            .init("Good or bad", "Neither. A harder or longer workout gives a higher number; it is not a score to beat."),
+            .init(
+                "A lot or a little",
+                "Polar compares each workout's load with your last 90 days and rates it 1 to 5. Vesel shows Polar's word for that rating only once it has been checked against Polar's own app."
+            ),
+            .init("What's normal", "It depends on you: the same run is a bigger load for someone less used to it."),
+            .init("What affects it", "How hard and how long you go, your fitness, heat, tiredness and illness."),
+        ],
+        howTheBandKnows:
+            "The Loop works it out itself at the end of the workout. Vesel keeps the number as the Loop gave it and never adds workouts up over days or weeks.",
         workedOut: nil
     )
 
