@@ -59,6 +59,8 @@ struct PolarBandEventsTests {
         start.time.seconds = 0
         start.time.millis = 0
         start.timeZoneOffset = 60
+        // Required by the proto; the Loop always sends it.
+        start.obsoleteTrusted = true
         let startBytes: [UInt8] = try start.serializedBytes()
         func event(_ bytes: [UInt8]) -> BandEvent? {
             PolarBandEvents.event(.exerciseStatus, parameters: Data(bytes), at: now)

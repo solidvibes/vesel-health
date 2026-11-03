@@ -67,7 +67,8 @@ final class RouteRecorder {
     }
 
     private func received(_ location: CLLocation) async {
-        guard var route, location.horizontalAccuracy >= 0 else { return }
+        // iOS may hand over a fix from before the workout first: never keep one.
+        guard var route, location.horizontalAccuracy >= 0, location.timestamp >= route.start else { return }
         if let last = route.points.last, location.timestamp.timeIntervalSince(last.time) < WorkoutThresholds.routePointSeconds { return }
         route.points.append(
             RoutePoint(

@@ -27,7 +27,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 
 ### What a workout shows
 - **Sport**, first match:
-  1. the Loop's own sport, when it gave one that isn't generic ("other indoor", "other outdoor" or none);
+  1. your fix (below), else the Loop's own sport, when it is one Vesel knows (running or cycling for now; others are added after the check on the real Loop);
   2. with a route covering at least half the workout: average speed over 13 km/h is cycling, else running ("guessed from speed");
   3. no route: the sport you did most often within 2 hours of that time of day over the last 90 days, from workouts with a sport from the Loop or from you ("guessed from time of day");
   4. else "Workout".

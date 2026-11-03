@@ -118,6 +118,26 @@ struct BandSyncWorkoutTests {
         #expect(try await storedSessions() == [ride, run])
     }
 
+    /// A workout read the watchdog stops ends that read; the next one skips it for an hour and reaches heart rate.
+    @Test func aStuckWorkoutReadDoesNotHoldBackTheNextReadsHeartRate() async throws {
+        let uptime = ManualUptime()
+        let band = try FakeWearableSource(scenario: .normal, uptime: uptime)
+        let limits = ReadLimits(
+            tapWait: .milliseconds(500), backgroundWait: .milliseconds(500), stuckCall: .milliseconds(50), backlogCall: .milliseconds(50),
+            awayGrace: .seconds(2), tick: .milliseconds(10))
+        let sync = BandSync(band: band, database: database, clock: clock, limits: limits, uptime: { uptime.now })
+        await band.hangNext("workout \(ride)", for: .milliseconds(500))
+        #expect(await sync.sync(.manual) != .success)
+
+        await band.clearCalls()
+        clock.set("2026-10-26T07:30:00Z")
+        #expect(await sync.sync(.manual) == .success)
+        let calls = await band.calls
+        #expect(!calls.contains("workout \(ride)"))
+        #expect(calls.contains("fetch heartRate"))
+        await band.answerHangs()
+    }
+
     @Test func anUnfinishedWorkoutIsSkipped() async throws {
         await sync.sync(.manual)
         var workout = try #require(try await database.workouts(day: day("2026-10-25")).first).workout

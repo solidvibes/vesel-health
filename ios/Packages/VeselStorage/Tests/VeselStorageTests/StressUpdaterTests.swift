@@ -325,6 +325,26 @@ struct StressUpdaterTests {
         #expect(try await !database.writer.read { try stress.touchedDays($0, today: day("2026-10-08")) }.contains(day("2026-10-02")))
     }
 
+    /// A workout ending at midnight belongs to its own day only: the next day is never picked again and again.
+    @Test func aWorkoutEndingAtMidnightLeavesTheNextDayAlone() async throws {
+        try await storeEarlierDays(1...7)
+        try await storeToday()
+        try await updater.updateAfterSync()
+        // 23:00 to 24:00 local on 2 October.
+        let start = at("2026-10-02T21:00:00Z")
+        try await database.save(
+            BandWorkout(
+                workout: Workout(
+                    session: "20261002/230000", start: start, end: start.addingTimeInterval(3600), utcOffsetSeconds: 7200, bandSportId: nil,
+                    durationSeconds: 3600, calories: nil, cardioLoad: nil, cardioLoadRating: nil, trainingLoad: nil, averageHeartRate: nil,
+                    maxHeartRate: nil, heartRates: nil, fileSize: 1, unreadableFiles: []
+                ), files: []), storedAt: at("2026-10-08T13:00:00Z"))
+        let later = FixedClock(now: at("2026-10-08T14:00:00Z"), timeZone: berlin)
+        let touched = try await database.writer.read { try StressUpdater(clock: later).touchedDays($0, today: day("2026-10-08")) }
+        #expect(touched.contains(day("2026-10-02")))
+        #expect(!touched.contains(day("2026-10-03")))
+    }
+
     @Test func theTodayScreenAndTheStressScreenReadTheStoredNumbers() async throws {
         try await storeEarlierDays(1...7)
         try await storeToday()

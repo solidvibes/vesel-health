@@ -230,8 +230,9 @@ public actor FakeWearableSource: WearableSource {
         }
     }
 
-    public func workout(_ reference: WorkoutReference) throws -> BandWorkout {
+    public func workout(_ reference: WorkoutReference) async throws -> BandWorkout {
         calls.append("workout \(reference.session)")
+        await hangIfAsked("workout \(reference.session)")
         guard let band = workouts.first(where: { $0.workout.session == reference.session }) else { throw WorkoutReadError.notListed }
         if failure == .workoutTransfer, band.workout.bandSportId == nil { throw FakeBandError.disconnected }
         if band.workout.durationSeconds == 0 { throw WorkoutReadError.unfinished }
@@ -275,7 +276,7 @@ public actor FakeWearableSource: WearableSource {
         dayDelay = delay
     }
 
-    /// The next call starting with `call` ("fetch", "fetch ppi", "sleepRecordingStatus", "endSleepRecording") doesn't
+    /// The next call starting with `call` ("fetch", "fetch ppi", "sleepRecordingStatus", "endSleepRecording", "workout <session>") doesn't
     /// answer until `answerHangs()` and ignores being stopped, like an SDK call that hangs. `duration` passes on the uptime.
     public func hangNext(_ call: String, for duration: Duration = .zero) {
         hanging = (call, duration)

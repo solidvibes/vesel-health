@@ -57,8 +57,11 @@ struct StressUpdater {
                 """)
         {
             let changedAt: Int64 = row["changed_at"]
-            var day = DayKey(Date(unixSeconds: row["start_at"]), in: zone)
-            let last = DayKey(Date(unixSeconds: row["end_at"]), in: zone)
+            let startAt: Int64 = row["start_at"]
+            let endAt: Int64 = row["end_at"]
+            var day = DayKey(Date(unixSeconds: startAt), in: zone)
+            // A workout ending at midnight doesn't reach the next day (the same overlap `StressInputs` uses).
+            let last = DayKey(Date(unixSeconds: max(startAt, endAt - 1)), in: zone)
             while day <= last {
                 if withBeats.contains(day), let computedAt = computed[day], computedAt < changedAt { days.insert(day) }
                 day = day.adding(days: 1)

@@ -428,7 +428,7 @@ public actor BandSync {
 
     /// Reads every workout on the band that isn't stored, or whose files changed size, one at a time. The one still running
     /// waits for its end. A workout that fails, or a list that doesn't come, is skipped and the read carries on; a workout whose
-    /// file didn't come off the band is tried again at most once an hour. Workouts stay on the band.
+    /// file didn't come off the band, or whose read was stopped, is tried again at most once an hour. Workouts stay on the band.
     private func fetchWorkouts() async throws {
         let now = clock.now
         let status = try? await call { _ in try await band.workoutStatus() }
@@ -452,6 +452,9 @@ public actor BandSync {
             default: break
             }
             if let failedAt = workoutFailedAt[reference.session], now < failedAt.addingTimeInterval(3600) { continue }
+            // Marked before the call: one the watchdog stops (stuck, or the band went away) also waits an hour, so it
+            // can't stop every read before heart rate.
+            workoutFailedAt[reference.session] = now
             do {
                 let workout = try await call { _ in try await band.workout(reference) }
                 try await database.save(workout, storedAt: now)
@@ -459,10 +462,9 @@ public actor BandSync {
             } catch is CancellationError {
                 throw CancellationError()
             } catch WorkoutReadError.unfinished {
-                continue
+                workoutFailedAt[reference.session] = nil
             } catch {
                 try Task.checkCancellation()
-                workoutFailedAt[reference.session] = now
             }
         }
     }
