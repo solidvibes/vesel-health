@@ -85,14 +85,11 @@ public struct WorkoutReference: Sendable, Equatable {
     public var date: Date
     /// The total size of its files; a change means the band's copy changed.
     public var fileSize: Int64
-    /// "TSESS", "00/BASE", "00/SAMPLES", …
-    public var fileNames: [String]
 
-    public init(session: String, date: Date, fileSize: Int64, fileNames: [String]) {
+    public init(session: String, date: Date, fileSize: Int64) {
         self.session = session
         self.date = date
         self.fileSize = fileSize
-        self.fileNames = fileNames
     }
 }
 

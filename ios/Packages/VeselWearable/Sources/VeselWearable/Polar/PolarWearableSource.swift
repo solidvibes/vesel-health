@@ -259,9 +259,7 @@ public actor PolarWearableSource: WearableSource {
         return references.compactMap { reference in
             guard let session = PolarMapping.workoutSession(reference.path) else { return nil }
             trainingSessions[session] = reference
-            return WorkoutReference(
-                session: session, date: reference.date, fileSize: reference.fileSize, fileNames: PolarMapping.workoutFileNames(reference)
-            )
+            return WorkoutReference(session: session, date: reference.date, fileSize: reference.fileSize)
         }
     }
 

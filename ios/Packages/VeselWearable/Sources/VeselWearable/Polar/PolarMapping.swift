@@ -450,15 +450,6 @@ extension PolarMapping {
         return "\(parts[2])/\(parts[4])"
     }
 
-    /// The file names a workout's reference lists: "TSESS", then per exercise "00/BASE", "00/SAMPLES", …
-    static func workoutFileNames(_ reference: PolarTrainingSessionReference) -> [String] {
-        let summary = reference.trainingDataTypes.isEmpty ? [] : ["TSESS"]
-        return summary
-            + reference.exercises.sorted { $0.index < $1.index }.flatMap { exercise in
-                Set(exercise.exerciseDataTypes.map(fileName)).sorted().map { "\(folder(exercise))/\($0)" }
-            }
-    }
-
     /// A workout as the band gave it: every file as the SDK handed it over, plus a typed row. The SDK's presence checks are
     /// internal, so a 0 reads as absent. A file the reference lists but that came back unparsed is noted as unreadable.
     static func workout(_ session: PolarTrainingSession, zone: TimeZone) throws -> BandWorkout {

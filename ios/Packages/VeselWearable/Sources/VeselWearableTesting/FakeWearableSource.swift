@@ -224,9 +224,7 @@ public actor FakeWearableSource: WearableSource {
     public func workoutReferences() -> [WorkoutReference] {
         calls.append("workoutReferences")
         return workouts.map { band in
-            WorkoutReference(
-                session: band.workout.session, date: band.workout.start, fileSize: band.workout.fileSize, fileNames: band.files.map(\.name)
-            )
+            WorkoutReference(session: band.workout.session, date: band.workout.start, fileSize: band.workout.fileSize)
         }
     }
 

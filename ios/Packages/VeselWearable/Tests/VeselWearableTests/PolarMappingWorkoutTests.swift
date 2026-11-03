@@ -132,9 +132,8 @@ struct PolarMappingWorkoutTests {
         #expect(throws: WorkoutReadError.unfinished) { try PolarMapping.workout(session(running), zone: berlin) }
     }
 
-    @Test func aReferenceNamesItsFolderAndFiles() {
+    @Test func aReferenceNamesItsFolder() {
         let reference = session(summary(), listed: [.routeGzip]).reference
         #expect(PolarMapping.workoutSession(reference.path) == "20261103/071000")
-        #expect(PolarMapping.workoutFileNames(reference) == ["TSESS", "00/BASE", "00/ROUTE", "00/SAMPLES"])
     }
 }
