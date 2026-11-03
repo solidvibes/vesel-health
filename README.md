@@ -9,9 +9,15 @@ Built for one person running their own copy. Not a product: no App Store, no acc
 Used daily by its author on one iPhone and one Polar Loop since October 2026. Any feature not yet checked on real hardware is marked in its page in [docs/how-it-works/](docs/how-it-works/).
 
 <p>
-  <img src="docs/screenshots/today.png" width="240" alt="Today">
-  <img src="docs/screenshots/sleep.png" width="240" alt="The Sleep page">
-  <img src="docs/screenshots/journal.png" width="240" alt="Journal">
+  <img src="docs/screenshots/today.png" width="200" alt="Today">
+  <img src="docs/screenshots/sleep.png" width="200" alt="The Sleep page, a finger reading the chart">
+  <img src="docs/screenshots/journal.png" width="200" alt="Journal on a past day">
+  <img src="docs/screenshots/body.png" width="200" alt="Body">
+</p>
+<p>
+  <img src="docs/screenshots/recovery.png" width="200" alt="The Recovery page: what went into it">
+  <img src="docs/screenshots/stress.png" width="200" alt="The Stress page">
+  <img src="docs/screenshots/heart-rate.png" width="200" alt="The Heart rate page">
 </p>
 
 ## What you need
