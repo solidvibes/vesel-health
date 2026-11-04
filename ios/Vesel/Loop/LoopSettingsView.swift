@@ -35,6 +35,7 @@ struct LoopSettingsView: View {
                         Divider()
                         ListRow(label: "Heart rate now", value: liveHeartRateText)
                     }
+                    wristSection
                     section("Sync") {
                         NavigationLink(value: TodayRoute.syncing) {
                             HStack(spacing: Theme.Spacing.s8) {
@@ -154,6 +155,36 @@ struct LoopSettingsView: View {
             if let step = model.forget {
                 ForgetLoopSheet(model: model, step: step)
             }
+        }
+    }
+
+    private var wristSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
+            if model.wristNotSaved {
+                ErrorCard(
+                    title: "Not saved",
+                    message: "Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again."
+                )
+            }
+            section("Worn on") {
+                Picker(
+                    "Worn on",
+                    selection: Binding(
+                        get: { model.wrist },
+                        set: { side in Task { await model.chooseWrist(side) } }
+                    )
+                ) {
+                    Text("Left").tag(WristSide.left)
+                    Text("Right").tag(WristSide.right)
+                }
+                .pickerStyle(.segmented)
+                .disabled(model.savingWrist)
+                .padding(.vertical, Theme.Spacing.s8)
+            }
+            Text("Polar's sleep and activity maths are tuned to the wrist you wear it on.")
+                .font(Theme.Typography.small)
+                .foregroundStyle(Theme.Palette.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

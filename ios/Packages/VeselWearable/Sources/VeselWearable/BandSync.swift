@@ -166,6 +166,22 @@ public actor BandSync {
         }
     }
 
+    /// Tells the band which wrist it is worn on, once no sync is running. The live stream pauses for it and comes back
+    /// after, also when the band refuses.
+    public func setWrist(_ wrist: WristSide) async throws {
+        try await exclusively {
+            await self.pauseLive()
+            do {
+                try Task.checkCancellation()
+                try await self.band.setWrist(wrist)
+            } catch {
+                await self.resumeLive()
+                throw error
+            }
+            await self.resumeLive()
+        }
+    }
+
     /// Wipes the band, its pairing included, once no sync is running.
     public func factoryReset() async throws {
         try await exclusively {

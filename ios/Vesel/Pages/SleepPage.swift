@@ -1,9 +1,10 @@
 import SwiftUI
 import VeselCore
 
-/// Sleep for one night: time asleep, stages with the overnight heart rate, and the overnight numbers.
+/// Sleep for one night: the night's times, your normal, the stages with the overnight heart rate, the stages and the overnight numbers.
 struct SleepDay: View {
     @State private var model: SleepModel
+    @State private var week: BodyModel
     @State private var selection: Date?
     @Environment(\.scenePhase) private var scenePhase
 
@@ -11,18 +12,24 @@ struct SleepDay: View {
         _model = State(
             initialValue: SleepModel(
                 database: environment.database, clock: environment.clock, status: environment.status, day: day, takeLaunchScrub: environment.takeLaunchScrub))
+        _week = State(
+            initialValue: BodyModel(
+                database: environment.database, clock: environment.clock, units: environment.units, period: .week, endingOn: day,
+                kinds: [MetricKind.sleepInBed, MetricKind.sleepEfficiency, MetricKind.sleepLowestHeartRate]))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s24) {
             PageHeader(text: header, scrub: scrub)
-            if let report = model.report, let sleep = report.sleep { chart(sleep) }
-            LineRow(title: "Sleep", value: asleepText ?? "—", verdict: model.sleepLine, color: Theme.Palette.sleep)
             content
             WhatHelpsCard(tips: model.helpTips, usualBedtime: model.usualBedtime)
         }
         .onChange(of: model.shown) { selection = nil }
-        .readProblem(model.readProblem)
+        .readProblem(model.readProblem || week.readProblem)
+        .task(id: scenePhase) {
+            guard scenePhase == .active else { return }
+            await week.observe()
+        }
         .task(id: ObserveKey(value: model.day, active: scenePhase == .active)) {
             guard scenePhase == .active else { return }
             await model.observeShown()
@@ -76,9 +83,18 @@ private extension SleepDay {
         }
     }
 
+    func mark(_ kind: TrendKind, night: DayKey) -> NormalMark? {
+        week.inRange(kind).first { $0.metric.day == night }?.mark
+    }
+
     @ViewBuilder var content: some View {
         if let report = model.report {
-            NightView(report: report, sleepLine: model.sleepLine, zone: model.zone, today: model.today)
+            NightView(
+                report: report, sleepLine: model.sleepLine, zone: model.zone, today: model.today, picture: model.normalPicture,
+                efficiencyMark: mark(.efficiency, night: report.night), lowestHeartRateMark: mark(.lowestHeartRate, night: report.night)
+            ) {
+                if let sleep = report.sleep { chart(sleep) }
+            }
         } else if model.loaded && model.shown == nil && model.nightPending {
             EmptyState(systemImage: "moon", title: "Evaluating your night", message: "Your sleep shows here once your Loop has it ready.")
         } else if model.loaded && model.shown == nil {

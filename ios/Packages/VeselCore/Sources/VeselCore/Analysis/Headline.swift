@@ -105,7 +105,7 @@ public struct Headline: Sendable, Equatable {
             .label.noun
     }
 
-    private static let noneStoodOut = "None of last night's readings stood out on its own; Polar weighs them together."
+    static let noneStoodOut = "None of last night's readings stood out on its own; Polar weighs them together."
 
     private static func headline(_ rule: Double, _ sentence: String, _ why: String, _ text: String, _ status: RecoveryStatus? = nil) -> Headline {
         var inputs: [Explanation.Input] = [.init(name: "rule", value: rule, unit: "of 9")]

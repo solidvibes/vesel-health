@@ -17,6 +17,10 @@ Screens said where Polar keeps a number, not what it means. One set of meanings,
 - Where: Body card titles (the rest of a card still opens its chart), page titles, the "usual range" words on Body, the Sleep page's stage rows and Time asleep (a row opens the sheet instead of expanding), the Stress page's title, the Heart rate page's title. Heart fitness' card and page titles and the VO2max row on its page. Not on Today. The recovery card's title and each contributor row open it too.
 - Loop & settings → Help → What things mean: the same entries as a list, without a "Yours" line.
 
+## Planned
+- Three more entries in the Sleep group (`docs/plans/2026-11-04-recovery-sleep-polish.md`): In bed, Efficiency, Bedtime and wake. 24 terms; each opens from its page's title.
+- Recovery's contributor rows stop opening the meaning sheet: a row opens that signal's page, whose title opens the meaning.
+
 ## Do / Don't
 - Don't write meaning text anywhere but the glossary.
 - Don't make medical claims; compare with your own usual first.

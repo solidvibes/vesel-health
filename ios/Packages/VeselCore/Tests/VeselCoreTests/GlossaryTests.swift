@@ -10,8 +10,12 @@ struct GlossaryTests {
         #expect(meaning.sections.first?.text.isEmpty == false)
     }
 
-    @Test func twentyOneTerms() {
-        #expect(Term.allCases.count == 21)
+    @Test func twentyFourTerms() {
+        #expect(Term.allCases.count == 24)
+    }
+
+    @Test func goodOrBadIsFoundWhereTheTermHasIt() {
+        #expect(Glossary.goodOrBad(.lowestHeartRate) == "Lower than your usual is usually a sign of a restful night.")
     }
 
     @Test func workoutsSitWithMovement() {

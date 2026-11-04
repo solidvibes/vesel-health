@@ -127,6 +127,15 @@ public actor PolarWearableSource: WearableSource {
         }
     }
 
+    public func setWrist(_ wrist: WristSide) async throws {
+        let location: PolarUserDeviceSettings.DeviceLocation = wrist == .left ? .WRIST_LEFT : .WRIST_RIGHT
+        do {
+            try await api.setUserDeviceLocation(try ready(), location: location.toInt())
+        } catch {
+            throw BandWriteError.refused
+        }
+    }
+
     public func startSync() async throws {
         try await api.sendInitializationAndStartSyncNotifications(identifier: try ready())
     }
