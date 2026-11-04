@@ -212,11 +212,11 @@ Phase 5 — Sleep page
 - [ ] 5. Docs and changelog (done); screenshots in the states under Verification (left for the final pass).
 
 ### Phase 3 — signal pages
-1. `TrendNight.mark` / `TrendPoint.mark`, `PersonalRange.explanation`; tests.
-2. `SignalChart` full form: filled mark-coloured outside dots; VoiceOver words; captions.
-3. `NormalPicture` with previews.
-4. `NightlyDayPart` "How it's worked out" card; glossary lookup.
-5. Docs, changelog, screenshots.
+- [x] 1. `TrendNight.mark` / `TrendPoint.mark`, `PersonalRange.explanation`; tests.
+- [x] 2. `SignalChart` full form: filled mark-coloured outside dots; VoiceOver words; captions.
+- [x] 3. `NormalPicture` with previews.
+- [x] 4. `NightlyDayPart` "How it's worked out" card; glossary lookup.
+- [ ] 5. Docs and changelog (done); screenshots (left for the final pass).
 
 ### Phase 4a — sleep reads
 1. VeselStorage: `observeTrends(kinds:)`, `observeSleepStages`, `observeSleepTimes`, tests.

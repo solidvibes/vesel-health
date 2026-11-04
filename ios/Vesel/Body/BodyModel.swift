@@ -173,6 +173,20 @@ struct TrendNight: Equatable {
     let normal: ClosedRange<Double>?
     /// How the number and its normal were worked out: the metric's own, except for sleep, whose normal is the sleep line's.
     let explanation: Explanation
+    /// Where the night stands against its normal; nil while that is being learned, and for bars.
+    let mark: NormalMark?
+    /// How a normal worked out here from the 28 nights before it was made (the lowest heart rate's); the others' is in `explanation`.
+    let normalExplanation: Explanation?
+}
+
+/// What a signal page's picture draws and says for one night: where the normal and the night sit, and the words.
+struct NightPicture: Equatable {
+    let scale: LineScale
+    let mark: NormalMark
+    let value: String
+    let low: String
+    let high: String
+    let spoken: String
 }
 
 /// A night's dot or bar, and its normal as the band behind it (`low`…`high`).
@@ -185,6 +199,8 @@ struct TrendPoint: Identifiable, Equatable {
     var high: Double?
     /// The day isn't over: its bar is drawn lighter.
     var isPartial = false
+    /// Against its normal; nil while learning, for bars and where the signal has no mark.
+    var mark: NormalMark?
     var id: Date { start }
 
     var isOutsideNormal: Bool {
@@ -302,7 +318,7 @@ final class BodyModel {
                 day: day, start: start, end: end, value: kind.plotted(night.value, units: units),
                 low: night.normal.map { kind.plotted($0.lowerBound, units: units) },
                 high: night.normal.map { kind.plotted($0.upperBound, units: units) },
-                isPartial: kind == .steps && day == today
+                isPartial: kind == .steps && day == today, mark: night.mark
             )
         }
     }
@@ -332,10 +348,30 @@ final class BodyModel {
         if kind == .recovery { return "OK or better" }
         if kind == .calm { return "up to \(kind.format(normal.upperBound, units: units))" }
         if kind == .steps { return "\(Formatters.steps(hundreds(normal.lowerBound)))–\(Formatters.steps(hundreds(normal.upperBound))) a day" }
+        let (low, high) = normalEnds(kind, normal)
+        return "\(low)–\(high)"
+    }
+
+    /// The ends of a normal as written, the unit only on the last: "34" and "52 ms".
+    private func normalEnds(_ kind: TrendKind, _ normal: ClosedRange<Double>) -> (low: String, high: String) {
         let low = kind.format(normal.lowerBound, units: units)
         let high = kind.format(normal.upperBound, units: units)
-        guard kind != .sleep, let unit = high.split(separator: " ").last, low.hasSuffix(" \(unit)") else { return "\(low)–\(high)" }
-        return "\(low.dropLast(unit.count + 1))–\(high)"
+        guard kind != .sleep, let unit = high.split(separator: " ").last, low.hasSuffix(" \(unit)") else { return (low, high) }
+        return (String(low.dropLast(unit.count + 1)), high)
+    }
+
+    /// The picture of `night` against its normal for a signal page; nil while learning or with no normal.
+    func picture(_ kind: TrendKind, night: TrendNight) -> NightPicture? {
+        guard let normal = night.normal, let mark = night.mark else { return nil }
+        let units = units
+        let scale = NormalScale.scale(
+            value: night.value, low: normal.lowerBound, high: normal.upperBound, floor: kind == .skinTemperature ? nil : 0
+        )
+        let ends = normalEnds(kind, normal)
+        let value = kind.format(night.value, units: units)
+        let when = YoursText.night(night.metric.day, today: today, zone: zone)
+        let spoken = "\(when) \(value), \(mark.words). Your normal \(ends.low) to \(ends.high)."
+        return NightPicture(scale: scale, mark: mark, value: value, low: ends.low, high: ends.high, spoken: spoken)
     }
 
     private func hundreds(_ steps: Double) -> Int { Int((steps / 100).rounded()) * 100 }
@@ -392,6 +428,14 @@ final class BodyModel {
         guard let night = inRange(kind).first(where: { $0.metric.day == day }) else { return nil }
         let value = kind.text(night.metric, units: units) + (kind == .steps && day == today ? " so far" : "")
         return HeaderText(label: nil, value: value, line: Formatters.day(day, zone: zone))
+    }
+
+    /// What VoiceOver reads for the finger on `date`: the touched night's text and, where it has one, the mark's words.
+    func scrubSpoken(_ kind: TrendKind, at date: Date) -> String? {
+        guard let text = scrubText(kind, at: date) else { return nil }
+        let day = DayKey(date, in: zone)
+        let words = inRange(kind).first { $0.metric.day == day }?.mark.map { ", \($0.words)" } ?? ""
+        return "\(text.line), \(text.value)\(words)"
     }
 
     static func dateRange(_ first: DayKey, _ last: DayKey, zone: TimeZone) -> String {
@@ -456,11 +500,14 @@ final class BodyModel {
             let value: Double
             let normal: ClosedRange<Double>?
             var explanation = metric.explanation
+            var mark: NormalMark?
+            var normalExplanation: Explanation?
             switch kind {
             case .recovery:
                 guard let status = RecoveryStatus(metric) else { return nil }
                 value = min(Double(status.indicator) + Double(status.subLevel) / 100, 6)
                 normal = Double(InRange.recoveryInside)...6
+                mark = status.mark
             case .calm:
                 value = metric.value
                 normal = dayLines[metric.day]?.calm.normal.high.map { 0...$0 }
@@ -469,17 +516,23 @@ final class BodyModel {
                 normal = DailySteps.normal(before: metric.day, in: byNight)
             case .lowestHeartRate:
                 value = metric.value
-                normal = PersonalRange(previous: PersonalRange.previousValues(before: metric.day, in: byNight)).map { $0.low...$0.high }
+                let range = PersonalRange(previous: PersonalRange.previousValues(before: metric.day, in: byNight))
+                normal = range.map { $0.low...$0.high }
+                mark = range.flatMap { NormalMark(verdict: $0.verdict(of: metric.value), better: .lower) }
+                normalExplanation = range?.explanation(unit: "bpm")
             case .sleep:
                 value = metric.value
                 let line = InRange.sleep(ContributorReading(metric))
                 normal = line.normal.low.flatMap { low in line.normal.high.map { low...$0 } }
                 explanation = line.explanation
+                mark = ContributorReading(metric)?.mark
             case .hrv, .restingHeartRate, .breathing, .skinTemperature:
                 value = metric.value
-                normal = ContributorReading(metric)?.range.map { $0.low...$0.high }
+                let reading = ContributorReading(metric)
+                normal = reading?.range.map { $0.low...$0.high }
+                mark = reading?.mark
             }
-            return TrendNight(metric: metric, value: value, normal: normal, explanation: explanation)
+            return TrendNight(metric: metric, value: value, normal: normal, explanation: explanation, mark: mark, normalExplanation: normalExplanation)
         }
     }
 }

@@ -48,4 +48,44 @@ struct BodyModelTests {
         await waitUntil { model.units == .us }
         #expect(model.points(.skinTemperature).last?.value == celsius * 9 / 5 + 32)
     }
+
+    @Test func aNightHasAMarkExactlyWhenItHasANormal() async throws {
+        let (database, clock) = try await synced()
+        let model = BodyModel(database: database, clock: clock, units: UnitsStore(), period: .quarter, endingOn: end)
+        await observe(model.observe) { model.isReady }
+
+        for kind in [TrendKind.recovery, .hrv, .restingHeartRate, .lowestHeartRate, .breathing, .skinTemperature, .sleep] {
+            for night in model.inRange(kind) {
+                #expect((night.mark != nil) == (night.normal != nil), "\(kind) \(night.metric.day)")
+            }
+            #expect(model.points(kind).map(\.mark) == model.inRange(kind).map(\.mark))
+        }
+    }
+
+    @Test func contributorMarksComeFromTheirReadings() async throws {
+        let (database, clock) = try await synced()
+        let model = BodyModel(database: database, clock: clock, units: UnitsStore(), period: .quarter, endingOn: end)
+        await observe(model.observe) { model.isReady }
+
+        for night in model.inRange(.hrv) {
+            #expect(night.mark == ContributorReading(night.metric)?.mark)
+        }
+        for night in model.inRange(.recovery) {
+            #expect(night.mark == RecoveryStatus(night.metric)?.mark)
+        }
+    }
+
+    @Test func theLowestHeartRateIsBetterLowerAndExplainsItsNormalOnRead() async throws {
+        let (database, clock) = try await synced()
+        let model = BodyModel(database: database, clock: clock, units: UnitsStore(), period: .quarter, endingOn: end)
+        await observe(model.observe) { model.isReady }
+
+        for night in model.inRange(.lowestHeartRate) {
+            #expect((night.normalExplanation != nil) == (night.normal != nil))
+            guard let normal = night.normal else { continue }
+            let range = PersonalRange(mean: (normal.lowerBound + normal.upperBound) / 2, sd: (normal.upperBound - normal.lowerBound) / 2, nights: 0)
+            #expect(night.mark == NormalMark(verdict: range.verdict(of: night.value), better: .lower))
+            #expect(night.normalExplanation?.method == PersonalRange.method)
+        }
+    }
 }

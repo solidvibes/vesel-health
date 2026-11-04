@@ -57,8 +57,8 @@ struct BodyCard<Open: View>: View {
 }
 
 /// A signal over the range: a value per night (a line with points; stress, steps and sleep as bars) over a shaded band that follows each night's own normal.
-/// Points outside the band are hollow. The compact form is Body's glance; the full one is the page's W, M and 3M chart, which a finger
-/// scrubs after a short hold and a tap on a day opens.
+/// Points outside the band are hollow on the compact form, which is Body's glance; the full form is the pages' chart, where they are
+/// filled in their mark's colour, and a finger scrubs after a short hold and a tap on a day opens.
 struct SignalChart: View {
     let kind: TrendKind
     let points: [TrendPoint]
@@ -119,10 +119,14 @@ struct SignalChart: View {
                     }
                 }
                 ForEach(points) { point in
-                    if point.isOutsideNormal {
+                    if compact, point.isOutsideNormal {
                         PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))
                             .foregroundStyle(kind.color.opacity(emphasis(point)))
                             .symbol(Circle().strokeBorder(lineWidth: 1.5))
+                            .symbolSize(dotSize + 8)
+                    } else if !compact, let mark = point.mark, mark.isOutside {
+                        PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))
+                            .foregroundStyle(Theme.Palette.markChip(mark).opacity(emphasis(point)))
                             .symbolSize(dotSize + 8)
                     } else {
                         PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))

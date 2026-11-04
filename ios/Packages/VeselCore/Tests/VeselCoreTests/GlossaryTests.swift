@@ -14,6 +14,10 @@ struct GlossaryTests {
         #expect(Term.allCases.count == 21)
     }
 
+    @Test func goodOrBadIsFoundWhereTheTermHasIt() {
+        #expect(Glossary.goodOrBad(.lowestHeartRate) == "Lower than your usual is usually a sign of a restful night.")
+    }
+
     @Test func workoutsSitWithMovement() {
         #expect(Glossary.groups.first { $0.title == "Movement" }?.terms == [.steps, .workout, .cardioLoad])
     }

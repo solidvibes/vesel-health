@@ -6,6 +6,7 @@ One plain sentence per entry.
 ## Unreleased
 
 - Recovery now leads with a short verdict and shows each thing that went into it with a mark against your normal, and tapping one opens its page.
+- HRV, resting heart rate, lowest heart rate, breathing and skin temperature now open with a picture of last night against your normal, and nights outside it are coloured on their chart.
 - Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
 - Loop & settings now lets you say which wrist you wear the Loop on, and sends it to the Loop.
 

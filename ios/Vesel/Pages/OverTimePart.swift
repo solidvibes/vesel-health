@@ -39,7 +39,7 @@ struct OverTimePart: View {
                         )
                         .scrubAccessibility(
                             $selection, domain: model.domain, step: 86_400, label: "\(kind.title), \(range)",
-                            value: scrub.map { "\($0.line), \($0.value)" } ?? ""
+                            value: selection.flatMap { model.scrubSpoken(kind, at: $0) } ?? ""
                         )
                         .accessibilityActions {
                             if let selection {
@@ -85,7 +85,6 @@ struct OverTimePart: View {
         } else {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
                 Text(kind.shadedNote)
-                if !kind.isBars { Text("Hollow dots fall outside it.") }
                 if kind == .calm { Text("Days with no bar had no stress numbers.") }
                 if kind == .steps { Text("Days with no bar had no steps counted.") }
                 if kind == .steps, model.latest(kind)?.metric.day == model.today { Text("Today's bar is lighter: the day isn't over.") }

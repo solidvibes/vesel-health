@@ -72,6 +72,11 @@ public enum Glossary {
         }
     }
 
+    /// The term's "Good or bad" sentence.
+    public static func goodOrBad(_ term: Term) -> String? {
+        meaning(term).sections.first { $0.heading == "Good or bad" }?.text
+    }
+
     private static let shareOfAsleep = "The share is the stage's minutes ÷ your time asleep, rounded."
     private static let shareOfInBed = "The share is the stage's minutes ÷ your time in bed, rounded."
 

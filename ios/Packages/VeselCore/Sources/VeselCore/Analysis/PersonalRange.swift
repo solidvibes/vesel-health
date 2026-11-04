@@ -46,6 +46,21 @@ public struct PersonalRange: Sendable, Equatable {
         self.init(mean: mean, sd: variance.squareRoot(), nights: values.count)
     }
 
+    /// How a range worked out on read (not stored with a night) was made: `unit` is written after each number.
+    public func explanation(unit: String, decimals: Int = 0) -> Explanation {
+        Explanation(
+            method: Self.method, version: Self.version,
+            inputs: [
+                .init(name: "nights", value: Double(nights), unit: "nights"),
+                .init(name: "usualMean", value: mean, unit: unit),
+                .init(name: "usualSD", value: sd, unit: unit),
+            ],
+            text:
+                "Your usual is the mean ± 1 standard deviation of your previous \(nights) nights: "
+                + "\(NumberText.decimal(low, decimals))–\(NumberText.decimal(high, decimals)) \(unit)."
+        )
+    }
+
     /// The values of the 28 nights before `night` that have one.
     public static func previousValues(before night: DayKey, in valuesByNight: [DayKey: Double]) -> [Double] {
         (1...windowNights).compactMap { valuesByNight[night.adding(days: -$0)] }
