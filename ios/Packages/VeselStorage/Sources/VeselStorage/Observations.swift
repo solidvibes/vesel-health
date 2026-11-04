@@ -54,6 +54,8 @@ public struct StressReport: Sendable, Equatable {
     public var readings: ComputedMetric?
     /// The day's hourly levels, by hour.
     public var hourly: [ComputedMetric]
+    /// Daytime hours with beats but no reading, and why.
+    public var emptyHours: [StressEmptyHour]
     public var highMinutes: ComputedMetric?
     public var now: StressNow?
     /// Earlier days with enough readings; stress shows a level from 7.
@@ -457,6 +459,7 @@ extension AppDatabase {
             day: day,
             readings: metrics.first { $0.kind == MetricKind.stressReadings },
             hourly: metrics.filter { $0.kind == MetricKind.stressHourly },
+            emptyHours: metrics.compactMap(StressEmptyHour.init),
             highMinutes: metrics.first { $0.kind == MetricKind.stressHighMinutes },
             now: metrics.first { $0.kind == MetricKind.stressNow }.flatMap(StressNow.init),
             baselineDays: try stressBaselineDays(db, before: day)

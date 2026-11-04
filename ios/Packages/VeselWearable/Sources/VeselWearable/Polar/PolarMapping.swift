@@ -457,7 +457,8 @@ extension PolarMapping {
         let durationSeconds = seconds(summary.duration)
         guard durationSeconds > 0, let begin = localDate(summary.start, zone: zone) else { throw WorkoutReadError.unfinished }
         let start = begin.date
-        let end = localDate(summary.end, zone: zone).map(\.date).flatMap { $0 >= start ? $0 : nil }
+        let end =
+            localDate(summary.end, zone: zone).map(\.date).flatMap { $0 >= start ? $0 : nil }
             ?? start.addingTimeInterval(TimeInterval(durationSeconds))
 
         var files = [WorkoutFile(name: "TSESS", data: try summary.serializedBytes(partial: true))]

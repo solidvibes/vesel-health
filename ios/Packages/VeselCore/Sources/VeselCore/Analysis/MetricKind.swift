@@ -7,8 +7,10 @@ public enum MetricKind {
     public static let recoveryStatus = "recovery.status"
     /// Per day: how many clean daytime readings there were, and how they were cleaned.
     public static let stressReadings = "stress.readings"
-    /// Per day and hour: the highest stress level (0 to 100) of that hour's readings.
+    /// Per day and hour: the middle stress level (0 to 100) of that hour's readings.
     public static let stressHourly = "stress.hourly"
+    /// Per day and hour: a daytime hour with beats but no reading, and why.
+    public static let stressEmptyHour = "stress.emptyHour"
     public static let stressHighMinutes = "stress.highMinutes"
     /// Per day: the most high-stress minutes within any 2 hours.
     public static let stressBusiestSpan = "stress.busiestSpan"

@@ -39,7 +39,8 @@ public struct WorkoutRouteSummary: Sendable, Equatable {
     public var coversEnough: Bool { coverage >= WorkoutThresholds.routeMinCoverage }
 
     public init(points: [RoutePoint], workout: DateInterval, durationSeconds: Int) {
-        let kept = points
+        let kept =
+            points
             .filter { workout.contains($0.time) && $0.accuracy >= 0 && $0.accuracy <= WorkoutThresholds.routeAccuracyMeters }
             .sorted { $0.time < $1.time }
         self.points = kept

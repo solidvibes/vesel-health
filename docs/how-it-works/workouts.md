@@ -64,7 +64,7 @@ A band setting saves when you flip the switch, let go of the slider or pick a le
 
 ### Stored and backed up
 - Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone. Opening a workout page with a route fetches Apple's map tiles for that area; the route is drawn on the phone.
-- Stored as the Loop gave them: cardio load, Polar's rating, training load. Worked out on read, not stored: sport guesses, distance and speed. Stress numbers that skip workouts are stored as before (`stress` version 3).
+- Stored as the Loop gave them: cardio load, Polar's rating, training load. Worked out on read, not stored: sport guesses, distance and speed. Stress numbers that skip workouts are stored as before (since `stress` version 3).
 
 ## Do / Don't
 - Don't add load up over days or weeks (for now); no bests, no streaks, no "longest", no comparison with an earlier workout.

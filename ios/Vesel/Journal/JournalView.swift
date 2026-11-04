@@ -147,7 +147,7 @@ struct JournalView: View {
                 } glance: {
                     if !hours.isEmpty {
                         HourlyStressChart(
-                            hours: hours, day: model.day, zone: zone, workouts: model.heartRate.workouts(model.day), compact: true, selection: .constant(nil))
+                            hours: hours, day: model.day, zone: zone, workouts: model.heartRate.workouts(model.day))
                     }
                 }
             }

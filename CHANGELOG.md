@@ -11,6 +11,7 @@ One plain sentence per entry.
 - Sleep over weeks now shows stacked deep, light and REM bars for each night, with averages of In bed and Efficiency and your middle bedtime and wake time.
 - Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
 - Loop & settings now lets you say which wrist you wear the Loop on, and sends it to the Loop.
+- The Stress page now shows every 3-minute stress reading through the day, more of the time you wear your Loop gets a reading, and a gap says why.
 
 ## 0.1.0 — 2026-11-01
 

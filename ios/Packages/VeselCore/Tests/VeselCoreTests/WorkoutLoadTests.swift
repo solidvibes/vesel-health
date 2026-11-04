@@ -48,6 +48,8 @@ struct WorkoutLoadTests {
         let route = WorkoutRouteSummary(points: points, workout: workout.interval, durationSeconds: 2520)
         let explanation = WorkoutLoad.explanation(workout, label: WorkoutLabel(sport: .cycling, source: .speed, hidden: false), route: route)
         #expect(explanation.inputs.first { $0.name == "routeCoverage" }?.value == 1)
-        #expect(explanation.text.hasSuffix("The sport is guessed from speed: 13.3 km/h over a route covering 100 % of the workout (over 13 km/h is cycling, else running)."))
+        #expect(
+            explanation.text.hasSuffix(
+                "The sport is guessed from speed: 13.3 km/h over a route covering 100 % of the workout (over 13 km/h is cycling, else running)."))
     }
 }

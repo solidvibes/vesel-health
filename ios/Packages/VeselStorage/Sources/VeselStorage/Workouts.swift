@@ -245,7 +245,8 @@ extension AppDatabase {
 
     static func routes(_ db: Database, overlapping interval: DateInterval) throws -> [RecordedRoute] {
         let earliest = interval.start.addingTimeInterval(-WorkoutThresholds.routeMaxHours * 3600)
-        return try WorkoutRouteRecord
+        return
+            try WorkoutRouteRecord
             .filter(sql: "started_at >= ? AND started_at <= ?", arguments: [earliest.unixSeconds, interval.end.unixSeconds])
             .order(sql: "started_at")
             .fetchAll(db)

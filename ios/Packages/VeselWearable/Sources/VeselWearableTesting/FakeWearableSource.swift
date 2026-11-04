@@ -384,7 +384,8 @@ public actor FakeWearableSource: WearableSource {
         status = .notRunning
         if var band = workouts.last {
             let format = Date.VerbatimFormatStyle(
-                format: "\(year: .defaultDigits)\(month: .twoDigits)\(day: .twoDigits)/\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased))\(minute: .twoDigits)\(second: .twoDigits)",
+                format:
+                    "\(year: .defaultDigits)\(month: .twoDigits)\(day: .twoDigits)/\(hour: .twoDigits(clock: .twentyFourHour, hourCycle: .zeroBased))\(minute: .twoDigits)\(second: .twoDigits)",
                 timeZone: Self.fixtureZone, calendar: Calendar(identifier: .gregorian)
             )
             band.workout.session = start.formatted(format)

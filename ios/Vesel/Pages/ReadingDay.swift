@@ -154,7 +154,9 @@ struct ReadingDayChart: View {
 
     private var label: String {
         let asleep = spans.map { "asleep \(Formatters.clock($0.lowerBound, zone: zone)) to \(Formatters.clock($0.upperBound, zone: zone))" }
-        let workedOut = workouts.map { "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone)) to \(Formatters.clock($0.range.upperBound, zone: zone))" }
+        let workedOut = workouts.map {
+            "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone)) to \(Formatters.clock($0.range.upperBound, zone: zone))"
+        }
         return ([spokenLabel] + asleep + workedOut).joined(separator: ", ")
     }
 

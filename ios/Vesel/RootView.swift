@@ -115,7 +115,7 @@ private struct MainTabs: View {
                         }
                     }
                     .pageDestinations(environment: environment)
-                        .workoutDestinations(environment: environment)
+                    .workoutDestinations(environment: environment)
                     .toolbarVisibility(.hidden, for: .navigationBar)
                 }
                 .environment(\.openPage, OpenPage { todayPath.append($0) })

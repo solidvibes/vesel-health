@@ -13,7 +13,8 @@ struct WorkoutRouteSummaryTests {
     /// The phone started 20 minutes late: 23 points a minute apart from 06:30 to 06:52, each 0.002° further north.
     @Test func aRouteThatStartsLateCoversPartOfTheWorkout() throws {
         var points = (0...22).map { minute in
-            RoutePoint(time: at("2026-11-03T06:30:00Z").addingTimeInterval(Double(minute * 60)), latitude: 52.5 + 0.002 * Double(minute), longitude: 13.4, accuracy: 8)
+            RoutePoint(
+                time: at("2026-11-03T06:30:00Z").addingTimeInterval(Double(minute * 60)), latitude: 52.5 + 0.002 * Double(minute), longitude: 13.4, accuracy: 8)
         }
         // Before the workout, too inexact, and no accuracy at all: all dropped.
         points += [
