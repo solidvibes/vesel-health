@@ -6,6 +6,7 @@ One plain sentence per entry.
 ## Unreleased
 
 - Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
+- Loop & settings now lets you say which wrist you wear the Loop on, and sends it to the Loop.
 
 ## 0.1.0 — 2026-11-01
 

@@ -42,6 +42,24 @@ struct PairingModelTests {
         #expect(try await database.band()?.deviceId == "FAKE0001")
     }
 
+    @Test func pairingAgainSendsTheStoredWristToTheBand() async throws {
+        var paired = false
+        let database = try AppDatabase.inMemory()
+        let clock = FixedClock(now: now, timeZone: .gmt)
+        let band = try FakeWearableSource(scenario: .pairing)
+        let bandSync = BandSync(band: band, database: database, clock: clock)
+        try await database.setWrist(.right)
+        let model = PairingModel(bandSync: bandSync, database: database, clock: clock, units: UnitsStore(), launchStep: .before, didPair: { paired = true })
+        model.startLooking()
+        await waitUntil { model.step == .aboutYou }
+        fillIn(model)
+        model.finish()
+        await waitUntil { paired }
+
+        #expect(await band.wrist == .right)
+        #expect(await band.calls.firstIndex(of: "firstTimeUse")! < band.calls.firstIndex(of: "setWrist")!)
+    }
+
     @Test func aBandThatRefusesTheProfileLeavesNothingStored() async throws {
         var paired = false
         let (model, database) = try pairing(failure: .setupFailed) { paired = true }

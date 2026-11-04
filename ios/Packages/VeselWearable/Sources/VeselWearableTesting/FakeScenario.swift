@@ -47,7 +47,7 @@ public enum FakeScenario: String, Sendable, CaseIterable {
 
 /// A problem the fake band acts out, picked with `-VeselFakeFailure <name>` (Simulator screenshots, tests).
 public enum FakeFailure: String, Sendable, CaseIterable {
-    case notFound, refused, setupFailed, unreachable
+    case notFound, refused, setupFailed, wristFailed, unreachable
     /// The Loop refuses a change to its training detection.
     case workoutDetection
     /// The evening ride doesn't come off the Loop.
