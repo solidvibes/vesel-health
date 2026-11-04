@@ -313,6 +313,63 @@ for index in 0..<30 {
             ]))
 }
 
+// Workouts have their own generator too. A 42-minute morning run on the last day, an unlabelled 75-minute evening ride the day before.
+var workoutRng = SplitMix64(state: 20261103)
+
+struct WorkoutFixture: Encodable {
+    var session: String
+    var start: String
+    var utcOffsetSeconds: Int
+    var bandSportId: Int?
+    var durationSeconds: Int
+    var calories: Int
+    var cardioLoad: Double
+    var cardioLoadRating: Int
+    var trainingLoad: Double
+    var averageHeartRate: Int
+    var maxHeartRate: Int
+    var heartRates: HeartRates
+    var fileSize: Int
+    var files: [File]
+
+    struct HeartRates: Encodable {
+        var intervalMs: Int
+        var bpm: [Int]
+    }
+
+    struct File: Encodable {
+        var name: String
+        var data: Data
+    }
+}
+
+func workout(day: Int, hour: Int, minute: Int, minutes: Int, sport: Int?, steady: ClosedRange<Int>, calories: Int, load: Double, rating: Int) -> WorkoutFixture
+{
+    let dayStart = firstDay.addingTimeInterval(TimeInterval(day * 86400))
+    let startSeconds = hour * 3600 + minute * 60
+    let start = wallTime(dayStart, plusSeconds: startSeconds)
+    let offset = berlin.secondsFromGMT(for: dayStart.addingTimeInterval(TimeInterval(startSeconds - 3600)))
+    let bpm = (0..<(minutes * 60)).map { second in
+        let warmUp = min(1.0, Double(second) / 300)
+        return 95 + Int(warmUp * Double(workoutRng.int(steady) - 95))
+    }
+    let files = ["TSESS", "00/BASE", "00/SAMPLES"].map { name in
+        WorkoutFixture.File(name: name, data: Data((0..<workoutRng.int(16...48)).map { _ in UInt8(workoutRng.int(0...255)) }))
+    }
+    let compact = { (value: String) in value.filter(\.isNumber) }
+    let session = "\(compact(String(start.prefix(10))))/\(compact(String(start.dropFirst(11).prefix(8))))"
+    return WorkoutFixture(
+        session: session, start: start, utcOffsetSeconds: offset, bandSportId: sport, durationSeconds: minutes * 60, calories: calories,
+        cardioLoad: load, cardioLoadRating: rating, trainingLoad: (load * 0.8).rounded(), averageHeartRate: bpm.reduce(0, +) / bpm.count,
+        maxHeartRate: bpm.max()!, heartRates: .init(intervalMs: 1000, bpm: bpm), fileSize: files.reduce(0) { $0 + $1.data.count }, files: files
+    )
+}
+
+let workouts = [
+    workout(day: 28, hour: 18, minute: 30, minutes: 75, sport: nil, steady: 128...152, calories: 820, load: 182, rating: 4),
+    workout(day: 29, hour: 7, minute: 10, minutes: 42, sport: 1, steady: 140...162, calories: 410, load: 87, rating: 3),
+]
+
 let outputDirectory = URL(
     fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "ios/Packages/VeselWearable/Sources/VeselWearableTesting/Resources/Fixtures"
 )
@@ -326,3 +383,4 @@ for (kind, entries) in [
 ] {
     try encoder.encode(entries).write(to: outputDirectory.appending(path: "\(kind).json"))
 }
+try encoder.encode(workouts).write(to: outputDirectory.appending(path: "workouts.json"))

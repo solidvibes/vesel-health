@@ -57,8 +57,8 @@ struct BodyCard<Open: View>: View {
 }
 
 /// A signal over the range: a value per night (a line with points; stress, steps and sleep as bars) over a shaded band that follows each night's own normal.
-/// Points outside the band are hollow. The compact form is Body's glance; the full one is the page's W, M and 3M chart, which a finger
-/// scrubs after a short hold and a tap on a day opens.
+/// Points outside the band are hollow on the compact form, which is Body's glance; the full form is the pages' chart, where they are
+/// filled in their mark's colour, and a finger scrubs after a short hold and a tap on a day opens.
 struct SignalChart: View {
     let kind: TrendKind
     let points: [TrendPoint]
@@ -80,7 +80,7 @@ struct SignalChart: View {
         let values = points.flatMap { [$0.value, $0.low ?? $0.value, $0.high ?? $0.value] } + [settlingMedian].compactMap { $0 }
         let low = values.min() ?? 0
         let high = values.max() ?? 1
-        let pad = Swift.max((high - low) * 0.15, 0.5)
+        let yDomain = yDomain(low: low, high: high)
         let size: CGFloat = compact ? (typeSize.isAccessibilitySize ? 240 : 120) : 240
         let selected = selection?.wrappedValue.flatMap { moment in points.first { $0.day == DayKey(moment, in: zone) } }
         let chart = Chart {
@@ -119,10 +119,14 @@ struct SignalChart: View {
                     }
                 }
                 ForEach(points) { point in
-                    if point.isOutsideNormal {
+                    if compact, point.isOutsideNormal {
                         PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))
                             .foregroundStyle(kind.color.opacity(emphasis(point)))
                             .symbol(Circle().strokeBorder(lineWidth: 1.5))
+                            .symbolSize(dotSize + 8)
+                    } else if !compact, let mark = point.mark, mark.isOutside {
+                        PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))
+                            .foregroundStyle(Theme.Palette.markChip(mark).opacity(emphasis(point)))
                             .symbolSize(dotSize + 8)
                     } else {
                         PointMark(x: .value("Day", point.start), y: .value(kind.title, point.value))
@@ -141,8 +145,8 @@ struct SignalChart: View {
             }
         }
         .chartXScale(domain: domain)
-        .chartYScale(domain: yDomain(low: low, high: high, pad: pad))
-        .trendAxes(ticks: ticks, yValues: kind == .recovery ? [1, 3, 6] : nil, showsNumbers: !typeSize.isAccessibilitySize)
+        .chartYScale(domain: yDomain)
+        .trendAxes(ticks: ticks, yValues: kind == .recovery ? Self.wholeSteps(in: yDomain) : nil, showsNumbers: !typeSize.isAccessibilitySize)
         .chartYAxisLabel(position: .trailing) { if !compact { Text(kind.axisLabel(units: units)) } }
         .frame(height: size)
         if let selection {
@@ -166,16 +170,22 @@ struct SignalChart: View {
     /// Small dots on the compact cards and over 3 months, where there are many.
     private var dotSize: Double { compact || domain.upperBound.timeIntervalSince(domain.lowerBound) > 60 * 86_400 ? 12 : 30 }
 
-    private func yDomain(low: Double, high: Double, pad: Double) -> ClosedRange<Double> {
-        if kind == .recovery { return 1...6 }
+    private func yDomain(low: Double, high: Double) -> ClosedRange<Double> {
         if kind.isBars { return 0...Swift.max(high * 1.15, 1) }
-        return (low - pad)...(high + pad)
+        let pad = Swift.max((high - low) * 0.15, 0.5)
+        return Swift.max(low - pad, kind == .recovery ? 1 : -.infinity)...Swift.min(high + pad, kind == .efficiency ? 100 : .infinity)
+    }
+
+    /// Recovery's axis numbers: the whole Polar steps inside the scale, at most 3 (lowest, middle, highest).
+    static func wholeSteps(in domain: ClosedRange<Double>) -> [Double] {
+        let steps = Array(stride(from: domain.lowerBound.rounded(.up), through: domain.upperBound.rounded(.down), by: 1))
+        return steps.count > 3 ? [steps[0], steps[steps.count / 2], steps[steps.count - 1]] : steps
     }
 }
 
 extension View {
-    /// The charts' axes: a faint grid, 3 numbers on the trailing side (`yValues` when the scale is fixed) and the dates along the bottom (every other date at the largest text sizes).
-    func trendAxes(ticks allTicks: [TrendTick], yValues: [Double]?, showsNumbers: Bool) -> some View {
+    /// The charts' axes: a faint grid, 3 numbers on the trailing side (`yValues` when the scale is fixed, written by `yLabel` when given) and the dates along the bottom (every other date at the largest text sizes).
+    func trendAxes(ticks allTicks: [TrendTick], yValues: [Double]?, yLabel: ((Double) -> String)? = nil, showsNumbers: Bool) -> some View {
         // At the largest text sizes every other label; a week keeps the inner ones (Tue, Thu, Sat), as the end days' labels don't fit at the edges.
         let ticks =
             showsNumbers
@@ -185,9 +195,11 @@ extension View {
             }.map(\.element)
         return chartYAxis {
             if let yValues {
-                AxisMarks(position: .trailing, values: yValues) { _ in
+                AxisMarks(position: .trailing, values: yValues) { value in
                     AxisGridLine().foregroundStyle(Theme.Palette.mutedText.opacity(0.25))
-                    if showsNumbers { AxisValueLabel() }
+                    if showsNumbers {
+                        if let yLabel, let number = value.as(Double.self) { AxisValueLabel(yLabel(number)) } else { AxisValueLabel() }
+                    }
                 }
             } else {
                 AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { _ in

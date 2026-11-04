@@ -10,8 +10,10 @@ public enum StressThresholds {
     public static let maximumJump = 0.20
 
     // Windows
-    public static let windowSeconds = 60.0
-    public static let minimumIntervals = 30
+    /// A reading is this much clock time, gathered from every session in it.
+    public static let windowSeconds = 180.0
+    /// Pairs of neighbouring clean beats a reading needs.
+    public static let minimumPairs = 30
     /// Only readings from these local hours count: night readings are sleep, not stress.
     public static let daytimeHours = 6..<22
     /// Exercise: a heart rate above resting + this share of the reserve (max − resting).

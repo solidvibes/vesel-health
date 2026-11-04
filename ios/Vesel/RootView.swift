@@ -62,8 +62,12 @@ private struct MainTabs: View {
         var bodyTab = NavigationPath()
         if request == nil {
             switch tab {
-            case .today, .loop: launch.routes(day: environment.clock.today).forEach { today.append($0) }
-            case .journal: launch.routes(day: environment.days.day).forEach { journal.append($0) }
+            case .today, .loop:
+                launch.routes(day: environment.clock.today).forEach { today.append($0) }
+                if let workout = launch.workout { today.append(workout) }
+            case .journal:
+                launch.routes(day: environment.days.day).forEach { journal.append($0) }
+                if let workout = launch.workout { journal.append(workout) }
             case .body: launch.routes(day: environment.clock.today).forEach { bodyTab.append($0) }
             }
         }
@@ -104,31 +108,38 @@ private struct MainTabs: View {
                         case .loopSettings: LoopSettingsView(environment: environment)
                         case .syncing: SyncingView(environment: environment)
                         case .meanings: WhatThingsMeanView()
+                        case .workoutSettings: WorkoutSettingsView(environment: environment)
                         #if DEBUG
                         case .bandDataReport: BandDataReportView(environment: environment)
                         #endif
                         }
                     }
                     .pageDestinations(environment: environment)
+                    .workoutDestinations(environment: environment)
                     .toolbarVisibility(.hidden, for: .navigationBar)
                 }
                 .environment(\.openPage, OpenPage { todayPath.append($0) })
+                .environment(\.openWorkout, OpenWorkout { todayPath.append($0) })
             }
             Tab("Journal", systemImage: "book.closed", value: AppTab.journal) {
                 NavigationStack(path: $journalPath) {
                     JournalView(environment: environment)
                         .pageDestinations(environment: environment)
+                        .workoutDestinations(environment: environment)
                         .toolbarVisibility(.hidden, for: .navigationBar)
                 }
                 .environment(\.openPage, OpenPage { journalPath.append($0) })
+                .environment(\.openWorkout, OpenWorkout { journalPath.append($0) })
             }
             Tab("Body", systemImage: "waveform.path.ecg.rectangle", value: AppTab.body) {
                 NavigationStack(path: $bodyPath) {
                     BodyView(environment: environment)
                         .pageDestinations(environment: environment)
+                        .workoutDestinations(environment: environment)
                         .toolbarVisibility(.hidden, for: .navigationBar)
                 }
                 .environment(\.openPage, OpenPage { bodyPath.append($0) })
+                .environment(\.openWorkout, OpenWorkout { bodyPath.append($0) })
             }
             Tab(value: AppTab.loop, role: .search) {
                 Color.clear
@@ -188,6 +199,7 @@ enum TodayRoute: Hashable {
     case loopSettings
     case syncing
     case meanings
+    case workoutSettings
     #if DEBUG
     case bandDataReport
     #endif

@@ -24,8 +24,46 @@ extension Array where Element == ReadingPoint {
     }
 }
 
+extension Array where Element == WorkoutSpan {
+    /// The noun of the workout `moment` falls in ("ride").
+    func word(at moment: Date) -> String? { first { $0.range.contains(moment) }?.word }
+
+    /// The noun of the workout that shares time with `range`, touching ends left out.
+    func word(overlapping range: ClosedRange<Date>) -> String? {
+        first { $0.range.lowerBound < range.upperBound && range.lowerBound < $0.range.upperBound }?.word
+    }
+
+    /// Each workout's time inside `domain`.
+    func clipped(to domain: ClosedRange<Date>) -> [ClosedRange<Date>] {
+        compactMap { span in
+            let start = Swift.max(span.range.lowerBound, domain.lowerBound)
+            let end = Swift.min(span.range.upperBound, domain.upperBound)
+            return start < end ? start...end : nil
+        }
+    }
+}
+
+/// A workout's time behind a chart's marks: workout purple at 18 % with a 3 pt full-colour top edge at `top`, so it is never
+/// told apart by colour alone (the scrub text and VoiceOver name the sport).
+struct WorkoutBlocks: ChartContent {
+    let ranges: [ClosedRange<Date>]
+    let top: Double
+
+    var body: some ChartContent {
+        ForEach(Array(ranges.enumerated()), id: \.offset) { _, range in
+            RectangleMark(xStart: .value("Workout from", range.lowerBound), xEnd: .value("Workout to", range.upperBound))
+                .foregroundStyle(Theme.Palette.workout.opacity(0.18))
+            RuleMark(xStart: .value("Workout from", range.lowerBound), xEnd: .value("Workout to", range.upperBound), y: .value("Top", top))
+                .lineStyle(StrokeStyle(lineWidth: 3))
+                .foregroundStyle(Theme.Palette.workout)
+                .offset(y: 1.5)
+        }
+    }
+}
+
 /// Every line of readings over time: heart rate, skin temperature. A silence longer than `HeartRateSample.lineGap` is a gap in the line,
-/// never a guess; a lone reading is a dot. With `yDomain` the y axis is hidden and the caller labels it. `shaded` stretches (sleep) sit behind the line.
+/// never a guess; a lone reading is a dot. With `yDomain` the y axis is hidden and the caller labels it. `shaded` stretches (sleep) and
+/// `workouts` sit behind the line.
 struct ReadingLineChart: View {
     let points: [ReadingPoint]
     let domain: ClosedRange<Date>
@@ -35,6 +73,7 @@ struct ReadingLineChart: View {
     var color: Color = Theme.Palette.primary
     var format: (Double) -> String = { Formatters.whole($0) }
     var shaded: [ClosedRange<Date>] = []
+    var workouts: [WorkoutSpan] = []
     var yDomain: ClosedRange<Double>?
     var height: CGFloat = 160
     var scrub: ChartScrubStyle = .immediate
@@ -89,6 +128,7 @@ struct ReadingLineChart: View {
                 RectangleMark(xStart: .value("From", span.lowerBound), xEnd: .value("To", span.upperBound))
                     .foregroundStyle(Theme.Palette.sleep.opacity(0.12))
             }
+            WorkoutBlocks(ranges: workouts.clipped(to: domain), top: (yDomain ?? fittedDomain).upperBound)
             ForEach(segments) { segment in
                 ForEach(segment.points) { point in
                     LineMark(x: .value("Time", point.time), y: .value(unit, point.value), series: .value("Stretch", segment.id))

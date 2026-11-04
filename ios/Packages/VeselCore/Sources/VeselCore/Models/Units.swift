@@ -6,6 +6,7 @@ public enum Units: String, Sendable, CaseIterable {
 
     public static let poundsPerKilogram = 2.20462
     public static let centimetresPerInch = 2.54
+    public static let metresPerMile = 1609.344
 
     /// "75 kg" / "165 lb"
     public func weightText(kg: Double) -> String {
@@ -35,6 +36,16 @@ public enum Units: String, Sendable, CaseIterable {
     public func temperatureDifferenceText(celsius: Double) -> String {
         let difference = temperatureDifference(celsius: celsius)
         return "\(difference >= 0 ? "+" : "−")\(NumberText.decimal(abs(difference), 1)) \(temperatureUnit)"
+    }
+
+    /// A route's length: "8.4 km" / "5.2 mi".
+    public func distanceText(meters: Double) -> String {
+        self == .metric ? "\(NumberText.decimal(meters / 1000, 1)) km" : "\(NumberText.decimal(meters / Self.metresPerMile, 1)) mi"
+    }
+
+    /// An average speed: "11.9 km/h" / "7.4 mph".
+    public func speedText(kmh: Double) -> String {
+        self == .metric ? "\(NumberText.decimal(kmh, 1)) km/h" : "\(NumberText.decimal(kmh * 1000 / Self.metresPerMile, 1)) mph"
     }
 
     /// Kilograms or pounds.

@@ -11,6 +11,7 @@ final class TodayModel {
 
     private var loaded: (day: DayKey, snapshot: TodaySnapshot)?
     private var loadedStepHours: (day: DayKey, hours: HourlySteps)?
+    private var loadedWorkouts: (day: DayKey, workouts: [LabelledWorkout])?
     /// The morning "Still in bed" was tapped; the card returns the next morning even if the app stayed open.
     private var dismissedOn: String?
 
@@ -96,6 +97,9 @@ final class TodayModel {
     /// Today's steps by hour, for the steps card's bars; empty while it is being read or with none.
     var stepHours: [HourlySteps.Hour] { loadedStepHours.flatMap { $0.day == today ? $0.hours.hours : nil } ?? [] }
 
+    /// The workouts that started today, in time order; empty while they are being read or with none.
+    var workouts: [LabelledWorkout] { loadedWorkouts.flatMap { $0.day == today ? $0.workouts : nil } ?? [] }
+
     /// Last night's resting heart rate; nil until last night is stored.
     var restingHeartRate: Double? {
         guard let latest = snapshot?.latest, latest.night == today else { return nil }
@@ -111,7 +115,8 @@ final class TodayModel {
             status: snapshot.latest?.status,
             contributors: snapshot.latest?.contributors ?? [],
             asleepMinutes: snapshot.latest?.value(MetricKind.sleepAsleep),
-            units: unitsStore.units
+            units: unitsStore.units,
+            yesterdayWorkout: snapshot.yesterdayWorkout
         )
     }
 
@@ -138,6 +143,13 @@ final class TodayModel {
         let shown = today
         await reads.observe {
             for try await value in database.observeHourlySteps(day: shown) { loadedStepHours = (shown, value) }
+        }
+    }
+
+    func observeWorkouts() async {
+        let shown = today
+        await reads.observe {
+            for try await value in database.observeLabelledWorkouts(day: shown) { loadedWorkouts = (shown, value) }
         }
     }
 

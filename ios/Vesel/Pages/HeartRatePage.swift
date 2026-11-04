@@ -52,7 +52,8 @@ struct HeartRateDay: View {
     private var scrub: HeaderText? {
         guard let selection, let points = model.loaded(day)?.points else { return nil }
         let found = ReadingDayChart.scrubText(at: selection, points: points, zone: model.zone, unit: "bpm", format: { Formatters.whole($0) })
-        return HeaderText(value: found.reading.capitalizedFirst, line: "\(found.time) · \(PageDayLine.day(day, today: today, zone: model.zone))")
+        let workout = model.workouts(day).word(at: selection).map { " · \($0.capitalizedFirst)" } ?? ""
+        return HeaderText(value: found.reading.capitalizedFirst + workout, line: "\(found.time) · \(PageDayLine.day(day, today: today, zone: model.zone))")
     }
 
     /// The day's lowest to highest, as Journal's card says it.
@@ -137,7 +138,8 @@ struct HeartRateDayContent<Now: View>: View {
             let zone = model.zone
             GlassCard {
                 ReadingDayChart(
-                    day: day, points: periods.points, spans: model.spans(day) ?? [], zone: zone, unit: "bpm", color: Theme.Palette.recovery,
+                    day: day, points: periods.points, spans: model.spans(day) ?? [], workouts: model.workouts(day), zone: zone, unit: "bpm",
+                    color: Theme.Palette.recovery,
                     format: { Formatters.whole($0) },
                     spokenLabel:
                         "Heart rate on \(Formatters.day(day, zone: zone)), lowest \(Formatters.whole(range.lowest)) at \(Formatters.clock(range.lowestAt, zone: zone)), highest \(Formatters.whole(range.highest)) at \(Formatters.clock(range.highestAt, zone: zone))",

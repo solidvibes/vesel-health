@@ -85,6 +85,8 @@ final class PairingModel {
             do {
                 try await bandSync.firstTimeUse(profile)
                 guard let band = paired else { throw PairingError.setupFailed }
+                // Keeps a stored choice through a re-pair. The Loop's own default stands if this doesn't go through.
+                try? await bandSync.setWrist(await database.wrist())
                 try await database.save(profile)
                 try await database.save(BandInfo(deviceId: band.deviceId, name: band.name, pairedAt: clock.now))
                 didPair()

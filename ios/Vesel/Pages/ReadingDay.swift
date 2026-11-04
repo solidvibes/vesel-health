@@ -15,6 +15,7 @@ final class ReadingDayModel {
 
     private(set) var periods: Periods?
     private var loadedSpans: (day: DayKey, spans: [ClosedRange<Date>])?
+    private var loadedWorkouts: (day: DayKey, spans: [WorkoutSpan])?
     /// Today's latest stored reading, for the heart rate page's Now row; nil on another day.
     private(set) var latest: HeartRateSample?
     /// The time `-VeselScrub` asks for, once.
@@ -37,6 +38,9 @@ final class ReadingDayModel {
 
     func spans(_ day: DayKey) -> [ClosedRange<Date>]? { loadedSpans?.day == day ? loadedSpans?.spans : nil }
 
+    /// The workouts over `day`, for the purple blocks; empty while they are being read.
+    func workouts(_ day: DayKey) -> [WorkoutSpan] { loadedWorkouts?.day == day ? loadedWorkouts?.spans ?? [] : [] }
+
     func isReady(_ day: DayKey) -> Bool {
         loaded(day) != nil && spans(day) != nil
     }
@@ -44,7 +48,14 @@ final class ReadingDayModel {
     func observe(_ day: DayKey) async {
         async let periods: Void = observePeriods(day)
         async let spans: Void = observeSpans(day)
-        _ = await (periods, spans)
+        async let workouts: Void = observeWorkouts(day)
+        _ = await (periods, spans, workouts)
+    }
+
+    private func observeWorkouts(_ day: DayKey) async {
+        await reads.observe {
+            for try await value in database.observeWorkoutSpans(day: day, zone: zone) { loadedWorkouts = (day, value) }
+        }
     }
 
     /// Follows today's latest reading; does nothing for another day.
@@ -85,6 +96,7 @@ struct ReadingDayChart: View {
     let day: DayKey
     let points: [ReadingPoint]
     let spans: [ClosedRange<Date>]
+    var workouts: [WorkoutSpan] = []
     let zone: TimeZone
     let unit: String
     let color: Color
@@ -106,21 +118,27 @@ struct ReadingDayChart: View {
         let start = day.start(in: zone)
         let domain = start...day.adding(days: 1).start(in: zone)
         let marks = Self.marks(of: start, zone: zone)
-        let text = selection.map { moment -> String in
+        let spoken = selection.map { moment -> String in
             let found = Self.scrubText(at: moment, points: points, zone: zone, unit: unit, format: format)
-            return "\(found.time) · \(found.reading)"
+            return "\(found.time) · \(found.reading)" + (workouts.word(at: moment).map { ", during a \($0)" } ?? "")
         }
         VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
             ReadingLineChart(
-                points: points, domain: domain, marks: marks, zone: zone, unit: unit, color: color, format: format, shaded: spans, scrub: scrub,
-                selection: $selection)
+                points: points, domain: domain, marks: marks, zone: zone, unit: unit, color: color, format: format, shaded: spans, workouts: workouts,
+                scrub: scrub, selection: $selection)
             if !spans.isEmpty {
                 Text("Shaded: asleep")
                     .font(Theme.Typography.small)
                     .foregroundStyle(Theme.Palette.mutedText)
             }
+            if !workouts.isEmpty {
+                Text("Purple: \(workoutList)")
+                    .font(Theme.Typography.small)
+                    .foregroundStyle(Theme.Palette.mutedText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .scrubAccessibility($selection, domain: domain, label: label, value: text ?? "")
+        .scrubAccessibility($selection, domain: domain, label: label, value: spoken ?? "")
         .onAppear {
             guard selection == nil else { return }
             selection = takeLaunchScrub()?.moment(in: domain, zone: zone)
@@ -136,7 +154,16 @@ struct ReadingDayChart: View {
 
     private var label: String {
         let asleep = spans.map { "asleep \(Formatters.clock($0.lowerBound, zone: zone)) to \(Formatters.clock($0.upperBound, zone: zone))" }
-        return ([spokenLabel] + asleep).joined(separator: ", ")
+        let workedOut = workouts.map {
+            "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone)) to \(Formatters.clock($0.range.upperBound, zone: zone))"
+        }
+        return ([spokenLabel] + asleep + workedOut).joined(separator: ", ")
+    }
+
+    /// "ride 18:30–19:45, run 07:10–07:52"
+    private var workoutList: String {
+        workouts.map { "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone))–\(Formatters.clock($0.range.upperBound, zone: zone))" }
+            .joined(separator: ", ")
     }
 }
 

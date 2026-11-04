@@ -62,6 +62,7 @@ targets:
           - bluetooth-central
           - fetch
           - processing
+          - location
         BGTaskSchedulerPermittedIdentifiers:
           - app.vesel.ios.refresh
           - app.vesel.ios.catchup
@@ -84,6 +85,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Vesel
         INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Vesel reads your band directly over Bluetooth, so your data never goes through anyone's cloud."
         INFOPLIST_KEY_NSCameraUsageDescription: "Vesel uses the camera only to scan the backup QR your Mac shows."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Vesel records your route during a workout your Loop noticed. It stays on your phone and your Mac."
+        INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: "Your Loop starts workouts by itself, so Vesel needs location in the background to record the route. Only during a workout; it stays on your phone and your Mac."
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Vesel backs up to your Mac over your home Wi-Fi, and nowhere else."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

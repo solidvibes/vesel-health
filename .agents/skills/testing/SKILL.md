@@ -11,6 +11,7 @@ What we test: health formulas with written-out expected numbers, migrations, the
 - Analysis (baselines, HRV, stress, alerts) gets Swift Testing tests on recorded sample data, with the expected numbers written out.
 - Storage tests run against an in-memory GRDB database.
 - Code that needs the band uses a fake `WearableSource`; tests never need a real Loop.
+- Workout mapping tests build the SDK's protobuf structs, never a real session file.
 - App screen-model tests build the model from `AppDatabase.inMemory()`, a `FixedClock` and plain closures for app actions, like `SyncingModelTests`.
 - Whether an error is a paused database is tested on GRDB's own errors in VeselStorage (`PausedTests`); the app tests can't link GRDB.
 - Server code gets pytest tests.
@@ -21,4 +22,4 @@ What we test: health formulas with written-out expected numbers, migrations, the
 - The fake band and its fixtures live in `VeselWearableTesting`, compiled only under `VESEL_FAKE_BAND` (Debug). App code imports it only under `#if DEBUG`. The Release guard in `ios/project.yml` ("Leave the fake band out of Release") must stay.
 - Changing how an analysis works bumps its method version (stored in `computed_metric`); the next read recomputes every night stored under the old version.
 - A stress level worked out outside `StressUpdater` uses that day's stored baseline and floor, never a new baseline, and re-reads when the stored `stress.readings` rows change.
-- Stress tests always include a flagged-sample (blocker or no skin contact) case and a high-activity case.
+- Stress tests always include a flagged-sample (blocker or no skin contact) case, a high-activity case and a reading inside a workout.

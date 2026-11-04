@@ -20,6 +20,8 @@ public actor BandSync {
     private var wantsLive = false
     private var live: Task<Void, Never>?
     private var liveGeneration = 0
+    /// When a workout last failed to come off the band, by session; it is tried again at most once an hour.
+    private var workoutFailedAt: [String: Date] = [:]
     private let liveContinuation: AsyncStream<LiveHeartRate>.Continuation
     /// Live heart rate while it is on. For showing only: never store or log it.
     public nonisolated let liveHeartRate: AsyncStream<LiveHeartRate>
@@ -140,6 +142,38 @@ public actor BandSync {
             do {
                 try Task.checkCancellation()
                 try await self.band.firstTimeUse(profile, now: self.clock.now)
+            } catch {
+                await self.resumeLive()
+                throw error
+            }
+            await self.resumeLive()
+        }
+    }
+
+    /// Changes the band's automatic training detection. The live stream pauses for it and comes back after, also when the
+    /// band refuses. Only the band is written: the caller stores it on the phone once this returns.
+    public func setWorkoutDetection(_ detection: WorkoutDetection) async throws {
+        try await exclusively {
+            await self.pauseLive()
+            do {
+                try Task.checkCancellation()
+                try await self.band.setWorkoutDetection(detection)
+            } catch {
+                await self.resumeLive()
+                throw error
+            }
+            await self.resumeLive()
+        }
+    }
+
+    /// Tells the band which wrist it is worn on, once no sync is running. The live stream pauses for it and comes back
+    /// after, also when the band refuses.
+    public func setWrist(_ wrist: WristSide) async throws {
+        try await exclusively {
+            await self.pauseLive()
+            do {
+                try Task.checkCancellation()
+                try await self.band.setWrist(wrist)
             } catch {
                 await self.resumeLive()
                 throw error
@@ -319,6 +353,7 @@ public actor BandSync {
         let zone = clock.timeZone
         let today = clock.today
         try await call { _ in try await band.setTime(now, zone: zone) }
+        try await switchOnWorkoutDetection()
 
         var updated = info
         updated.batteryPercent = try await call { _ in try await band.battery() }
@@ -342,6 +377,8 @@ public actor BandSync {
         var held: [BandPayload] = []
         for kind in kinds {
             try Task.checkCancellation()
+            // Workouts before the slow 24/7 downloads. They aren't a kind: never in the ledger, never cleared.
+            if kind == .heartRate { try await fetchWorkouts() }
             let ledger = try await database.ledger([kind])
             let afterLast = try await database.lastStoredDay(kind).map { $0.adding(days: -1) }
             let unsettled = ClearPlan.firstUnsettledDay(in: ledger, timeZone: zone)
@@ -382,6 +419,68 @@ public actor BandSync {
             try await call { _ in try await band.deleteStored(type, until: day) }
             for kind in type.fetchKinds {
                 try await database.markDeletedFromBand(kind, through: day, at: clock.now)
+            }
+        }
+    }
+
+    /// Once per Loop: switches on its automatic training detection, keeping its own sensitivity and shortest workout. A
+    /// failure leaves it for the next read; this read carries on.
+    private func switchOnWorkoutDetection() async throws {
+        guard try await !database.isWorkoutDetectionSetUp() else { return }
+        do {
+            let current = try await call { _ in try await band.workoutDetection() }
+            var detection = current ?? .sdkFallback
+            detection.isOn = true
+            if detection != current {
+                try await call { _ in try await band.setWorkoutDetection(detection) }
+            }
+            try await database.storeWorkoutDetection(detection)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try Task.checkCancellation()
+        }
+    }
+
+    /// Reads every workout on the band that isn't stored, or whose files changed size, one at a time. The one still running
+    /// waits for its end. A workout that fails, or a list that doesn't come, is skipped and the read carries on; a workout whose
+    /// file didn't come off the band, or whose read was stopped, is tried again at most once an hour. Workouts stay on the band.
+    private func fetchWorkouts() async throws {
+        let now = clock.now
+        let status = try? await call { _ in try await band.workoutStatus() }
+        try Task.checkCancellation()
+        let references: [WorkoutReference]
+        do {
+            references = try await call(limit: limits.backlogCall) { _ in try await band.workoutReferences() }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try Task.checkCancellation()
+            return
+        }
+        let stored = try await database.storedWorkouts()
+        for reference in references.sorted(by: { $0.date < $1.date }) {
+            try Task.checkCancellation()
+            guard stored[reference.session] != reference.fileSize else { continue }
+            switch status {
+            case .running(let since?) where reference.date >= since.addingTimeInterval(-60): continue
+            case .running(nil) where reference.date >= now.addingTimeInterval(-6 * 3600): continue
+            default: break
+            }
+            if let failedAt = workoutFailedAt[reference.session], now < failedAt.addingTimeInterval(3600) { continue }
+            // Marked before the call: one the watchdog stops (stuck, or the band went away) also waits an hour, so it
+            // can't stop every read before heart rate.
+            workoutFailedAt[reference.session] = now
+            do {
+                let workout = try await call { _ in try await band.workout(reference) }
+                try await database.save(workout, storedAt: now)
+                workoutFailedAt[reference.session] = nil
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch WorkoutReadError.unfinished {
+                workoutFailedAt[reference.session] = nil
+            } catch {
+                try Task.checkCancellation()
             }
         }
     }

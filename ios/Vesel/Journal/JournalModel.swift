@@ -10,6 +10,7 @@ final class JournalModel {
     private var loaded: (day: DayKey, snapshot: TodaySnapshot)?
     private var loadedStress: StressReport?
     private var loadedSteps: (day: DayKey, hours: HourlySteps)?
+    private var loadedWorkouts: (day: DayKey, workouts: [LabelledWorkout])?
     let heartRate: ReadingDayModel
     private let reads = ReadProblem()
     private let database: AppDatabase
@@ -79,6 +80,9 @@ final class JournalModel {
     /// The picked day's hourly step bars; empty while it is being read or with no steps.
     var stepHours: [HourlySteps.Hour] { loadedSteps.flatMap { $0.day == day ? $0.hours.hours : nil } ?? [] }
 
+    /// The workouts that started on the picked day, in time order; empty while they are being read or with none.
+    var workouts: [LabelledWorkout] { loadedWorkouts.flatMap { $0.day == day ? $0.workouts : nil } ?? [] }
+
     /// The day's lowest to highest; nil with no readings.
     var heartRateRange: DailyHeartRate.Range? {
         heartRate.loaded(day)?.metric.flatMap(DailyHeartRate.Range.init)
@@ -114,6 +118,13 @@ final class JournalModel {
         let shown = day
         await reads.observe {
             for try await value in database.observeHourlySteps(day: shown) { loadedSteps = (shown, value) }
+        }
+    }
+
+    func observeWorkouts() async {
+        let shown = day
+        await reads.observe {
+            for try await value in database.observeLabelledWorkouts(day: shown) { loadedWorkouts = (shown, value) }
         }
     }
 

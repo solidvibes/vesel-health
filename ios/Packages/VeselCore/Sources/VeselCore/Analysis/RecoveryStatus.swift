@@ -17,10 +17,23 @@ public struct RecoveryStatus: Sendable, Equatable {
     /// Polar's word for the indicator.
     public var word: String { Self.word(indicator: indicator) }
 
+    /// The short words the Recovery page leads with.
+    public var verdict: String {
+        switch indicator {
+        case 6: "Well recovered"
+        case 5: "Good recovery"
+        case 4: "Recovery OK"
+        case 3: "Lower than usual"
+        default: "Low recovery"
+        }
+    }
+
     public static func word(indicator: Int) -> String { words[indicator - 1] }
 
     /// Poor, very poor or compromised: the Recovery line turns to the warm colour.
     public static func isLow(indicator: Int) -> Bool { indicator <= 3 }
+
+    public var mark: NormalMark { NormalMark(recovery: indicator) }
 
     private static let words = ["very poor", "poor", "compromised", "OK", "good", "very good"]
 

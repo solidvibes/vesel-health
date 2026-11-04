@@ -14,6 +14,7 @@ struct TodayView: View {
     @State private var attempt = 0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.openWorkout) private var openWorkout
 
     init(environment: AppEnvironment, readingCard: ReadingCardGate, openPage: @escaping (PageRoute) -> Void, openSyncing: @escaping () -> Void) {
         self.environment = environment
@@ -53,6 +54,10 @@ struct TodayView: View {
         .task(id: ObserveKey(value: model.today, active: scenePhase == .active, attempt: attempt)) {
             guard scenePhase == .active else { return }
             await model.observeStepHours()
+        }
+        .task(id: ObserveKey(value: model.today, active: scenePhase == .active, attempt: attempt)) {
+            guard scenePhase == .active else { return }
+            await model.observeWorkouts()
         }
         .onChange(of: readKey, initial: true) { _, key in
             if !key.reading {
@@ -125,7 +130,8 @@ struct TodayView: View {
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 HeartRateCard(
                     live: model.live(at: context.date), latest: model.snapshot?.latestHeartRate, resting: model.restingHeartRate,
-                    points: model.heartRate.loaded(model.today)?.points ?? [], day: model.today, now: environment.clock.now, zone: model.zone,
+                    points: model.heartRate.loaded(model.today)?.points ?? [], workouts: model.heartRate.workouts(model.today), day: model.today,
+                    now: environment.clock.now, zone: model.zone,
                     action: { openPage(PageRoute(kind: .heartRate, day: model.today)) }
                 )
             }
@@ -134,6 +140,7 @@ struct TodayView: View {
                 day: model.today, now: environment.clock.now, zone: model.zone,
                 action: { openPage(PageRoute(kind: .steps, day: model.today)) }
             )
+            WorkoutLines(workouts: model.workouts, zone: model.zone, open: { openWorkout($0) })
             ForEach(model.alerts, id: \.kind) { alert in
                 AlertCard(alert: alert) {
                     switch alert.kind {

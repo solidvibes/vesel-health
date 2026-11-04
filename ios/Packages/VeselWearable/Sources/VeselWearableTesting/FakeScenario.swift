@@ -30,6 +30,8 @@ public enum FakeScenario: String, Sendable, CaseIterable {
     case offDay
     /// Like `normal`, but the last night's sleep runs 150 minutes longer, well above your usual, and its Nightly Recharge is good, so the long night is what Today says.
     case longNight
+    /// Like `normal`, but the Loop starts a workout 5 seconds after launch and ends it 2 minutes later; it is then on the band.
+    case workoutRunning
 
     public init(defaults: UserDefaults = .standard) {
         self.init(named: defaults.string(forKey: "VeselScenario"))
@@ -45,7 +47,11 @@ public enum FakeScenario: String, Sendable, CaseIterable {
 
 /// A problem the fake band acts out, picked with `-VeselFakeFailure <name>` (Simulator screenshots, tests).
 public enum FakeFailure: String, Sendable, CaseIterable {
-    case notFound, refused, setupFailed, unreachable
+    case notFound, refused, setupFailed, wristFailed, unreachable
+    /// The Loop refuses a change to its training detection.
+    case workoutDetection
+    /// The evening ride doesn't come off the Loop.
+    case workoutTransfer
 
     public init?(defaults: UserDefaults) {
         guard let failure = defaults.string(forKey: "VeselFakeFailure").flatMap(FakeFailure.init(rawValue:)) else { return nil }

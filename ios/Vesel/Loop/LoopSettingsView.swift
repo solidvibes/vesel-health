@@ -35,6 +35,7 @@ struct LoopSettingsView: View {
                         Divider()
                         ListRow(label: "Heart rate now", value: liveHeartRateText)
                     }
+                    wristSection
                     section("Sync") {
                         NavigationLink(value: TodayRoute.syncing) {
                             HStack(spacing: Theme.Spacing.s8) {
@@ -58,8 +59,21 @@ struct LoopSettingsView: View {
                         ErrorCard(
                             title: "Band storage is filling up",
                             message:
-                                "Vesel clears what it has stored, up to the day before yesterday. Training sessions, sleep scores and skin-contact files aren't read by Vesel yet, so they stay on the band."
+                                "Vesel clears what it has stored, up to the day before yesterday. Vesel keeps your workouts on the Loop and doesn't read sleep scores and skin-contact files yet, so they stay on the band."
                         )
+                    }
+                    section("Workouts") {
+                        NavigationLink(value: TodayRoute.workoutSettings) {
+                            HStack(spacing: Theme.Spacing.s8) {
+                                ListRow(label: "Workouts", value: workoutsText)
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Theme.Palette.mutedText)
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
                     }
                     section("Alerts") {
                         ForEach(Array(AlertKind.allCases.enumerated()), id: \.element) { index, kind in
@@ -144,6 +158,36 @@ struct LoopSettingsView: View {
         }
     }
 
+    private var wristSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
+            if model.wristNotSaved {
+                ErrorCard(
+                    title: "Not saved",
+                    message: "Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again."
+                )
+            }
+            section("Worn on") {
+                Picker(
+                    "Worn on",
+                    selection: Binding(
+                        get: { model.wrist },
+                        set: { side in Task { await model.chooseWrist(side) } }
+                    )
+                ) {
+                    Text("Left").tag(WristSide.left)
+                    Text("Right").tag(WristSide.right)
+                }
+                .pickerStyle(.segmented)
+                .disabled(model.savingWrist)
+                .padding(.vertical, Theme.Spacing.s8)
+            }
+            Text("Polar's sleep and activity maths are tuned to the wrist you wear it on.")
+                .font(Theme.Typography.small)
+                .foregroundStyle(Theme.Palette.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var connectionText: String {
         switch model.connection {
         case .connected: "Connected"
@@ -159,6 +203,11 @@ struct LoopSettingsView: View {
 
     private var lastReadText: String {
         model.lastRead.map { "Last read \(Formatters.ago($0, now: environment.clock.now))" } ?? "Not read yet"
+    }
+
+    private var workoutsText: String {
+        guard let detection = model.workoutDetection else { return "Not set up" }
+        return detection.isOn ? "On" : "Off"
     }
 
     private var backupText: String {

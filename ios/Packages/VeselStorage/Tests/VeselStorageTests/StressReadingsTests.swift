@@ -40,7 +40,7 @@ struct StressReadingsTests {
         try await database.writer.read { try AppDatabase.stressReadings($0, from: day(string), through: day(string), now: at(iso), zone: berlin) }
     }
 
-    @Test func theHighestReadingInEachHourIsTheStoredHourlyLevel() async throws {
+    @Test func theMiddleReadingInEachHourIsTheStoredHourlyLevel() async throws {
         // A second reading at 10:30 (calmer than 10:00) and at 11:30 (more stressed than 11:00).
         try await database.save(stored.session(day("2026-10-08"), hour: 10, minute: 30, spread: 50))
         try await database.save(stored.session(day("2026-10-08"), hour: 11, minute: 30, spread: 15))
@@ -53,7 +53,9 @@ struct StressReadingsTests {
         #expect(byHour.mapValues(\.count) == [10: 2, 11: 2, 12: 1])
         for (hour, inHour) in byHour {
             let hourly = try #require(try await database.computedMetric(MetricKind.stressHourly, day: day("2026-10-08"), hour: hour))
-            #expect(inHour.map(\.level).max() == hourly.value)
+            // Two readings: the middle is their mean; one: itself.
+            let levels = inHour.map(\.level)
+            #expect(abs(levels.reduce(0, +) / Double(levels.count) - hourly.value) < 1e-9)
         }
         #expect(abs(found[0].level - 67.04) < 0.01)
         #expect(abs(found[0].baseline.baseline - StressUpdaterTests.baseline) < 1e-9)
@@ -68,7 +70,7 @@ struct StressReadingsTests {
     }
 
     @Test func exerciseAndFlaggedBeatsLeaveNoReading() async throws {
-        // The band marked a high-activity heart rate at 11:01 (09:01Z); the 12:00 session has 11 flagged beats of 40.
+        // The band marked a high-activity heart rate at 11:01 (09:01Z); the 13:00 session has 11 of 40 beats without skin contact.
         try await database.save(heartRates: [HeartRateSample(time: at("2026-10-08T09:01:00Z"), bpm: 150, trigger: .highActivity)])
         try await stored.updater.updateAfterSync()
         #expect(try await readings("2026-10-08").count == 2)

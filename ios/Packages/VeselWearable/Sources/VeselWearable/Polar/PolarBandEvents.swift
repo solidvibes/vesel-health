@@ -78,13 +78,23 @@ final class PolarBandEvents: PolarBleApiObserver, PolarBleApiDeviceInfoObserver,
 
     /// `restApiEvent` is left out: it is the sleep-state notice `observeSleepRecordingStatus` already turns into `.sleepEnded`.
     /// Only an inactivity alert that fired (countdown 0) is `.stillTooLong`; the warning before it, or one that can't be
-    /// read, only checks in.
+    /// read, only checks in. An exercise notice says a workout started or ended; paused, or one that can't be read, only
+    /// checks in.
     static func event(_ type: PolarDeviceToHostNotification, parameters: Data, at now: Date) -> BandEvent? {
         switch type {
         case .syncRequired: .syncRequested
         case .inactivityAlert: PolarMapping.inactivityCountdown(parameters) == 0 ? .stillTooLong(at: now) : .checkIn
-        case .exerciseStatus: .checkIn
+        case .exerciseStatus: exerciseEvent(parameters, at: now)
         default: nil
+        }
+    }
+
+    private static func exerciseEvent(_ parameters: Data, at now: Date) -> BandEvent {
+        let info = try? PolarExerciseSession.ExerciseInfo.parse(from: parameters)
+        return switch info?.status {
+        case .inProgress: .workoutStarted(at: info?.startTime ?? now)
+        case .stopped: .workoutEnded(at: now)
+        default: .checkIn
         }
     }
 
