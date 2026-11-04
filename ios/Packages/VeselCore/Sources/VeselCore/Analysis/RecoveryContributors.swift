@@ -49,6 +49,14 @@ public enum Contributor: String, CaseIterable, Sendable {
         }
     }
 
+    public var better: NormalMark.Better {
+        switch self {
+        case .hrv, .sleep: .higher
+        case .restingHeartRate: .lower
+        case .breathing, .skinTemperature: .neither
+        }
+    }
+
     /// A value as the screens write it: "6 h 05 m", "54.5 bpm"; skin temperature in `units`. Explanation texts stay metric.
     public func text(_ value: Double, units: Units = .metric) -> String {
         if self == .sleep { return DurationText.hoursMinutes(minutes: value) }
@@ -183,6 +191,12 @@ public struct ContributorReading: Sendable, Equatable {
         if value > normal.high { return .wellAbove }
         if value >= normal.low { return .usual }
         return range.sd == 0 || value >= range.mean - 2 * range.sd ? .lower : .wellBelow
+    }
+
+    /// Nil while learning. Sleep above its normal is off, never better.
+    public var mark: NormalMark? {
+        if contributor == .sleep, verdict == .wellAbove { return .off(.above) }
+        return NormalMark(verdict: verdict, better: contributor.better)
     }
 
     /// The verdict in words: sleep reads "shorter"/"longer" than usual, the others "lower"/"higher".

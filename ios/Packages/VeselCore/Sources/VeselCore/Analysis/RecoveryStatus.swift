@@ -22,6 +22,8 @@ public struct RecoveryStatus: Sendable, Equatable {
     /// Poor, very poor or compromised: the Recovery line turns to the warm colour.
     public static func isLow(indicator: Int) -> Bool { indicator <= 3 }
 
+    public var mark: NormalMark { NormalMark(recovery: indicator) }
+
     private static let words = ["very poor", "poor", "compromised", "OK", "good", "very good"]
 
     public init?(_ recharge: NightlyRecharge) {

@@ -200,9 +200,9 @@ Phase 5 — Sleep page
 ## Steps
 
 ### Phase 1 — marks and colours
-1. `NormalMark`, `NormalScale`, `ContributorReading.mark`, `RecoveryStatus.mark`, with `NormalMarkTests`.
-2. Eight colour sets, `Theme.Palette` entries, `MarkBadge` with previews.
-3. `docs/design/system.md`: colours, component, contrast pairs; layers rule line for marks.
+- [x] 1. `NormalMark`, `NormalScale`, `ContributorReading.mark`, `RecoveryStatus.mark`, with `NormalMarkTests`.
+- [x] 2. Eight colour sets, `Theme.Palette` entries, `MarkBadge` with previews.
+- [x] 3. `docs/design/system.md`: colours, component, contrast pairs; layers rule line for marks.
 
 ### Phase 2 — Recovery page
 1. `RecoveryStatus.verdict`, `quietLine`, `noneStoodOut` shared; delete `make` and tests.
