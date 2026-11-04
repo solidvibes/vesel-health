@@ -38,17 +38,6 @@ public enum Contributor: String, CaseIterable, Sendable {
         self = found
     }
 
-    /// Which side of your usual is the better one, where there is one. HRV is better higher, resting heart rate lower,
-    /// sleep higher (but a much longer night than usual isn't a better one); breathing and skin temperature have no good side.
-    public func goodSide(of verdict: RangeVerdict) -> GoodSide {
-        switch (self, verdict) {
-        case (_, .learning), (_, .usual), (.breathing, _), (.skinTemperature, _), (.sleep, .wellAbove): .none
-        case (.hrv, .higher), (.hrv, .wellAbove), (.sleep, .higher): .good
-        case (.restingHeartRate, .lower), (.restingHeartRate, .wellBelow): .good
-        default: .other
-        }
-    }
-
     public var better: NormalMark.Better {
         switch self {
         case .hrv, .sleep: .higher
@@ -63,11 +52,6 @@ public enum Contributor: String, CaseIterable, Sendable {
         if self == .skinTemperature { return units.temperatureText(celsius: value) }
         return "\(NumberText.decimal(value, decimals)) \(unit)"
     }
-}
-
-/// Whether a contributor's verdict is on its good side, the other side, or neither.
-public enum GoodSide: Sendable, Equatable {
-    case good, other, none
 }
 
 /// One night's numbers for each contributor, and what Polar measured to get them.

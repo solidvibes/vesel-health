@@ -205,11 +205,11 @@ Phase 5 — Sleep page
 - [x] 3. `docs/design/system.md`: colours, component, contrast pairs; layers rule line for marks.
 
 ### Phase 2 — Recovery page
-1. `RecoveryStatus.verdict`, `quietLine`, `noneStoodOut` shared; delete `make` and tests.
-2. `RecoveryPage` header and order; `RecoveryModel`.
-3. `RecoveryView` card and `ContributorRow`; delete `goodSide`/`GoodSide`, move their test cases.
-4. `SignalChart` recovery y-domain and axis; `BodyModel` recovery scrub and W/M/3M header words.
-5. Docs and changelog; screenshots in the states under Verification.
+- [x] 1. `RecoveryStatus.verdict`, `quietLine`, `noneStoodOut` shared; delete `make` and tests.
+- [x] 2. `RecoveryPage` header and order; `RecoveryModel`.
+- [x] 3. `RecoveryView` card and `ContributorRow`; delete `goodSide`/`GoodSide`, move their test cases.
+- [x] 4. `SignalChart` recovery y-domain and axis; `BodyModel` recovery scrub and W/M/3M header words.
+- [ ] 5. Docs and changelog (done); screenshots in the states under Verification (left for the final pass).
 
 ### Phase 3 — signal pages
 1. `TrendNight.mark` / `TrendPoint.mark`, `PersonalRange.explanation`; tests.

@@ -158,7 +158,7 @@ enum TrendKind: String, CaseIterable, Hashable {
 
     func text(_ metric: ComputedMetric, units: Units) -> String {
         switch self {
-        case .recovery: RecoveryStatus(metric)?.word.capitalizedFirst ?? "—"
+        case .recovery: RecoveryStatus(metric)?.verdict ?? "—"
         default: format(metric.value, units: units)
         }
     }
@@ -371,15 +371,15 @@ final class BodyModel {
         }
     }
 
-    /// The header of the period: the plain average of the days with a number ("48 ms", "average a night"); for recovery its most frequent word.
+    /// The header of the period: the plain average of the days with a number ("48 ms", "average a night"); for recovery its most frequent verdict.
     /// Steps leave today out: the day isn't over.
     func periodSummary(_ kind: TrendKind) -> HeaderText? {
         let range = Self.dateRange(firstDay, end, zone: zone)
         let nights = inRange(kind).filter { kind != .steps || $0.metric.day != today }
         guard !nights.isEmpty else { return nil }
         if kind == .recovery {
-            let words = nights.compactMap { night in RecoveryStatus(night.metric).map { (day: night.metric.day, value: $0.word) } }
-            return PeriodWindow.mostFrequent(words).map { HeaderText(label: nil, value: "Mostly \($0)", line: range) }
+            let words = nights.compactMap { night in RecoveryStatus(night.metric).map { (day: night.metric.day, value: $0.verdict) } }
+            return PeriodWindow.mostFrequent(words).map { HeaderText(label: "Most nights", value: $0, line: range) }
         }
         guard let average = PeriodWindow.average(nights.map(\.value)) else { return nil }
         let unit = kind.isPerDay ? "average a day" : "average a night"
