@@ -5,8 +5,6 @@ import VeselStorage
 /// What went into Recovery, one card: a row per contributor with its value and mark, and how it is worked out.
 struct RecoveryView: View {
     let model: RecoveryModel
-    /// A contributor's row opens that signal's page for the night.
-    let openContributor: (Contributor, DayKey) -> Void
 
     var body: some View {
         if let report = model.report {
@@ -34,7 +32,10 @@ struct RecoveryView: View {
                     .accessibilityAddTraits(.isHeader)
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(readings, id: \.contributor) { reading in
-                        ContributorRow(reading: reading, units: model.units) { openContributor(reading.contributor, report.night) }
+                        SignalLinkRow(
+                            kind: PageKind(TrendKind(reading.contributor)), value: valueText(reading), mark: reading.mark,
+                            note: reading.range == nil ? LearningText.nights(reading.nights) : nil, day: report.night
+                        )
                         if reading.contributor != readings.last?.contributor { Divider() }
                     }
                 }
@@ -49,6 +50,12 @@ struct RecoveryView: View {
             HowItsWorkedOutRow(framed: false, explanations: workedOut(report).map(\.1), labels: workedOut(report).map(\.0))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Skin temperature as its difference from your usual ("+0.9 °C"); the others as their value.
+    private func valueText(_ reading: ContributorReading) -> String {
+        guard reading.contributor == .skinTemperature, reading.mark != nil else { return reading.valueText(units: model.units) }
+        return reading.differenceText(units: model.units) ?? reading.valueText(units: model.units)
     }
 
     /// Polar's Nightly Recharge, your normal, then each contributor.
@@ -76,7 +83,7 @@ private struct PreviewRecovery: View {
 
     var body: some View {
         ScrollView {
-            RecoveryView(model: model) { _, _ in }
+            RecoveryView(model: model)
                 .padding(Theme.Spacing.edge)
         }
         .background { BlobBackground() }

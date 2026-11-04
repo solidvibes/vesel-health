@@ -84,6 +84,7 @@ struct SleepPeriodDetails: View {
                 Text("Stages")
                     .font(Theme.Typography.heading)
                     .foregroundStyle(Theme.Palette.text)
+                    .accessibilityAddTraits(.isHeader)
                 if let nights = stages.nights, !nights.isEmpty {
                     chart(nights)
                         .scrubAccessibility(
@@ -164,6 +165,7 @@ struct SleepPeriodDetails: View {
                 Text("Across these nights")
                     .font(Theme.Typography.heading)
                     .foregroundStyle(Theme.Palette.text)
+                    .accessibilityAddTraits(.isHeader)
                 SignalLinkRow(kind: .inBed, value: trends.periodSummary(.inBed)?.value ?? "—", day: trends.end, period: trends.period)
                 Divider()
                 SignalLinkRow(kind: .efficiency, value: trends.periodSummary(.efficiency)?.value ?? "—", day: trends.end, period: trends.period)

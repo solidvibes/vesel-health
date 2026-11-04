@@ -69,6 +69,13 @@ struct OverTimePart<Slot: View>: View {
                             .font(Theme.Typography.heading)
                             .foregroundStyle(Theme.Palette.text)
                         ExplanationView(explanation: latest.explanation)
+                        if let normal = latest.normalExplanation {
+                            Divider()
+                            Text("Your normal")
+                                .font(Theme.Typography.label)
+                                .foregroundStyle(Theme.Palette.text)
+                            ExplanationView(explanation: normal)
+                        }
                     }
                 }
             }
@@ -85,7 +92,8 @@ struct OverTimePart<Slot: View>: View {
             if slotSelection != nil { selection = nil }
         }
         .onChange(of: model.isReady, initial: true) {
-            setMeaning(PageMeaning(yours: model.yours(kind), explanations: model.explanations(kind)))
+            let normal = model.latest(kind)?.normalExplanation.map { [(label: "Your normal", explanation: $0)] } ?? []
+            setMeaning(PageMeaning(yours: model.yours(kind), explanations: model.explanations(kind) + normal))
         }
     }
 

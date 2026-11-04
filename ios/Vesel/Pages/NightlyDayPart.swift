@@ -79,6 +79,7 @@ struct NightlyDayPart: View {
                     Text("How it's worked out")
                         .font(Theme.Typography.heading)
                         .foregroundStyle(Theme.Palette.text)
+                        .accessibilityAddTraits(.isHeader)
                     Text(kind.normalSentence(normal))
                         .font(Theme.Typography.body)
                         .foregroundStyle(Theme.Palette.text)

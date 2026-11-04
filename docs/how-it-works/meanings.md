@@ -18,7 +18,7 @@ Screens said where Polar keeps a number, not what it means. One set of meanings,
 - Loop & settings → Help → What things mean: the same entries as a list, without a "Yours" line.
 
 ## Planned
-- Three more entries in the Sleep group (`docs/plans/2026-11-04-recovery-sleep-polish.md`): In bed, Efficiency, Bedtime and wake. Written (24 terms); opened from their new pages' titles once those pages land.
+- Three more entries in the Sleep group (`docs/plans/2026-11-04-recovery-sleep-polish.md`): In bed, Efficiency, Bedtime and wake. 24 terms; each opens from its page's title.
 - Recovery's contributor rows stop opening the meaning sheet: a row opens that signal's page, whose title opens the meaning.
 
 ## Do / Don't

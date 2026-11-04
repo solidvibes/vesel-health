@@ -44,6 +44,7 @@ struct NightView: View {
                 Text("The night")
                     .font(Theme.Typography.heading)
                     .foregroundStyle(Theme.Palette.text)
+                    .accessibilityAddTraits(.isHeader)
                 SignalLinkRow(
                     kind: .bedtime, value: "\(Formatters.clock(sleep.start, zone: zone)) to \(Formatters.clock(sleep.end, zone: zone))", day: report.night)
                 if let inBed = report.metrics[MetricKind.sleepInBed] {
@@ -68,6 +69,7 @@ struct NightView: View {
                     Text("Your normal")
                         .font(Theme.Typography.heading)
                         .foregroundStyle(Theme.Palette.text)
+                        .accessibilityAddTraits(.isHeader)
                     if let picture {
                         NormalPicture(
                             scale: picture.scale, mark: picture.mark, color: Theme.Palette.sleep, value: picture.value, low: picture.low,

@@ -27,7 +27,7 @@ struct NormalPicture: View {
                         .foregroundStyle(Theme.Palette.text)
                         .fixedSize()
                 }
-                .centered(at: scale.dot * (proxy.size.width - dotSize) + dotSize / 2, in: proxy.size.width)
+                .centered(at: x(scale.dot, in: proxy.size.width), in: proxy.size.width)
             }
             .frame(height: rowHeight)
             GeometryReader { proxy in
@@ -38,8 +38,8 @@ struct NormalPicture: View {
                         .frame(height: track)
                     Capsule()
                         .fill(color.opacity(0.35))
-                        .frame(width: max(width * (scale.normalTo - scale.normalFrom), track), height: track)
-                        .offset(x: width * scale.normalFrom)
+                        .frame(width: max(x(scale.normalTo, in: width) - x(scale.normalFrom, in: width), track), height: track)
+                        .offset(x: x(scale.normalFrom, in: width))
                     Circle()
                         .fill(mark.map(Theme.Palette.markChip) ?? color)
                         .overlay(Circle().strokeBorder(Theme.Palette.surface, lineWidth: 2))
@@ -57,8 +57,8 @@ struct NormalPicture: View {
             } else {
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
-                        end(low).centered(at: proxy.size.width * scale.normalFrom, in: proxy.size.width)
-                        end(high).centered(at: proxy.size.width * scale.normalTo, in: proxy.size.width)
+                        end(low).centered(at: x(scale.normalFrom, in: proxy.size.width), in: proxy.size.width)
+                        end(high).centered(at: x(scale.normalTo, in: proxy.size.width), in: proxy.size.width)
                     }
                 }
                 .frame(height: rowHeight)
@@ -67,6 +67,9 @@ struct NormalPicture: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
     }
+
+    /// Where a point `fraction` along the track sits, on the same scale as the dot's middle, so a dot on the normal's edge sits on the band's edge.
+    private func x(_ fraction: Double, in width: CGFloat) -> CGFloat { dotSize / 2 + fraction * (width - dotSize) }
 
     private func end(_ text: String) -> some View {
         Text(text)

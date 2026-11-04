@@ -7,7 +7,6 @@ struct RecoveryDay: View {
     @State private var nights: BodyModel
     @State private var selection: Date?
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.openPage) private var openPage
     @Environment(\.setPageMeaning) private var setMeaning
 
     init(environment: AppEnvironment, day: DayKey) {
@@ -27,11 +26,11 @@ struct RecoveryDay: View {
                     line: PageDayLine.night(model.day, shown: model.report?.night, today: model.today, zone: model.zone)
                 ), scrub: selection.flatMap { nights.scrubText(.recovery, at: $0) })
             NightsChart(kind: .recovery, day: model.day, model: nights, selection: $selection)
-            RecoveryView(model: model) { contributor, night in openPage(PageRoute(kind: PageKind(TrendKind(contributor)), day: night)) }
+            RecoveryView(model: model)
             WhatHelpsCard(tips: model.helpTips, usualBedtime: model.usualBedtime)
         }
         .readProblem(model.readProblem || nights.readProblem)
-        .onChange(of: model.report?.night, initial: true) {
+        .onChange(of: model.report?.status, initial: true) {
             setMeaning(
                 PageMeaning(
                     yours: model.report?.status.map {
