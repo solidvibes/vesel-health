@@ -1,10 +1,10 @@
 ---
-status: not-started
+status: implemented
 ---
 
 # Recovery and Sleep polish: one colour language, less text, every number opens its page
 **Date**: 2026-11-04
-**Status**: Approved
+**Status**: Implemented 2026-11-04
 **Touches**: `docs/decisions/2026-11-04-colour-against-your-normal.md`, `docs/decisions/2026-10-28-range-lines.md`, `docs/decisions/2026-10-28-one-page-per-signal.md`, `docs/decisions/2026-10-27-no-score-to-chase.md`, `docs/design/system.md`, `docs/design/screens.md`, `docs/how-it-works/recovery.md`, `docs/how-it-works/sleep.md`, `docs/how-it-works/days.md`, `docs/how-it-works/meanings.md`, `.agents/skills/layers/SKILL.md`
 
 ## TL;DR
@@ -272,6 +272,8 @@ Phase 5 — Sleep page
 - Phase 4b: `TrendKind.readKinds` says what a thing's own pages read (In bed and Efficiency only their series, the others Body's list); `BodyModel` takes it as `kinds`. `trendAxes` gained an optional `yLabel` so the Bedtime chart's axis reads clock hours.
 - Phase 5: `OverTimePart` takes the slot as a closure that also receives the page's `BodyModel` (built with In bed and Efficiency added to its kinds, on Sleep only), so the period rows reuse its averages instead of a second model; the slot sets its chart's header reading through a binding. `SleepModel.normalPicture` builds Sleep D's picture from `InRange.sleep`'s own scale. The rows are `SignalLinkRow` (a button through `openPage`), used by "The night", "Overnight" and the period rows. While time asleep is learning, "Your normal" shows the learning words and "Show the numbers". The time-asleep explanation and "Yours" line moved from the removed Time asleep card to the page's meaning sheet. The card of three rows under Stages is headed "Across these nights" (the plan names no heading). Stacked bars use explicit from/to extents so their order is deterministic.
 - Review: `ContributorRow` merged into `SignalLinkRow` (a `note` line for the learning words), so Recovery, Sleep D and Sleep's period rows share one row. W, M and 3M's "How it's worked out" and meaning sheet also show the on-read normal's explanation (Lowest HR, In bed, Efficiency).
+- Go: one branch and one pull request for all six phases (decision 24 said one each), stacked on `feat/workouts`.
+- Verify: full checks green (app tests 220 on the iOS 27.0 Simulator). On Sleep D at default text size the In bed row sits under the tab bar and Efficiency is below the fold; the stages chart takes about 40 % of the screen. Left for the owner (decision 28: iterate on Sleep later). The fake band's normal scenario showed only 2 nights in the Simulator, so marks and bands were not seen there; the owner checks them on the iPhone.
 
 ## Verification
 - Every phase: the contract's fast checks, then the full checks before the PR (`solidvibes lint .`, `swift test` for VeselCore, VeselStorage, VeselSync, VeselBackupKit, the app's `xcodebuild test` on iPhone 17 Pro Max iOS 26.5, the Mac build, `uv run pytest`).
