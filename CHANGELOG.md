@@ -7,7 +7,7 @@ One plain sentence per entry.
 
 - Recovery now leads with a short verdict and shows each thing that went into it with a mark against your normal, and tapping one opens its page.
 - HRV, resting heart rate, lowest heart rate, breathing and skin temperature now open with a picture of last night against your normal, and nights outside it are coloured on their chart.
-- Sleep now shows In bed, Efficiency and Bedtime · wake right under the chart, each opening its own page, and shows your normal for time asleep as a picture.
+- Sleep now shows Bedtime · wake, In bed and Efficiency first, then your normal, then the night's chart, each opening its own page, and shows your normal for time asleep as a picture.
 - Sleep over weeks now shows stacked deep, light and REM bars for each night, with averages of In bed and Efficiency and your middle bedtime and wake time.
 - Vesel now shows the workouts your Loop notices, with route, heart rate and cardio load.
 - Loop & settings now lets you say which wrist you wear the Loop on, and sends it to the Loop.

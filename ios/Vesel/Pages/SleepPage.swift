@@ -1,7 +1,7 @@
 import SwiftUI
 import VeselCore
 
-/// Sleep for one night: the stages with the overnight heart rate, the night's times, your normal, the stages and the overnight numbers.
+/// Sleep for one night: the night's times, your normal, the stages with the overnight heart rate, the stages and the overnight numbers.
 struct SleepDay: View {
     @State private var model: SleepModel
     @State private var week: BodyModel
@@ -21,7 +21,6 @@ struct SleepDay: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s24) {
             PageHeader(text: header, scrub: scrub)
-            if let report = model.report, let sleep = report.sleep { chart(sleep) }
             content
             WhatHelpsCard(tips: model.helpTips, usualBedtime: model.usualBedtime)
         }
@@ -93,7 +92,9 @@ private extension SleepDay {
             NightView(
                 report: report, sleepLine: model.sleepLine, zone: model.zone, today: model.today, picture: model.normalPicture,
                 efficiencyMark: mark(.efficiency, night: report.night), lowestHeartRateMark: mark(.lowestHeartRate, night: report.night)
-            )
+            ) {
+                if let sleep = report.sleep { chart(sleep) }
+            }
         } else if model.loaded && model.shown == nil && model.nightPending {
             EmptyState(systemImage: "moon", title: "Evaluating your night", message: "Your sleep shows here once your Loop has it ready.")
         } else if model.loaded && model.shown == nil {

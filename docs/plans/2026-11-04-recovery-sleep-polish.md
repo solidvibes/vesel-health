@@ -274,6 +274,7 @@ Phase 5 — Sleep page
 - Review: `ContributorRow` merged into `SignalLinkRow` (a `note` line for the learning words), so Recovery, Sleep D and Sleep's period rows share one row. W, M and 3M's "How it's worked out" and meaning sheet also show the on-read normal's explanation (Lowest HR, In bed, Efficiency).
 - Go: one branch and one pull request for all six phases (decision 24 said one each), stacked on `feat/workouts`.
 - Verify: full checks green (app tests 220 on the iOS 27.0 Simulator). On Sleep D at default text size the In bed row sits under the tab bar and Efficiency is below the fold; the stages chart takes about 40 % of the screen. Left for the owner (decision 28: iterate on Sleep later). The fake band's normal scenario showed only 2 nights in the Simulator, so marks and bands were not seen there; the owner checks them on the iPhone.
+- Owner, 4 Nov after the phone check: Sleep D puts "The night" card first, then "Your normal", then the stages and heart-rate chart (the night's times weigh more). Recovery's skin temperature row shows the band's reading, not its difference from usual ("−0.2 °C" read as a wrong temperature).
 
 ## Verification
 - Every phase: the contract's fast checks, then the full checks before the PR (`solidvibes lint .`, `swift test` for VeselCore, VeselStorage, VeselSync, VeselBackupKit, the app's `xcodebuild test` on iPhone 17 Pro Max iOS 26.5, the Mac build, `uv run pytest`).

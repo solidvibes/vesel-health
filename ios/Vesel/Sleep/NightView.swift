@@ -2,9 +2,9 @@ import SwiftUI
 import VeselCore
 import VeselStorage
 
-/// The sleep part of the page under the chart: the night's times, in bed and efficiency, your normal for time asleep, the stages, and the
-/// overnight signals. Each row that has a page opens it; the marks come from the screen's week of nights (nil while they are read).
-struct NightView: View {
+/// The sleep part of the page: the night's times, in bed and efficiency, your normal for time asleep, the night's chart, the stages, and
+/// the overnight signals. Each row that has a page opens it; the marks come from the screen's week of nights (nil while they are read).
+struct NightView<Chart: View>: View {
     let report: NightReport
     let sleepLine: LineVerdict?
     let zone: TimeZone
@@ -12,6 +12,7 @@ struct NightView: View {
     var picture: NightPicture?
     var efficiencyMark: NormalMark?
     var lowestHeartRateMark: NormalMark?
+    @ViewBuilder var chart: Chart
     @Environment(\.setPageMeaning) private var setMeaning
 
     var body: some View {
@@ -19,6 +20,7 @@ struct NightView: View {
             if let sleep = report.sleep {
                 nightCard(sleep)
                 normalCard
+                chart
                 stagesCard
             } else {
                 EmptyState(
@@ -171,7 +173,7 @@ private struct PreviewNight: View {
     var body: some View {
         ScrollView {
             if let report = model.report {
-                NightView(report: report, sleepLine: model.sleepLine, zone: model.zone, today: model.today)
+                NightView(report: report, sleepLine: model.sleepLine, zone: model.zone, today: model.today) { EmptyView() }
                     .padding(Theme.Spacing.edge)
             } else {
                 ProgressView()
