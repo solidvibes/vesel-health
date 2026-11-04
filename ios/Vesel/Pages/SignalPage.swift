@@ -4,7 +4,7 @@ import VeselCore
 
 /// Everything that has a page: one chart with a Day, Week, 4 weeks and 3 months view.
 enum PageKind: String, Hashable {
-    case recovery, sleep, stress, heartRate, steps, hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature
+    case recovery, sleep, stress, heartRate, steps, hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature, inBed, efficiency, bedtime
 
     init(_ trend: TrendKind) {
         switch trend {
@@ -17,10 +17,12 @@ enum PageKind: String, Hashable {
         case .lowestHeartRate: self = .lowestHeartRate
         case .breathing: self = .breathing
         case .skinTemperature: self = .skinTemperature
+        case .inBed: self = .inBed
+        case .efficiency: self = .efficiency
         }
     }
 
-    /// Nil for heart rate, which has no number a night to put on a band; its W, M and 3M is `HeartRateDaysPart`.
+    /// Nil for heart rate and bedtime, which have no number a night to put on a band; their W, M and 3M are `HeartRateDaysPart` and `BedtimePeriodPart`.
     var trend: TrendKind? {
         switch self {
         case .recovery: .recovery
@@ -32,12 +34,14 @@ enum PageKind: String, Hashable {
         case .lowestHeartRate: .lowestHeartRate
         case .breathing: .breathing
         case .skinTemperature: .skinTemperature
-        case .heartRate: nil
+        case .inBed: .inBed
+        case .efficiency: .efficiency
+        case .heartRate, .bedtime: nil
         }
     }
 
-    var title: String { trend?.title ?? "Heart rate" }
-    var term: Term { trend?.term ?? .heartRate }
+    var title: String { trend?.title ?? (self == .bedtime ? "Bedtime · wake" : "Heart rate") }
+    var term: Term { trend?.term ?? (self == .bedtime ? .bedtime : .heartRate) }
 }
 
 extension PagePeriod {
@@ -349,6 +353,8 @@ private struct PeriodPage: View {
             dayPart
         } else if let trend = model.kind.trend {
             OverTimePart(environment: environment, kind: trend, period: id.period, end: id.day)
+        } else if model.kind == .bedtime {
+            BedtimePeriodPart(environment: environment, period: id.period, end: id.day)
         } else {
             HeartRateDaysPart(environment: environment, period: id.period, end: id.day)
         }
@@ -361,7 +367,8 @@ private struct PeriodPage: View {
         case .stress: CalmDay(environment: environment, day: id.day)
         case .heartRate: HeartRateDay(environment: environment, day: id.day)
         case .steps: StepsDay(environment: environment, day: id.day)
-        case .hrv, .restingHeartRate, .lowestHeartRate, .breathing, .skinTemperature:
+        case .bedtime: BedtimeDayPart(environment: environment, day: id.day)
+        case .hrv, .restingHeartRate, .lowestHeartRate, .breathing, .skinTemperature, .inBed, .efficiency:
             if let trend = model.kind.trend { NightlyDayPart(environment: environment, kind: trend, day: id.day) }
         }
     }

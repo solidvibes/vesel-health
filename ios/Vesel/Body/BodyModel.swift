@@ -35,7 +35,7 @@ enum BodyGroup: CaseIterable {
 
 /// One number Body follows over time.
 enum TrendKind: String, CaseIterable, Hashable {
-    case recovery, sleep, calm, steps, hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature
+    case recovery, sleep, calm, steps, hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature, inBed, efficiency
 
     init(_ contributor: Contributor) {
         switch contributor {
@@ -58,6 +58,8 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .lowestHeartRate: "Lowest heart rate"
         case .breathing: "Breathing"
         case .skinTemperature: "Skin temperature"
+        case .inBed: "In bed"
+        case .efficiency: "Efficiency"
         }
     }
 
@@ -73,6 +75,8 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .lowestHeartRate: .lowestHeartRate
         case .breathing: .breathing
         case .skinTemperature: .skinTemperature
+        case .inBed: .timeInBed
+        case .efficiency: .sleepEfficiency
         }
     }
 
@@ -87,12 +91,17 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .lowestHeartRate: MetricKind.sleepLowestHeartRate
         case .breathing: Contributor.breathing.kind
         case .skinTemperature: Contributor.skinTemperature.kind
+        case .inBed: MetricKind.sleepInBed
+        case .efficiency: MetricKind.sleepEfficiency
         }
     }
 
+    /// What the thing's own pages read: In bed and Efficiency only their series, the others Body's list.
+    var readKinds: [String] { self == .inBed || self == .efficiency ? [metricKind] : TrendsSnapshot.kinds }
+
     var color: Color {
         switch self {
-        case .sleep: Theme.Palette.sleep
+        case .sleep, .inBed, .efficiency: Theme.Palette.sleep
         case .calm: Theme.Palette.stress
         case .steps: Theme.Palette.mutedText
         default: Theme.Palette.recovery
@@ -103,7 +112,7 @@ enum TrendKind: String, CaseIterable, Hashable {
     var bandColor: Color { self == .steps ? Theme.Palette.accent : color }
 
     /// Bars for days or nights that either have a number or don't, drawn from 0; lines for measures that follow you night after night.
-    var isBars: Bool { self == .calm || self == .steps || self == .sleep }
+    var isBars: Bool { self == .calm || self == .steps || self == .sleep || self == .inBed }
 
     /// Whether the number is a whole day's, for the wording "a day"; sleep is bars but still a night's.
     var isPerDay: Bool { self == .calm || self == .steps }
@@ -115,12 +124,12 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .breathing: .breathing
         case .sleep: .sleep
         case .skinTemperature: .skinTemperature
-        case .recovery, .calm, .steps, .lowestHeartRate: nil
+        case .recovery, .calm, .steps, .lowestHeartRate, .inBed, .efficiency: nil
         }
     }
 
     /// Whether the normal is worked out from your own nights, so it needs 7 of them first.
-    var learnsItsNormal: Bool { contributor != nil || self == .lowestHeartRate || self == .steps }
+    var learnsItsNormal: Bool { contributor != nil || [.lowestHeartRate, .steps, .inBed, .efficiency].contains(self) }
 
     /// A value as the screens write it, in real units.
     func format(_ value: Double, units: Units) -> String {
@@ -128,6 +137,8 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .lowestHeartRate: "\(Formatters.whole(value)) bpm"
         case .calm: DurationText.hoursMinutes(minutes: value)
         case .steps: "\(Formatters.steps(Int(value.rounded()))) steps"
+        case .inBed: DurationText.hoursMinutes(minutes: value)
+        case .efficiency: "\(Formatters.whole(value)) %"
         case .recovery: "\(Formatters.whole(value)) of 6"
         default: contributor?.text(value, units: units) ?? "—"
         }
@@ -141,7 +152,8 @@ enum TrendKind: String, CaseIterable, Hashable {
         case .restingHeartRate, .lowestHeartRate: "bpm"
         case .skinTemperature: units.temperatureUnit
         case .breathing: "breaths/min"
-        case .sleep: "hours"
+        case .sleep, .inBed: "hours"
+        case .efficiency: "%"
         case .calm: "minutes"
         case .steps: "steps"
         }
@@ -150,7 +162,7 @@ enum TrendKind: String, CaseIterable, Hashable {
     /// The value as the chart draws it.
     func plotted(_ value: Double, units: Units) -> Double {
         switch self {
-        case .sleep: value / 60
+        case .sleep, .inBed: value / 60
         case .skinTemperature: units.temperature(celsius: value)
         default: value
         }
@@ -182,7 +194,8 @@ struct TrendNight: Equatable {
 /// What a signal page's picture draws and says for one night: where the normal and the night sit, and the words.
 struct NightPicture: Equatable {
     let scale: LineScale
-    let mark: NormalMark
+    /// Nil where the thing has no mark (In bed): the dot and value show in the data colour.
+    let mark: NormalMark?
     let value: String
     let low: String
     let high: String
@@ -247,9 +260,14 @@ final class BodyModel {
     private let clock: any VeselClock
     private let unitsStore: UnitsStore
     private let endingOn: DayKey?
+    private let kinds: [String]
 
-    /// `endingOn` nil means today.
-    init(database: AppDatabase, clock: any VeselClock, units: UnitsStore, period: PagePeriod, endingOn: DayKey? = nil) {
+    /// `endingOn` nil means today. `kinds` are the metric kinds read: Body's list unless the page shows others.
+    init(
+        database: AppDatabase, clock: any VeselClock, units: UnitsStore, period: PagePeriod, endingOn: DayKey? = nil,
+        kinds: [String] = TrendsSnapshot.kinds
+    ) {
+        self.kinds = kinds
         self.database = database
         self.clock = clock
         unitsStore = units
@@ -356,21 +374,23 @@ final class BodyModel {
     private func normalEnds(_ kind: TrendKind, _ normal: ClosedRange<Double>) -> (low: String, high: String) {
         let low = kind.format(normal.lowerBound, units: units)
         let high = kind.format(normal.upperBound, units: units)
-        guard kind != .sleep, let unit = high.split(separator: " ").last, low.hasSuffix(" \(unit)") else { return (low, high) }
+        guard kind != .sleep, kind != .inBed, let unit = high.split(separator: " ").last, low.hasSuffix(" \(unit)") else { return (low, high) }
         return (String(low.dropLast(unit.count + 1)), high)
     }
 
     /// The picture of `night` against its normal for a signal page; nil while learning or with no normal.
     func picture(_ kind: TrendKind, night: TrendNight) -> NightPicture? {
-        guard let normal = night.normal, let mark = night.mark else { return nil }
+        guard let normal = night.normal, night.mark != nil || kind == .inBed else { return nil }
+        let mark = night.mark
         let units = units
         let scale = NormalScale.scale(
-            value: night.value, low: normal.lowerBound, high: normal.upperBound, floor: kind == .skinTemperature ? nil : 0
+            value: night.value, low: normal.lowerBound, high: normal.upperBound, floor: kind == .skinTemperature ? nil : 0,
+            ceiling: kind == .efficiency ? 100 : nil
         )
         let ends = normalEnds(kind, normal)
         let value = kind.format(night.value, units: units)
         let when = YoursText.night(night.metric.day, today: today, zone: zone)
-        let spoken = "\(when) \(value), \(mark.words). Your normal \(ends.low) to \(ends.high)."
+        let spoken = "\(when) \(value)\(mark.map { ", \($0.words)" } ?? ""). Your normal \(ends.low) to \(ends.high)."
         return NightPicture(scale: scale, mark: mark, value: value, low: ends.low, high: ends.high, spoken: spoken)
     }
 
@@ -385,6 +405,12 @@ final class BodyModel {
         switch kind {
         case .hrv, .restingHeartRate, .breathing, .sleep, .skinTemperature:
             return ContributorReading(metric).map { YoursText.contributor($0, when: when, units: units) }
+        case .inBed, .efficiency:
+            let value = kind.format(metric.value, units: units)
+            guard let normal = normalText(kind) else {
+                return "\(when): \(value). \(LearningText.nights(settling(kind)?.earlierNights ?? 0))."
+            }
+            return "\(when): \(value), \(night.mark.map { "\($0.words) (\(normal))" } ?? "your normal is \(normal)")."
         case .lowestHeartRate:
             let nights = settling(kind)?.earlierNights ?? 0
             let words = YoursText.vsUsual(
@@ -466,7 +492,7 @@ final class BodyModel {
 
     private func observeTrends() async {
         await reads.observe {
-            for try await value in database.observeTrends(endingOn: end) {
+            for try await value in database.observeTrends(endingOn: end, kinds: kinds) {
                 series = value.series
                 rebuild()
             }
@@ -520,6 +546,17 @@ final class BodyModel {
                 normal = range.map { $0.low...$0.high }
                 mark = range.flatMap { NormalMark(verdict: $0.verdict(of: metric.value), better: .lower) }
                 normalExplanation = range?.explanation(unit: "bpm")
+            case .inBed:
+                value = metric.value
+                let range = PersonalRange(previous: PersonalRange.previousValues(before: metric.day, in: byNight))
+                normal = range.map { $0.low...$0.high }
+                normalExplanation = range?.explanation(unit: "min")
+            case .efficiency:
+                value = metric.value
+                let range = PersonalRange(previous: PersonalRange.previousValues(before: metric.day, in: byNight))
+                normal = range?.lowNightsNormal
+                mark = range.map { NormalMark(efficiency: metric.value, range: $0) }
+                normalExplanation = range?.lowNightsExplanation()
             case .sleep:
                 value = metric.value
                 let line = InRange.sleep(ContributorReading(metric))

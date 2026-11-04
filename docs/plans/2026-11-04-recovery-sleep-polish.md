@@ -224,10 +224,10 @@ Phase 5 — Sleep page
 - [x] 3. Glossary entries and test count.
 
 ### Phase 4b — new pages
-1. `TrendKind.inBed` / `.efficiency`, efficiency mapping; tests.
-2. `PageKind` cases; In bed and Efficiency through the existing parts.
-3. `BedtimePage` parts and chart; previews.
-4. Docs, layers rule, changelog; screenshots with `-VeselPage inBed|efficiency|bedtime -VeselPeriod d|m`.
+- [x] 1. `TrendKind.inBed` / `.efficiency`, efficiency mapping; tests.
+- [x] 2. `PageKind` cases; In bed and Efficiency through the existing parts.
+- [x] 3. `BedtimePage` parts and chart; previews.
+- [ ] 4. Docs, layers rule, changelog (done); screenshots with `-VeselPage inBed|efficiency|bedtime -VeselPeriod d|m` (left for the final pass).
 
 ### Phase 5 — Sleep page
 1. `OverTimePart` slot and shared header; `SleepPeriodDetails`.
@@ -263,6 +263,13 @@ Phase 5 — Sleep page
 26. **mine** — Bedtime · wake shows clock times ("23:00 to 07:08"), never a duration: Sleep's rows, the Bedtime page header and the finger-read. Assumption (agent's): this also covers VoiceOver and the W/M/3M "Usually" header; the bars carry no labels of their own, the axis shows clock hours.
 27. **mine** — Gate answers as recommended: the header words (11), the sentence goes with the one quiet line (10), much longer sleep orange ↑ never red (13), In bed no colour and Efficiency flags only clearly low nights (18), the two greens checked on the phone in daylight after the build (Verification).
 28. **mine** — Sleep is "a bit noisy" but OK for now; build it as planned and iterate on Sleep later.
+
+## Deviations
+- Run 1: only iOS 27.0 simulators exist on this machine, so app builds target the iOS 27.0 iPhone simulator, not the contract's iOS 26.5 one.
+- Run 2: `TrendsSnapshot.kinds` gained `MetricKind.steps`, skipped by the metric loop and read only when requested (default behaviour unchanged). New plain VeselCore types `SleepNightTimes` and `NightStages`; `ClockMedian` is public. The wording of the three new glossary terms is the agent's own.
+- Phase 4b: Efficiency's on-read normal has its own method name and wording, `range28Low` version 1 (`PersonalRange.lowNightsExplanation`), because `range28`'s text says "mean ± 1 standard deviation", which is not what Efficiency draws. `NormalMark(efficiency:range:)` and `PersonalRange.lowNightsNormal` live in VeselCore beside the other marks.
+- Phase 4b: `NormalPicture` and `NightPicture` take an optional mark (nil: the data colour, no badge) instead of a second view, for In bed's page.
+- Phase 4b: `TrendKind.readKinds` says what a thing's own pages read (In bed and Efficiency only their series, the others Body's list); `BodyModel` takes it as `kinds`. `trendAxes` gained an optional `yLabel` so the Bedtime chart's axis reads clock hours.
 
 ## Verification
 - Every phase: the contract's fast checks, then the full checks before the PR (`solidvibes lint .`, `swift test` for VeselCore, VeselStorage, VeselSync, VeselBackupKit, the app's `xcodebuild test` on iPhone 17 Pro Max iOS 26.5, the Mac build, `uv run pytest`).

@@ -38,6 +38,20 @@ public enum NormalMark: Sendable, Equatable {
         }
     }
 
+    /// Sleep efficiency against your normal, where only a clearly low night counts: inside from 2 SD under to 1 SD over the mean,
+    /// above it better, under it off, under 3 SD far.
+    public init(efficiency value: Double, range: PersonalRange) {
+        if value > range.mean + range.sd {
+            self = .better(.above)
+        } else if value < range.mean - 3 * range.sd {
+            self = .far(.below)
+        } else if value < range.mean - 2 * range.sd {
+            self = .off(.below)
+        } else {
+            self = .inside
+        }
+    }
+
     public var isOutside: Bool { self != .inside }
 
     /// SF Symbol name.

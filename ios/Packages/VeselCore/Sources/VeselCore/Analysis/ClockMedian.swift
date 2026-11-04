@@ -8,14 +8,17 @@ public struct ClockMedian: Sendable, Equatable {
     /// Nil with no moments.
     public init?(of moments: [Date], zone: TimeZone) {
         guard !moments.isEmpty else { return nil }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = zone
-        let sorted = moments.map { moment in
-            ((calendar.component(.hour, from: moment) + 6) % 24) * 60 + calendar.component(.minute, from: moment)
-        }.sorted()
+        let sorted = moments.map { Self.minutesAfter18(of: $0, zone: zone) }.sorted()
         let middle = sorted.count / 2
         let median = sorted.count % 2 == 0 ? Double(sorted[middle - 1] + sorted[middle]) / 2 : Double(sorted[middle])
         minutesAfter18 = Int((median / 5).rounded()) * 5
+    }
+
+    /// Minutes after 18:00 of the clock time of `moment` in `zone`, not rounded.
+    public static func minutesAfter18(of moment: Date, zone: TimeZone) -> Int {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        return ((calendar.component(.hour, from: moment) + 6) % 24) * 60 + calendar.component(.minute, from: moment)
     }
 
     /// "23:10"

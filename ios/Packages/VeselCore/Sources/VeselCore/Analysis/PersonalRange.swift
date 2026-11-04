@@ -32,6 +32,9 @@ public struct PersonalRange: Sendable, Equatable {
     public var low: Double { mean - sd }
     public var high: Double { mean + sd }
 
+    /// Sleep efficiency's normal, where only a clearly low night counts: 2 SD under to 1 SD over the mean, never over 100.
+    public var lowNightsNormal: ClosedRange<Double> { (mean - 2 * sd)...min(mean + sd, 100) }
+
     public init(mean: Double, sd: Double, nights: Int) {
         self.mean = mean
         self.sd = sd
@@ -58,6 +61,22 @@ public struct PersonalRange: Sendable, Equatable {
             text:
                 "Your usual is the mean ± 1 standard deviation of your previous \(nights) nights: "
                 + "\(NumberText.decimal(low, decimals))–\(NumberText.decimal(high, decimals)) \(unit)."
+        )
+    }
+
+    /// How the efficiency normal worked out on read was made (`range28Low`, version 1).
+    public func lowNightsExplanation() -> Explanation {
+        let normal = lowNightsNormal
+        return Explanation(
+            method: "range28Low", version: 1,
+            inputs: [
+                .init(name: "nights", value: Double(nights), unit: "nights"),
+                .init(name: "usualMean", value: mean, unit: "%"),
+                .init(name: "usualSD", value: sd, unit: "%"),
+            ],
+            text:
+                "Your normal is from 2 standard deviations under to 1 over the mean of your previous \(nights) nights, so only a clearly low night is marked: "
+                + "\(NumberText.decimal(normal.lowerBound, 0))–\(NumberText.decimal(normal.upperBound, 0)) %."
         )
     }
 

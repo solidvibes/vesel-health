@@ -18,6 +18,29 @@ struct NormalMarkTests {
         }
     }
 
+    @Test func efficiencyFlagsOnlyAClearlyLowNight() {
+        let range = PersonalRange(mean: 90, sd: 2, nights: 28)
+        let cases: [(Double, NormalMark)] = [
+            (97, .better(.above)), (92.5, .better(.above)), (92, .inside), (90, .inside), (86, .inside), (85.9, .off(.below)),
+            (84, .off(.below)), (83.9, .far(.below)), (70, .far(.below)),
+        ]
+        for (value, expected) in cases {
+            #expect(NormalMark(efficiency: value, range: range) == expected, "\(value)")
+        }
+    }
+
+    @Test func efficiencyWithNoSpreadMarksAnyDropFar() {
+        let range = PersonalRange(mean: 90, sd: 0, nights: 28)
+        #expect(NormalMark(efficiency: 90, range: range) == .inside)
+        #expect(NormalMark(efficiency: 89, range: range) == .far(.below))
+    }
+
+    @Test func efficiencyNormalRunsFromTwoSDUnderToOneOverAndStopsAtOneHundred() {
+        #expect(PersonalRange(mean: 90, sd: 2, nights: 28).lowNightsNormal == 86...92)
+        #expect(PersonalRange(mean: 98, sd: 3, nights: 28).lowNightsNormal == 92...100)
+        #expect(PersonalRange(mean: 90, sd: 2, nights: 28).lowNightsExplanation().text.contains("86–92 %"))
+    }
+
     @Test func eachContributorHasItsBetterSide() {
         #expect(Contributor.hrv.better == .higher)
         #expect(Contributor.sleep.better == .higher)

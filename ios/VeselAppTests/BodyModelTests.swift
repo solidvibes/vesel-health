@@ -88,4 +88,53 @@ struct BodyModelTests {
             #expect(night.normalExplanation?.method == PersonalRange.method)
         }
     }
+
+    @Test func inBedAndEfficiencyAreReadOnlyWhereAskedAndHaveTheirNormalsOnRead() async throws {
+        let (database, clock) = try await synced()
+        let model = BodyModel(
+            database: database, clock: clock, units: UnitsStore(), period: .quarter, endingOn: end,
+            kinds: [MetricKind.sleepInBed, MetricKind.sleepEfficiency]
+        )
+        await observe(model.observe) { model.isReady }
+        #expect(model.inRange(.hrv).isEmpty)
+
+        let inBed = model.inRange(.inBed)
+        #expect(!inBed.isEmpty)
+        for night in inBed {
+            #expect(night.mark == nil)
+            #expect((night.normal != nil) == (night.normalExplanation != nil))
+        }
+        #expect(inBed.contains { $0.normal != nil })
+        let withNormal = try #require(inBed.last { $0.normal != nil })
+        #expect(withNormal.normalExplanation?.method == PersonalRange.method)
+        let picture = try #require(model.picture(.inBed, night: withNormal))
+        #expect(picture.mark == nil)
+
+        let efficiency = model.inRange(.efficiency)
+        #expect(!efficiency.isEmpty)
+        for night in efficiency {
+            guard let normal = night.normal else {
+                #expect(night.mark == nil)
+                continue
+            }
+            #expect(normal.upperBound <= 100)
+            #expect((night.mark == .inside) == normal.contains(night.value))
+            #expect((night.mark == .better(.above)) == (night.value > normal.upperBound))
+            #expect(night.normalExplanation?.method == "range28Low")
+        }
+    }
+
+    @Test func inBedAndEfficiencyPeriodsAreAveragesWithoutMarks() async throws {
+        let (database, clock) = try await synced()
+        let model = BodyModel(
+            database: database, clock: clock, units: UnitsStore(), period: .month, endingOn: end,
+            kinds: [MetricKind.sleepInBed, MetricKind.sleepEfficiency]
+        )
+        await observe(model.observe) { model.isReady }
+
+        let inBedAverage = try #require(PeriodWindow.average(model.inRange(.inBed).map(\.value)))
+        #expect(model.periodSummary(.inBed)?.value == DurationText.hoursMinutes(minutes: inBedAverage))
+        let efficiencyAverage = try #require(PeriodWindow.average(model.inRange(.efficiency).map(\.value)))
+        #expect(model.periodSummary(.efficiency)?.value == "\(Formatters.whole(efficiencyAverage)) %")
+    }
 }

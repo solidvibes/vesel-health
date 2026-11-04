@@ -2,10 +2,10 @@ import SwiftUI
 import VeselCore
 
 /// Where one reading sits against your normal: a track, your normal shaded on it with its ends written under, and the reading as a dot
-/// filled in its mark's colour with its value and `MarkBadge` over it. One element for VoiceOver, which reads `spoken`.
+/// filled in its mark's colour with its value and `MarkBadge` over it; without a mark (In bed) it takes `color` and has no badge. One element for VoiceOver, which reads `spoken`.
 struct NormalPicture: View {
     let scale: LineScale
-    let mark: NormalMark
+    let mark: NormalMark?
     let color: Color
     let value: String
     let low: String
@@ -21,7 +21,7 @@ struct NormalPicture: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
             GeometryReader { proxy in
                 HStack(spacing: Theme.Spacing.s8) {
-                    MarkBadge(mark: mark)
+                    if let mark { MarkBadge(mark: mark) }
                     Text(value)
                         .font(Theme.Typography.label.monospacedDigit())
                         .foregroundStyle(Theme.Palette.text)
@@ -41,7 +41,7 @@ struct NormalPicture: View {
                         .frame(width: max(width * (scale.normalTo - scale.normalFrom), track), height: track)
                         .offset(x: width * scale.normalFrom)
                     Circle()
-                        .fill(Theme.Palette.markChip(mark))
+                        .fill(mark.map(Theme.Palette.markChip) ?? color)
                         .overlay(Circle().strokeBorder(Theme.Palette.surface, lineWidth: 2))
                         .frame(width: dotSize, height: dotSize)
                         .offset(x: scale.dot * (width - dotSize))
@@ -86,7 +86,8 @@ extension View {
 
 #if DEBUG
 private struct NormalPictureSheet: View {
-    let cases: [(NormalMark, LineScale, String)] = [
+    let cases: [(NormalMark?, LineScale, String)] = [
+        (nil, LineScale(normalFrom: 0.33, normalTo: 0.66, dot: 0.6, value: 470), "7 h 50 m"),
         (.inside, LineScale(normalFrom: 0.33, normalTo: 0.66, dot: 0.5, value: 44), "44 ms"),
         (.better(.above), LineScale(normalFrom: 0.33, normalTo: 0.66, dot: 0.78, value: 62), "62 ms"),
         (.off(.below), LineScale(normalFrom: 0.33, normalTo: 0.66, dot: 0.2, value: 30), "30 ms"),
@@ -101,7 +102,7 @@ private struct NormalPictureSheet: View {
                 GlassCard {
                     NormalPicture(
                         scale: found.1, mark: found.0, color: Theme.Palette.recovery, value: found.2, low: "34", high: "52 ms",
-                        spoken: "\(found.2), \(found.0.words). Your normal 34 to 52 ms."
+                        spoken: "\(found.2)\(found.0.map { ", \($0.words)" } ?? ""). Your normal 34 to 52 ms."
                     )
                 }
             }

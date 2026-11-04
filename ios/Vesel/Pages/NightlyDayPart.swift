@@ -65,7 +65,8 @@ struct NightlyDayPart: View {
         self.kind = kind
         self.day = day
         _model = State(
-            initialValue: BodyModel(database: environment.database, clock: environment.clock, units: environment.units, period: .week, endingOn: day))
+            initialValue: BodyModel(
+                database: environment.database, clock: environment.clock, units: environment.units, period: .week, endingOn: day, kinds: kind.readKinds))
     }
 
     private var night: TrendNight? { model.inRange(kind).first { $0.metric.day == day } }
@@ -79,7 +80,7 @@ struct NightlyDayPart: View {
                     Text("How it's worked out")
                         .font(Theme.Typography.heading)
                         .foregroundStyle(Theme.Palette.text)
-                    Text("Your normal is the middle of your last 4 weeks of nights: \(normal).")
+                    Text(kind.normalSentence(normal))
                         .font(Theme.Typography.body)
                         .foregroundStyle(Theme.Palette.text)
                         .fixedSize(horizontal: false, vertical: true)
@@ -129,5 +130,14 @@ struct NightlyDayPart: View {
             guard scenePhase == .active else { return }
             await model.observe()
         }
+    }
+}
+
+extension TrendKind {
+    /// The "How it's worked out" line for the normal: efficiency's has more room below the mean than above it.
+    func normalSentence(_ normal: String) -> String {
+        self == .efficiency
+            ? "Your normal comes from your last 4 weeks of nights, with more room below the middle than above: \(normal)."
+            : "Your normal is the middle of your last 4 weeks of nights: \(normal)."
     }
 }

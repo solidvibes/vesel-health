@@ -13,7 +13,8 @@ struct OverTimePart: View {
     init(environment: AppEnvironment, kind: TrendKind, period: PagePeriod, end: DayKey) {
         self.kind = kind
         _model = State(
-            initialValue: BodyModel(database: environment.database, clock: environment.clock, units: environment.units, period: period, endingOn: end))
+            initialValue: BodyModel(
+                database: environment.database, clock: environment.clock, units: environment.units, period: period, endingOn: end, kinds: kind.readKinds))
     }
 
     private var range: String { BodyModel.dateRange(model.firstDay, model.end, zone: model.zone) }
