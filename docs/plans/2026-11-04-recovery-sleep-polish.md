@@ -230,9 +230,9 @@ Phase 5 — Sleep page
 - [ ] 4. Docs, layers rule, changelog (done); screenshots with `-VeselPage inBed|efficiency|bedtime -VeselPeriod d|m` (left for the final pass).
 
 ### Phase 5 — Sleep page
-1. `OverTimePart` slot and shared header; `SleepPeriodDetails`.
-2. Sleep D: new order, "The night" card, "Your normal" picture, Overnight rows with marks; the Time asleep card goes.
-3. Docs, screens.md, changelog; screenshots of D and M, default and largest text, light and dark.
+- [x] 1. `OverTimePart` slot and shared header; `SleepPeriodDetails`.
+- [x] 2. Sleep D: new order, "The night" card, "Your normal" picture, Overnight rows with marks; the Time asleep card goes.
+- [ ] 3. Docs, screens.md, changelog (done); screenshots of D and M, default and largest text, light and dark (left for the final pass).
 
 ## Decisions
 1. **mine** — Four marks: darker green ✓ inside (no arrow), lighter green + arrow outside on the good side, orange + arrow outside on the side that matters, red ‼ well outside (the existing `wellBelow`/`wellAbove` step). Arrows only outside. Colour never alone. Light and dark tokens meeting `system.md`'s contrast rules; the marks go into `system.md`.
@@ -270,6 +270,7 @@ Phase 5 — Sleep page
 - Phase 4b: Efficiency's on-read normal has its own method name and wording, `range28Low` version 1 (`PersonalRange.lowNightsExplanation`), because `range28`'s text says "mean ± 1 standard deviation", which is not what Efficiency draws. `NormalMark(efficiency:range:)` and `PersonalRange.lowNightsNormal` live in VeselCore beside the other marks.
 - Phase 4b: `NormalPicture` and `NightPicture` take an optional mark (nil: the data colour, no badge) instead of a second view, for In bed's page.
 - Phase 4b: `TrendKind.readKinds` says what a thing's own pages read (In bed and Efficiency only their series, the others Body's list); `BodyModel` takes it as `kinds`. `trendAxes` gained an optional `yLabel` so the Bedtime chart's axis reads clock hours.
+- Phase 5: `OverTimePart` takes the slot as a closure that also receives the page's `BodyModel` (built with In bed and Efficiency added to its kinds, on Sleep only), so the period rows reuse its averages instead of a second model; the slot sets its chart's header reading through a binding. `SleepModel.normalPicture` builds Sleep D's picture from `InRange.sleep`'s own scale. The rows are `SignalLinkRow` (a button through `openPage`), used by "The night", "Overnight" and the period rows. While time asleep is learning, "Your normal" shows the learning words and "Show the numbers". The time-asleep explanation and "Yours" line moved from the removed Time asleep card to the page's meaning sheet. The card of three rows under Stages is headed "Across these nights" (the plan names no heading). Stacked bars use explicit from/to extents so their order is deterministic.
 
 ## Verification
 - Every phase: the contract's fast checks, then the full checks before the PR (`solidvibes lint .`, `swift test` for VeselCore, VeselStorage, VeselSync, VeselBackupKit, the app's `xcodebuild test` on iPhone 17 Pro Max iOS 26.5, the Mac build, `uv run pytest`).

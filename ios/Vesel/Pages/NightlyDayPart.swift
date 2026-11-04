@@ -13,7 +13,6 @@ struct NightsChart: View {
     var body: some View {
         let points = model.points(kind)
         if model.isReady, !points.isEmpty {
-            let scrub = selection.flatMap { model.scrubText(kind, at: $0) }
             GlassCard {
                 VStack(alignment: .leading, spacing: Theme.Spacing.s12) {
                     SignalChart(

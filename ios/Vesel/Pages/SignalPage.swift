@@ -1,6 +1,7 @@
 import Observation
 import SwiftUI
 import VeselCore
+import VeselStorage
 
 /// Everything that has a page: one chart with a Day, Week, 4 weeks and 3 months view.
 enum PageKind: String, Hashable {
@@ -351,6 +352,13 @@ private struct PeriodPage: View {
     @ViewBuilder private var part: some View {
         if id.period == .day {
             dayPart
+        } else if model.kind == .sleep {
+            OverTimePart(
+                environment: environment, kind: .sleep, period: id.period, end: id.day,
+                kinds: TrendsSnapshot.kinds + [MetricKind.sleepInBed, MetricKind.sleepEfficiency]
+            ) { trends, selection, reading in
+                SleepPeriodDetails(environment: environment, trends: trends, selection: selection, reading: reading)
+            }
         } else if let trend = model.kind.trend {
             OverTimePart(environment: environment, kind: trend, period: id.period, end: id.day)
         } else if model.kind == .bedtime {

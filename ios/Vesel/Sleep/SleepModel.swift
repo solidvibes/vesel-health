@@ -50,6 +50,20 @@ final class SleepModel {
         report.map { InRange.sleep($0.metrics[Contributor.sleep.kind].flatMap(ContributorReading.init)) }
     }
 
+    /// Time asleep against your normal, for "Your normal": the sleep line's own scale and ends. Nil while learning or with no sleep.
+    var normalPicture: NightPicture? {
+        guard let report, let reading = report.contributors.first(where: { $0.contributor == .sleep }), let line = sleepLine,
+            let scale = line.scale, let low = line.normal.low, let high = line.normal.high, let mark = reading.mark
+        else { return nil }
+        let value = DurationText.hoursMinutes(minutes: reading.value)
+        let ends = (low: DurationText.hoursMinutes(minutes: low), high: DurationText.hoursMinutes(minutes: high))
+        let when = YoursText.night(report.night, today: today, zone: zone)
+        return NightPicture(
+            scale: scale, mark: mark, value: value, low: ends.low, high: ends.high,
+            spoken: "\(when) \(value) asleep, \(mark.words). Your normal \(ends.low) to \(ends.high)."
+        )
+    }
+
     /// "What tends to help" for a short or long night; empty when sleep was in your normal.
     var helpTips: [String] {
         guard let sleepLine else { return [] }

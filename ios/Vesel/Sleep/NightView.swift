@@ -2,17 +2,23 @@ import SwiftUI
 import VeselCore
 import VeselStorage
 
-/// The sleep part of Night under the chart: duration, times, stages, HRV, lowest heart rate, breathing.
+/// The sleep part of the page under the chart: the night's times, in bed and efficiency, your normal for time asleep, the stages, and the
+/// overnight signals. Each row that has a page opens it; the marks come from the screen's week of nights (nil while they are read).
 struct NightView: View {
     let report: NightReport
     let sleepLine: LineVerdict?
     let zone: TimeZone
     let today: DayKey
+    var picture: NightPicture?
+    var efficiencyMark: NormalMark?
+    var lowestHeartRateMark: NormalMark?
+    @Environment(\.setPageMeaning) private var setMeaning
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s16) {
             if let sleep = report.sleep {
-                summary(sleep)
+                nightCard(sleep)
+                normalCard
                 stagesCard
             } else {
                 EmptyState(
@@ -23,35 +29,60 @@ struct NightView: View {
             }
             details
         }
+        .onChange(of: report.night, initial: true) {
+            setMeaning(
+                PageMeaning(
+                    yours: report.metrics[MetricKind.sleepAsleep].map(sleepYours),
+                    explanations: report.metrics[MetricKind.sleepAsleep].map { [("Time asleep", $0.explanation)] } ?? []
+                ))
+        }
     }
 
-    private func summary(_ sleep: SleepNight) -> some View {
-        let asleep = report.metrics[MetricKind.sleepAsleep]
-        return GlassCard {
-            VStack(alignment: .leading, spacing: Theme.Spacing.s8) {
-                Text("Time asleep")
-                    .font(Theme.Typography.small)
-                    .foregroundStyle(Theme.Palette.mutedText)
-                Text(asleep.map { DurationText.hoursMinutes(minutes: $0.value) } ?? "—")
-                    .font(Theme.Typography.display)
+    private func nightCard(_ sleep: SleepNight) -> some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
+                Text("The night")
+                    .font(Theme.Typography.heading)
                     .foregroundStyle(Theme.Palette.text)
-                Text("\(Formatters.time(sleep.start, zone: zone)) to \(Formatters.time(sleep.end, zone: zone))")
-                    .font(Theme.Typography.body)
-                    .foregroundStyle(Theme.Palette.mutedText)
-                if let asleep {
-                    MeaningRow(
-                        term: .sleepTime, label: "Time asleep", value: DurationText.hoursMinutes(minutes: asleep.value),
-                        yours: sleepYours(asleep), explanations: [("Time asleep", asleep.explanation)]
-                    )
-                }
+                SignalLinkRow(
+                    kind: .bedtime, value: "\(Formatters.clock(sleep.start, zone: zone)) to \(Formatters.clock(sleep.end, zone: zone))", day: report.night)
                 if let inBed = report.metrics[MetricKind.sleepInBed] {
-                    ExplainedRow(label: "In bed", value: DurationText.hoursMinutes(minutes: inBed.value), explanation: inBed.explanation)
+                    Divider()
+                    SignalLinkRow(kind: .inBed, value: DurationText.hoursMinutes(minutes: inBed.value), day: report.night)
                 }
                 if let efficiency = report.metrics[MetricKind.sleepEfficiency] {
-                    ExplainedRow(label: "Efficiency", value: "\(Formatters.whole(efficiency.value)) %", explanation: efficiency.explanation)
+                    Divider()
+                    SignalLinkRow(kind: .efficiency, value: "\(Formatters.whole(efficiency.value)) %", mark: efficiencyMark, day: report.night)
                 }
-                if let sleepLine, sleepLine.state != .none {
-                    ExplainedRow(label: "Your normal", value: sleepLine.state.rowWord, explanation: sleepLine.explanation)
+            }
+        }
+    }
+
+    /// Time asleep against your normal, as a picture; while learning, the learning words. Its numbers are folded.
+    @ViewBuilder private var normalCard: some View {
+        let asleep = report.metrics[MetricKind.sleepAsleep]
+        let reading = report.contributors.first { $0.contributor == .sleep }
+        if let asleep, let sleepLine, picture != nil || reading.map({ $0.range == nil }) == true {
+            GlassCard {
+                VStack(alignment: .leading, spacing: Theme.Spacing.s12) {
+                    Text("Your normal")
+                        .font(Theme.Typography.heading)
+                        .foregroundStyle(Theme.Palette.text)
+                    if let picture {
+                        NormalPicture(
+                            scale: picture.scale, mark: picture.mark, color: Theme.Palette.sleep, value: picture.value, low: picture.low,
+                            high: picture.high, spoken: picture.spoken
+                        )
+                    } else if let reading {
+                        Text(LearningText.nights(reading.nights))
+                            .font(Theme.Typography.body)
+                            .foregroundStyle(Theme.Palette.mutedText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HowItsWorkedOutRow(
+                        framed: false, title: "Show the numbers", explanations: [asleep.explanation, sleepLine.explanation],
+                        labels: ["Time asleep", "Your normal"]
+                    )
                 }
             }
         }
@@ -100,32 +131,6 @@ struct NightView: View {
         return "\(when): \(DurationText.hoursMinutes(minutes: asleep.value)) asleep."
     }
 
-    private func chartLink(_ kind: PageKind, value: String) -> some View {
-        NavigationLink(value: PageRoute(kind: kind, day: report.night)) {
-            HStack(spacing: Theme.Spacing.s12) {
-                AdaptiveRow {
-                    Text(kind.title)
-                        .font(Theme.Typography.body)
-                        .foregroundStyle(Theme.Palette.text)
-                } trailing: {
-                    Text(value)
-                        .font(Theme.Typography.body)
-                        .foregroundStyle(Theme.Palette.mutedText)
-                        .multilineTextAlignment(.trailing)
-                }
-                Image(systemName: "chevron.right")
-                    .font(Theme.Typography.small)
-                    .foregroundStyle(Theme.Palette.mutedText)
-                    .accessibilityHidden(true)
-            }
-            .frame(minHeight: Theme.Size.row)
-            .contentShape(.rect)
-            .accessibilityElement(children: .combine)
-            .accessibilityHint("Opens \(kind.title)")
-        }
-        .buttonStyle(.plain)
-    }
-
     @ViewBuilder private var details: some View {
         let readings = Dictionary(uniqueKeysWithValues: report.contributors.map { ($0.contributor, $0) })
         GlassCard {
@@ -134,15 +139,16 @@ struct NightView: View {
                     .font(Theme.Typography.heading)
                     .foregroundStyle(Theme.Palette.text)
                 if let hrv = readings[.hrv] {
-                    chartLink(.hrv, value: hrv.valueText())
+                    SignalLinkRow(kind: .hrv, value: hrv.valueText(), mark: hrv.mark, day: report.night)
                     Divider()
                 }
                 if let lowest = report.metrics[MetricKind.sleepLowestHeartRate] {
-                    chartLink(.lowestHeartRate, value: "\(Formatters.whole(lowest.value)) bpm")
+                    SignalLinkRow(
+                        kind: .lowestHeartRate, value: "\(Formatters.whole(lowest.value)) bpm", mark: lowestHeartRateMark, day: report.night)
                     Divider()
                 }
                 if let breathing = readings[.breathing] {
-                    chartLink(.breathing, value: breathing.valueText())
+                    SignalLinkRow(kind: .breathing, value: breathing.valueText(), mark: breathing.mark, day: report.night)
                 }
             }
         }
