@@ -1,6 +1,6 @@
 # Days and range lines
 
-**Status:** Built: one page per signal (Day, Week, 4 weeks, 3 months), range lines (the rule, the lines on Today and the widgets, three dots per day in the strip and the calendar, sleep far above your usual counts as outside) and the picked day, which only Journal shows. Plans: week strip, week-strip feedback, tabs lines, tabs layout. First-week checks on Today (tabs voice plan).
+**Status:** Built: one page per signal (Day, Week, 4 weeks, 3 months), range lines (the rule, the lines on Today and the widgets, three dots per day in the strip and the calendar, sleep far above your usual counts as outside) and the picked day, which only Journal shows. Plans: week strip, week-strip feedback, tabs lines, tabs layout. First-week checks on Today (tabs voice plan). Planned (`docs/plans/2026-11-04-recovery-sleep-polish.md`): marks instead of hollow dots on the Recovery, Sleep and signal pages, and three new pages (In bed, Efficiency, Bedtime · wake); see `recovery.md` and `sleep.md`. Today, the widgets, the lock screen, Journal and Body keep the range lines and hollow dots.
 
 > Each line shows your own normal as a shaded stretch and a dot for the day: filled inside it, hollow outside it. Tap Journal's title to pick any earlier day; Journal then shows it. Today is always today.
 
