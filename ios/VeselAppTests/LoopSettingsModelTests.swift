@@ -11,8 +11,9 @@ import VeselWearableTesting
 struct LoopSettingsModelTests {
     let now = try! Date("2026-10-26T09:00:00Z", strategy: .iso8601)
 
-    func settings(lastRead: SyncOutcome? = .success, failure: FakeFailure? = nil, didForget: @escaping () -> Void = {}) async throws -> (LoopSettingsModel, AppDatabase, FakeWearableSource)
-    {
+    func settings(lastRead: SyncOutcome? = .success, failure: FakeFailure? = nil, didForget: @escaping () -> Void = {}) async throws -> (
+        LoopSettingsModel, AppDatabase, FakeWearableSource
+    ) {
         let database = try AppDatabase.inMemory()
         let clock = FixedClock(now: now, timeZone: .gmt)
         let band = try FakeWearableSource(scenario: .normal, failure: failure)

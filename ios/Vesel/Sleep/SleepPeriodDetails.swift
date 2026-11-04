@@ -142,7 +142,9 @@ struct SleepPeriodDetails: View {
     }
 
     private var legend: some View {
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s8)) : AnyLayout(HStackLayout(spacing: Theme.Spacing.s16))
+        let layout =
+            typeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s8)) : AnyLayout(HStackLayout(spacing: Theme.Spacing.s16))
         return layout {
             ForEach([SleepState.deep, .light, .rem], id: \.self) { state in
                 HStack(spacing: Theme.Spacing.s8) {
