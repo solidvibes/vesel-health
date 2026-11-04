@@ -219,9 +219,9 @@ Phase 5 — Sleep page
 - [ ] 5. Docs and changelog (done); screenshots (left for the final pass).
 
 ### Phase 4a — sleep reads
-1. VeselStorage: `observeTrends(kinds:)`, `observeSleepStages`, `observeSleepTimes`, tests.
-2. VeselCore: `ClockMedian`, `UsualBedtime` on it, `SleepTimes`, tests.
-3. Glossary entries and test count.
+- [x] 1. VeselStorage: `observeTrends(kinds:)`, `observeSleepStages`, `observeSleepTimes`, tests.
+- [x] 2. VeselCore: `ClockMedian`, `UsualBedtime` on it, `SleepTimes`, tests.
+- [x] 3. Glossary entries and test count.
 
 ### Phase 4b — new pages
 1. `TrendKind.inBed` / `.efficiency`, efficiency mapping; tests.

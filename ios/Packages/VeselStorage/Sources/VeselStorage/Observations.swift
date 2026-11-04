@@ -78,7 +78,7 @@ public struct SyncLog: Sendable, Equatable {
     }
 }
 
-/// What Body shows: each trended number for the 90 days it can show and the 28 nights before the first, which the
+/// What Body shows: each trended number asked for, for the 90 days it can show and the 28 nights before the first, which the
 /// moving normal of the first nights needs; oldest first. Steps (`MetricKind.steps`) come from `activity_day`, one per day with steps.
 public struct TrendsSnapshot: Sendable, Equatable {
     public var series: [String: [ComputedMetric]]
@@ -88,7 +88,7 @@ public struct TrendsSnapshot: Sendable, Equatable {
     public static let kinds = [
         MetricKind.recoveryStatus, Contributor.hrv.kind, Contributor.restingHeartRate.kind,
         MetricKind.sleepLowestHeartRate, Contributor.breathing.kind, Contributor.sleep.kind, Contributor.skinTemperature.kind,
-        MetricKind.stressHighMinutes,
+        MetricKind.stressHighMinutes, MetricKind.steps,
     ]
 }
 
@@ -202,9 +202,32 @@ extension AppDatabase {
         ValueObservation.tracking { db in try Self.stressReport(db, day: day) }.values(in: writer)
     }
 
-    /// The trended numbers for the `TrendsSnapshot.days` days ending on `today`.
-    public func observeTrends(endingOn today: DayKey) -> some AsyncSequence<TrendsSnapshot, any Error> {
-        ValueObservation.tracking { db in try Self.trends(db, today: today) }.values(in: writer)
+    /// The `kinds` asked for (Body's list by default), for the `TrendsSnapshot.days` days ending on `today`.
+    public func observeTrends(endingOn today: DayKey, kinds: [String] = TrendsSnapshot.kinds) -> some AsyncSequence<TrendsSnapshot, any Error> {
+        ValueObservation.tracking { db in try Self.trends(db, today: today, kinds: kinds) }.values(in: writer)
+    }
+
+    /// The deep, light and REM minutes of each of the `days` nights ending on `night`, oldest first; nights without stages are left out.
+    /// Reads only the stage metrics' `day`, `kind` and `value`.
+    public func observeSleepStages(endingOn night: DayKey, days: Int) -> some AsyncSequence<[NightStages], any Error> {
+        ValueObservation.tracking { db in try Self.sleepStages(db, endingOn: night, days: days) }.values(in: writer)
+    }
+
+    /// When each of the `days` nights ending on `night` began and ended, oldest first. Reads only `night`, `start_at` and `end_at`, never
+    /// `uploaded_at` or the JSON columns.
+    public func observeSleepTimes(endingOn night: DayKey, days: Int) -> some AsyncSequence<[SleepNightTimes], any Error> {
+        ValueObservation.tracking { db in
+            try Row.fetchAll(
+                db, sql: "SELECT night, start_at, end_at FROM sleep_night WHERE night >= ? AND night <= ? ORDER BY night",
+                arguments: [night.adding(days: -(days - 1)).description, night.description]
+            )
+            .compactMap { row -> SleepNightTimes? in
+                DayKey(row["night"] as String).map {
+                    SleepNightTimes(
+                        night: $0, start: Date(unixSeconds: row["start_at"] as Int64), end: Date(unixSeconds: row["end_at"] as Int64))
+                }
+            }
+        }.values(in: writer)
     }
 
     /// The 5-minute average heart rates of the `days` days ending on `day` in `zone`, oldest first; periods without samples are left out.
@@ -440,9 +463,32 @@ extension AppDatabase {
         )
     }
 
-    static func trends(_ db: Database, today: DayKey) throws -> TrendsSnapshot {
+    static func sleepStages(_ db: Database, endingOn night: DayKey, days: Int) throws -> [NightStages] {
+        let stages = [SleepState.deep, .light, .rem].map(MetricKind.sleepStage)
+        let rows = try Row.fetchAll(
+            db,
+            sql: """
+                SELECT day, kind, value FROM computed_metric
+                WHERE kind IN (?, ?, ?) AND day >= ? AND day <= ? AND hour IS NULL ORDER BY day
+                """,
+            arguments: StatementArguments(stages + [night.adding(days: -(days - 1)).description, night.description])
+        )
+        var minutes: [DayKey: [String: Double]] = [:]
+        for row in rows {
+            guard let day = DayKey(row["day"] as String) else { continue }
+            minutes[day, default: [:]][row["kind"]] = row["value"]
+        }
+        return minutes.keys.sorted().map { day in
+            let found = minutes[day] ?? [:]
+            return NightStages(
+                night: day, deep: found[MetricKind.sleepStage(.deep)] ?? 0, light: found[MetricKind.sleepStage(.light)] ?? 0,
+                rem: found[MetricKind.sleepStage(.rem)] ?? 0)
+        }
+    }
+
+    static func trends(_ db: Database, today: DayKey, kinds: [String] = TrendsSnapshot.kinds) throws -> TrendsSnapshot {
         var series: [String: [ComputedMetric]] = [:]
-        for kind in TrendsSnapshot.kinds {
+        for kind in kinds where kind != MetricKind.steps {
             series[kind] =
                 try ComputedMetricRecord
                 .filter(
@@ -453,6 +499,7 @@ extension AppDatabase {
                 .fetchAll(db)
                 .map { try $0.model() }
         }
+        guard kinds.contains(MetricKind.steps) else { return TrendsSnapshot(series: series) }
         let steps = try Row.fetchAll(
             db,
             sql: """

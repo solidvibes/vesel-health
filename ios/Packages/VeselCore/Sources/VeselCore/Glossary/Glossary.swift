@@ -2,7 +2,7 @@ import Foundation
 
 /// A word the screens can explain. The raw value is the launch flag (`-VeselMeaning remSleep`) and the term link's address.
 public enum Term: String, CaseIterable, Sendable, Hashable {
-    case deepSleep, lightSleep, remSleep, awake, sleepTime
+    case deepSleep, lightSleep, remSleep, awake, sleepTime, timeInBed, sleepEfficiency, bedtime
     case hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature
     case recovery, usualRange, stress, highStress, heartRate, howTheBandKnows
     case heartFitness, vo2max, steps
@@ -38,7 +38,7 @@ public enum Glossary {
 
     /// The list in Loop & settings: every term in exactly one group.
     public static let groups: [Group] = [
-        Group(title: "Sleep", terms: [.deepSleep, .lightSleep, .remSleep, .awake, .sleepTime]),
+        Group(title: "Sleep", terms: [.deepSleep, .lightSleep, .remSleep, .awake, .sleepTime, .timeInBed, .sleepEfficiency, .bedtime]),
         Group(title: "Recovery", terms: [.recovery, .hrv, .breathing, .skinTemperature]),
         Group(title: "Heart", terms: [.heartRate, .restingHeartRate, .lowestHeartRate, .heartFitness, .vo2max]),
         Group(title: "Stress", terms: [.stress, .highStress]),
@@ -53,6 +53,9 @@ public enum Glossary {
         case .remSleep: remSleep
         case .awake: awake
         case .sleepTime: sleepTime
+        case .timeInBed: timeInBed
+        case .sleepEfficiency: sleepEfficiency
+        case .bedtime: bedtime
         case .hrv: hrv
         case .restingHeartRate: restingHeartRate
         case .lowestHeartRate: lowestHeartRate
@@ -157,6 +160,44 @@ public enum Glossary {
             ),
             .init("What's normal", "Most adults need 7 to 9 hours. Your Sleep line compares you with your own normal, not with that number."),
             .init("What affects it", "Bedtime, alarms, caffeine late in the day, alcohol, light and screens, stress, illness."),
+        ],
+        howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
+        workedOut: nil
+    )
+
+    private static let timeInBed = Meaning(
+        term: .timeInBed, title: "In bed",
+        sections: [
+            .init("What it is", "How long your Loop recorded you sleeping, from when the sleep started to when it ended, wakings included."),
+            .init("Good or bad", "Neither. It is a time you choose more than a sign from your body."),
+            .init("A lot or a little", "A lie-in or an early start changes it. That is not a warning."),
+            .init("What's normal", "Mostly a little longer than your time asleep. Your normal is the middle of your last 4 weeks of nights."),
+            .init("What affects it", "When you go to bed, when you get up, alarms, weekends and lie-ins."),
+        ],
+        howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
+        workedOut: nil
+    )
+
+    private static let sleepEfficiency = Meaning(
+        term: .sleepEfficiency, title: "Efficiency",
+        sections: [
+            .init("What it is", "The share of your time in bed that you were asleep."),
+            .init("Good or bad", "Higher is better. Most people sleeping well are asleep for about 85 % of their time in bed or more."),
+            .init("A lot or a little", "A night now and then well under your normal is fine. Many in a row can mean restless sleep."),
+            .init("What's normal", "Your own normal is the middle of your last 4 weeks of nights. Only a night clearly under it is marked."),
+            .init("What affects it", "Lying awake before sleep, waking in the night, noise, light, caffeine, alcohol, stress, illness."),
+        ],
+        howTheBandKnows: "Your time asleep ÷ your time in bed, both from Polar's sleep result.",
+        workedOut: nil
+    )
+
+    private static let bedtime = Meaning(
+        term: .bedtime, title: "Bedtime and wake",
+        sections: [
+            .init("What it is", "The clock time your sleep started and the clock time it ended."),
+            .init("Good or bad", "Neither. Steady times tend to help sleep, but there is no right time."),
+            .init("What's normal", "Whatever your nights usually are. The middle bedtime and wake time are the middle of the nights shown."),
+            .init("What affects it", "Work, light in the evening, screens, meals, alcohol, weekends, travel."),
         ],
         howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
         workedOut: nil
