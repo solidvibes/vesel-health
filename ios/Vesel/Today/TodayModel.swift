@@ -12,6 +12,8 @@ final class TodayModel {
     private var loaded: (day: DayKey, snapshot: TodaySnapshot)?
     private var loadedStepHours: (day: DayKey, hours: HourlySteps)?
     private var loadedWorkouts: (day: DayKey, workouts: [LabelledWorkout])?
+    /// The newest reads, for spotting a stuck Loop.
+    private var recentRuns: [SyncRun] = []
     /// The morning "Still in bed" was tapped; the card returns the next morning even if the app stayed open.
     private var dismissedOn: String?
 
@@ -150,6 +152,15 @@ final class TodayModel {
         let shown = today
         await reads.observe {
             for try await value in database.observeLabelledWorkouts(day: shown) { loadedWorkouts = (shown, value) }
+        }
+    }
+
+    /// Since when the Loop has answered "busy" to every read (`LoopStuck`); nil when it isn't stuck.
+    var loopStuckSince: Date? { LoopStuck.since(recentRuns, now: clock.now) }
+
+    func observeRuns() async {
+        await reads.observe {
+            for try await log in database.observeSyncRuns(limit: 200) { recentRuns = log.runs }
         }
     }
 

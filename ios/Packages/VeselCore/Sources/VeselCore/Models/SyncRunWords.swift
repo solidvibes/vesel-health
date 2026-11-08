@@ -26,6 +26,7 @@ public enum SyncRunWords {
             switch run.detail {
             case SyncDetail.stoppedEarly: "stopped early"
             case SyncDetail.notPaired: "no Loop paired"
+            case let detail? where detail.hasPrefix(SyncDetail.loopBusy): "Loop busy"
             default: "didn't finish"
             }
         case nil: isRunning ? "reading now…" : "didn't finish"

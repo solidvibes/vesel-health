@@ -502,11 +502,18 @@ public actor BandSync {
         }
     }
 
+    /// Polar's "system busy" (PS-FTP error 202), wrapped by the SDK in whichever error the call throws.
+    private static func isBusy(_ error: any Error) -> Bool {
+        let text = String(describing: error)
+        return text.contains("errorCode: 202") || text.contains("error 202")
+    }
+
     /// What went wrong and at which band step, in words with no health values in them.
     private static func describe(_ error: any Error, at step: String) -> String {
         switch error {
         case is CancellationError: SyncDetail.stoppedEarly
         case BandPayloadError.unreadable(let kind, let day): "Couldn't read \(kind.rawValue) for \(day)"
+        case _ where isBusy(error): "\(SyncDetail.loopBusy) at \(step.isEmpty ? "start" : step)"
         default: "Sync stopped at \(step.isEmpty ? "start" : step): \(String(describing: error).prefix(200))"
         }
     }

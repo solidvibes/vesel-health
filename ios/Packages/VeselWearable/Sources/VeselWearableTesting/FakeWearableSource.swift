@@ -170,6 +170,7 @@ public actor FakeWearableSource: WearableSource {
     {
         calls.append("fetch \(kind.rawValue)")
         await hangIfAsked("fetch \(kind.rawValue)")
+        if failure == .busy { throw FakeLoopBusy() }
         if fetchDelay > .zero { try await take(fetchDelay) }
         if dayDelay > .zero {
             var day = start
@@ -560,5 +561,10 @@ public enum FakeBandError: Error {
     case disconnected
     case badFixture
     case refused
+}
+
+/// How the Polar SDK reports the Loop's "busy".
+struct FakeLoopBusy: Error, CustomStringConvertible {
+    var description: String { #"fileError(description: "The operation couldn’t be completed. (ResponseError error 202.)")"# }
 }
 #endif

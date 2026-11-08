@@ -52,6 +52,8 @@ public enum FakeFailure: String, Sendable, CaseIterable {
     case workoutDetection
     /// The evening ride doesn't come off the Loop.
     case workoutTransfer
+    /// The Loop answers "busy" (Polar's error 202) to every file it is asked for, as when a write was cut off.
+    case busy
 
     public init?(defaults: UserDefaults) {
         guard let failure = defaults.string(forKey: "VeselFakeFailure").flatMap(FakeFailure.init(rawValue:)) else { return nil }

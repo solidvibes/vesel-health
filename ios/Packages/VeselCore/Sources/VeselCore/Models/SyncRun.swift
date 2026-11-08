@@ -33,4 +33,6 @@ public enum SyncDetail {
     public static let notNearby = "Band not nearby"
     public static let didNotStart = "Band didn't start the sync"
     public static let stoppedEarly = "Stopped before it finished"
+    /// Followed by " at <step>": the Loop refused with Polar's "busy" (error 202).
+    public static let loopBusy = "Loop busy"
 }

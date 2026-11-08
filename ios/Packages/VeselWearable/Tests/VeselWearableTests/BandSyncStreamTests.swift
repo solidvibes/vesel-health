@@ -132,4 +132,13 @@ struct BandSyncStreamTests {
         try await writing.value
         #expect(await band.wrist == .right)
     }
+
+    @Test func aBusyLoopIsLoggedAsBusyAtTheStepItRefused() async throws {
+        await band.setFailure(.busy)
+        #expect(await sync.sync(.manual) == .failed)
+
+        let run = try #require(try await database.latestSyncRuns(limit: 1).first)
+        #expect(run.isLoopBusy)
+        #expect(run.detail == "Loop busy at sleep")
+    }
 }

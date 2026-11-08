@@ -12,6 +12,7 @@ struct TodayView: View {
     @State private var nightStoredAtReadStart: Bool?
     /// Bumped by Try again, so the reads start over.
     @State private var attempt = 0
+    @State private var showsRestartSteps = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openWorkout) private var openWorkout
@@ -51,6 +52,11 @@ struct TodayView: View {
             guard scenePhase == .active else { return }
             await model.observeHeartRate()
         }
+        .task(id: ObserveKey(value: model.today, active: scenePhase == .active, attempt: attempt)) {
+            guard scenePhase == .active else { return }
+            await model.observeRuns()
+        }
+        .sheet(isPresented: $showsRestartSteps) { RestartLoopSheet() }
         .task(id: ObserveKey(value: model.today, active: scenePhase == .active, attempt: attempt)) {
             guard scenePhase == .active else { return }
             await model.observeStepHours()
@@ -149,6 +155,14 @@ struct TodayView: View {
                     }
                 }
             }
+            if let since = model.loopStuckSince {
+                ErrorCard(
+                    title: "Your Loop is stuck",
+                    message: "It has said it's busy at every read since \(stuckTime(since)). A restart fixes it and keeps your data.",
+                    actionTitle: "How to restart",
+                    action: { showsRestartSteps = true }
+                )
+            }
             // Last, so the reading card appearing and folding away never moves a card above it.
             switch state.body {
             case .reading where model.headline == nil && model.snapshot?.latest == nil:
@@ -172,6 +186,13 @@ struct TodayView: View {
                 }
             }
         }
+    }
+
+    /// "17:45" today, "Fri 17:45" before.
+    private func stuckTime(_ date: Date) -> String {
+        DayKey(date, in: model.zone) == model.today
+            ? Formatters.time(date, zone: model.zone)
+            : date.formatted(Date.FormatStyle(timeZone: model.zone).weekday(.abbreviated).hour().minute())
     }
 
     /// The reading list's "Last night" row: only while last night isn't on the phone, decided when the read starts so the row
