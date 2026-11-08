@@ -37,9 +37,18 @@ struct EvaluatingNightCard: View {
     let waitingForLoop: Bool
     /// The morning sleep report is on, so a notification says when it's ready.
     let reportOn: Bool
+    /// The Loop ended the night: Polar may take up to 2 hours to finish it, and Vesel checks until then.
+    var checksUntil: Date?
+    var zone: TimeZone = .current
+
+    private var title: String { checksUntil != nil && !waitingForLoop ? "Polar is finishing your night" : "Evaluating your night" }
 
     private var message: String {
         if waitingForLoop { return "Nothing for you to do. Your Loop gets the message as soon as it's near your phone." }
+        if let checksUntil {
+            let ready = reportOn ? " We'll let you know when it's ready." : ""
+            return "Your Loop hasn't sent it yet. Vesel checks until \(Formatters.time(checksUntil, zone: zone)).\(ready)"
+        }
         return reportOn ? "Nothing for you to do. We'll let you know when it's ready." : "Nothing for you to do. It shows here when it's ready."
     }
 
@@ -47,7 +56,7 @@ struct EvaluatingNightCard: View {
         GlassCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s12) {
                 VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
-                    Text("Evaluating your night")
+                    Text(title)
                         .font(Theme.Typography.heading)
                         .foregroundStyle(Theme.Palette.text)
                     Text(message)
@@ -57,7 +66,10 @@ struct EvaluatingNightCard: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)
-                IndeterminateLine(color: Theme.Palette.sleep)
+                // A known end time, not endless loading.
+                if checksUntil == nil || waitingForLoop {
+                    IndeterminateLine(color: Theme.Palette.sleep)
+                }
             }
         }
     }
@@ -96,6 +108,7 @@ struct WaitingForLoopCard: View {
     VStack(spacing: Theme.Spacing.s16) {
         EvaluatingNightCard(waitingForLoop: false, reportOn: true)
         EvaluatingNightCard(waitingForLoop: true, reportOn: false)
+        EvaluatingNightCard(waitingForLoop: false, reportOn: true, checksUntil: .now.addingTimeInterval(5400))
         WaitingForLoopCard()
     }
     .padding(Theme.Spacing.edge)

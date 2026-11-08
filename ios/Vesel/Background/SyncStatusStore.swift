@@ -51,7 +51,12 @@ final class SyncStatusStore {
 
     /// The band stopped recording sleep under 2 hours ago: Polar may still be finishing the night.
     func bandFinishingNight(at now: Date) -> Bool {
-        sleepEndedAt.map { now.timeIntervalSince($0) < 2 * 3600 } ?? false
+        nightChecksUntil(at: now) != nil
+    }
+
+    /// While Polar may still be finishing the night: when Vesel stops waiting for it.
+    func nightChecksUntil(at now: Date) -> Date? {
+        sleepEndedAt.map { $0.addingTimeInterval(2 * 3600) }.flatMap { now < $0 ? $0 : nil }
     }
 
     /// Last night is on its way: the band still records it, Polar is still finishing it, it is being read, or "I'm up" waits

@@ -31,3 +31,4 @@ Getting up is one tap, wherever the Loop is. Once the night is in, nothing asks 
 ## What it means
 
 The minutes between the tap and the Loop getting it may count as in bed (accepted). A tap the Loop never gets is dropped after 6 hours, so it can't end the next night. The owner's stored value for the morning report is reset once (agent's) so it follows the new default (on); the switch still turns it off.
+- 8 Nov: while Polar may still be finishing the night, the card says "Polar is finishing your night" and the time Vesel stops checking, with no moving line, so a missing night never looks like endless loading. The 2-hour wait stays (mine).

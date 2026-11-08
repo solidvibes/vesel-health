@@ -92,7 +92,10 @@ struct TodayView: View {
                     case .goodMorning:
                         GoodMorningCard(imUp: { Task { await model.imUp() } }, stillInBed: model.stillInBed)
                     case .evaluating(let waitingForLoop):
-                        EvaluatingNightCard(waitingForLoop: waitingForLoop, reportOn: model.snapshot?.morningReportOn ?? false)
+                        EvaluatingNightCard(
+                            waitingForLoop: waitingForLoop, reportOn: model.snapshot?.morningReportOn ?? false,
+                            checksUntil: environment.status.nightChecksUntil(at: environment.clock.now), zone: model.zone
+                        )
                     case .none:
                         EmptyView()
                     }
