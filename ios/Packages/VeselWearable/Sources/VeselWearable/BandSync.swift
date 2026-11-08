@@ -22,6 +22,8 @@ public actor BandSync {
     private var liveGeneration = 0
     /// When a workout last failed to come off the band, by session; it is tried again at most once an hour.
     private var workoutFailedAt: [String: Date] = [:]
+    /// The read's band step now running, so a failed read can say where it stopped.
+    private var step = ""
     private let liveContinuation: AsyncStream<LiveHeartRate>.Continuation
     /// Live heart rate while it is on. For showing only: never store or log it.
     public nonisolated let liveHeartRate: AsyncStream<LiveHeartRate>
@@ -141,7 +143,7 @@ public actor BandSync {
             await self.pauseLive()
             do {
                 try Task.checkCancellation()
-                try await self.band.firstTimeUse(profile, now: self.clock.now)
+                try await self.uncancellable { try await self.band.firstTimeUse(profile, now: self.clock.now) }
             } catch {
                 await self.resumeLive()
                 throw error
@@ -157,7 +159,7 @@ public actor BandSync {
             await self.pauseLive()
             do {
                 try Task.checkCancellation()
-                try await self.band.setWorkoutDetection(detection)
+                try await self.uncancellable { try await self.band.setWorkoutDetection(detection) }
             } catch {
                 await self.resumeLive()
                 throw error
@@ -173,7 +175,7 @@ public actor BandSync {
             await self.pauseLive()
             do {
                 try Task.checkCancellation()
-                try await self.band.setWrist(wrist)
+                try await self.uncancellable { try await self.band.setWrist(wrist) }
             } catch {
                 await self.resumeLive()
                 throw error
@@ -191,6 +193,12 @@ public actor BandSync {
     }
 
     // MARK: One band call at a time
+
+    /// A settings write, once started, runs to its end even when the caller is cancelled (iOS ending the time): one cut off
+    /// halfway leaves the Loop answering "busy" to everything until it is restarted.
+    private func uncancellable(_ write: @escaping @Sendable () async throws -> Void) async throws {
+        try await Task { try await write() }.value
+    }
 
     private func exclusively<T: Sendable>(_ work: @Sendable () async throws -> T) async rethrows -> T {
         if busy {
@@ -246,6 +254,7 @@ public actor BandSync {
     }
 
     private func readBand(wait: Duration, progress: @escaping @Sendable (SyncStep) async -> Void) async -> (SyncOutcome, String?) {
+        step = ""
         guard let info = try? await database.band() else { return (.failed, SyncDetail.notPaired) }
         if await band.connectionState != .connected { await progress(.waitingForLoop) }
         guard await band.reachable(within: wait) else {
@@ -271,7 +280,7 @@ public actor BandSync {
         } catch is NotStarted {
             return (.unreachable, SyncDetail.didNotStart)
         } catch {
-            outcome = (.failed, Self.describe(error))
+            outcome = (.failed, Self.describe(error, at: step))
         }
         try? await band.stopSync()
         return outcome
@@ -352,12 +361,15 @@ public actor BandSync {
         let now = clock.now
         let zone = clock.timeZone
         let today = clock.today
+        step = "setTime"
         try await call { _ in try await band.setTime(now, zone: zone) }
         try await switchOnWorkoutDetection()
 
         var updated = info
+        step = "battery"
         updated.batteryPercent = try await call { _ in try await band.battery() }
         updated.batteryAt = now
+        step = "diskSpace"
         let disk = try await call { _ in try await band.diskSpace() }
         updated.diskFreeBytes = disk.freeBytes
         updated.diskTotalBytes = disk.totalBytes
@@ -366,6 +378,7 @@ public actor BandSync {
 
         // Heart rate and beat-to-beat last: each downloads every 24/7 file on the band, however few days are asked for.
         var kinds: [FetchKind] = [.dailySummary, .activitySamples, .skinTemperature, .heartRate, .ppi]
+        step = "sleepRecordingStatus"
         let sleepStatus = try await call { _ in try await band.sleepRecordingStatus() }
         self.sleepStatus = sleepStatus
         if sleepStatus == .stopped {
@@ -385,6 +398,7 @@ public actor BandSync {
             let start = [afterLast, unsettled].compactMap { $0 }.min() ?? firstDay
             // Heart rate and beat-to-beat are one SDK request that reads every 24/7 file: it may take longer without a word.
             let limit = kind == .heartRate || kind == .ppi ? limits.backlogCall : nil
+            step = kind.rawValue
             let payloads = try await call(limit: limit) { answered in
                 try await band.fetch(kind, from: min(start, today), through: today, answered: answered)
             }.sorted { $0.day < $1.day }
@@ -416,6 +430,7 @@ public actor BandSync {
             try Task.checkCancellation()
             let ledger = try await database.ledger(type.fetchKinds)
             guard let day = ClearPlan.lastSafeDay(for: type, ledger: ledger, today: today, timeZone: zone) else { continue }
+            step = "delete \(type.rawValue)"
             try await call { _ in try await band.deleteStored(type, until: day) }
             for kind in type.fetchKinds {
                 try await database.markDeletedFromBand(kind, through: day, at: clock.now)
@@ -432,7 +447,8 @@ public actor BandSync {
             var detection = current ?? .sdkFallback
             detection.isOn = true
             if detection != current {
-                try await call { _ in try await band.setWorkoutDetection(detection) }
+                let wanted = detection
+                try await call { _ in try await self.uncancellable { try await self.band.setWorkoutDetection(wanted) } }
             }
             try await database.storeWorkoutDetection(detection)
         } catch is CancellationError {
@@ -446,6 +462,7 @@ public actor BandSync {
     /// waits for its end. A workout that fails, or a list that doesn't come, is skipped and the read carries on; a workout whose
     /// file didn't come off the band, or whose read was stopped, is tried again at most once an hour. Workouts stay on the band.
     private func fetchWorkouts() async throws {
+        step = "workouts"
         let now = clock.now
         let status = try? await call { _ in try await band.workoutStatus() }
         try Task.checkCancellation()
@@ -485,12 +502,12 @@ public actor BandSync {
         }
     }
 
-    /// What went wrong, in words with no health values in them.
-    private static func describe(_ error: any Error) -> String {
+    /// What went wrong and at which band step, in words with no health values in them.
+    private static func describe(_ error: any Error, at step: String) -> String {
         switch error {
         case is CancellationError: SyncDetail.stoppedEarly
         case BandPayloadError.unreadable(let kind, let day): "Couldn't read \(kind.rawValue) for \(day)"
-        default: "Sync stopped: \(type(of: error))"
+        default: "Sync stopped at \(step.isEmpty ? "start" : step): \(String(describing: error).prefix(200))"
         }
     }
 }

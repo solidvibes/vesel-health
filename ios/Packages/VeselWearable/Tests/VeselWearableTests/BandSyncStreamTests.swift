@@ -120,4 +120,16 @@ struct BandSyncStreamTests {
         #expect(try await database.ledger(FetchKind.allCases).allSatisfy { $0.sampleCount > 0 })
         #expect(await band.calls.contains { $0.hasPrefix("delete") } == false)
     }
+
+    /// iOS ending the time mid-write must not cut the write off: a half-written setting leaves the Loop "busy" for good.
+    @Test func aStartedWristWriteFinishesEvenWhenStopped() async throws {
+        await band.hangNext("setWrist")
+        let writing = Task { try await sync.setWrist(.right) }
+        await waitUntil { await band.hangsOpen == 1 }
+        writing.cancel()
+        await band.answerHangs()
+
+        try await writing.value
+        #expect(await band.wrist == .right)
+    }
 }

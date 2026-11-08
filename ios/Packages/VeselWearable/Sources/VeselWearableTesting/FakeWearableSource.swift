@@ -120,9 +120,12 @@ public actor FakeWearableSource: WearableSource {
         self.profile = profile
     }
 
-    public func setWrist(_ wrist: WristSide) throws {
+    /// A write stopped while it hangs is cut off, like a real one that never reached the end.
+    public func setWrist(_ wrist: WristSide) async throws {
         calls.append("setWrist")
         if failure == .wristFailed { throw BandWriteError.refused }
+        await hangIfAsked("setWrist")
+        try Task.checkCancellation()
         self.wrist = wrist
     }
 
@@ -281,7 +284,7 @@ public actor FakeWearableSource: WearableSource {
         dayDelay = delay
     }
 
-    /// The next call starting with `call` ("fetch", "fetch ppi", "sleepRecordingStatus", "endSleepRecording", "workout <session>") doesn't
+    /// The next call starting with `call` ("fetch", "fetch ppi", "sleepRecordingStatus", "endSleepRecording", "workout <session>", "setWrist") doesn't
     /// answer until `answerHangs()` and ignores being stopped, like an SDK call that hangs. `duration` passes on the uptime.
     public func hangNext(_ call: String, for duration: Duration = .zero) {
         hanging = (call, duration)
