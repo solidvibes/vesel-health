@@ -1,12 +1,13 @@
-# The checks every pull request and every push to main must pass.
+# The checks every pull request must pass. A job runs only when its own files change (the
+# `changes` job decides); a skipped job counts as passed for the required checks. Draft pull
+# requests run only the lint; everything runs once the pull request is marked ready.
 # Close to, not the same as, the contract's full checks in AGENTS.md: CI runs the app's
 # tests on an iOS 27 Simulator, while the local checks use iOS 26.5.
 name: Checks
 
 on:
   pull_request:
-  push:
-    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -21,6 +22,33 @@ env:
   XCODE: /Applications/Xcode_27.2.app
 
 jobs:
+  changes:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      packages: ${{ steps.diff.outputs.packages }}
+      ios: ${{ steps.diff.outputs.ios }}
+      mac: ${{ steps.diff.outputs.mac }}
+      server: ${{ steps.diff.outputs.server }}
+    steps:
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          files="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate --jq '.[].filename')"
+          changed() { grep -qE "^\.github/workflows/checks\.yml$|$1" <<<"$files" && echo true || echo false; }
+          {
+            echo "packages=$(changed '\.swift$|^\.swift-format$|^ios/Packages/|^mac/Packages/')"
+            echo "ios=$(changed '^ios/|^Signing\.xcconfig$')"
+            # The Mac app bundles server/.
+            echo "mac=$(changed '^mac/|^server/|^Signing\.xcconfig$')"
+            echo "server=$(changed '^server/')"
+          } | tee -a "$GITHUB_OUTPUT"
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -39,6 +67,8 @@ jobs:
       - run: bash solid-vibes/bin/solidvibes lint vesel
 
   packages:
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
     runs-on: xcode-27
     timeout-minutes: 30
     steps:
@@ -54,22 +84,11 @@ jobs:
       - run: swift test --package-path ios/Packages/VeselCore
       - run: swift test --package-path ios/Packages/VeselStorage
       - run: swift test --package-path ios/Packages/VeselSync
-
-  backup-kit:
-    runs-on: xcode-27
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - run: sudo xcode-select -s "$XCODE"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/Library/Caches/org.swift.swiftpm
-          key: spm-${{ runner.os }}-${{ hashFiles('ios/Packages/*/Package.resolved', 'mac/Packages/*/Package.resolved') }}
       - run: swift test --package-path mac/Packages/VeselBackupKit
 
   ios:
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: xcode-27
     timeout-minutes: 45
     steps:
@@ -102,6 +121,8 @@ jobs:
         working-directory: ios
 
   mac:
+    needs: changes
+    if: needs.changes.outputs.mac == 'true'
     runs-on: xcode-27
     timeout-minutes: 30
     steps:
@@ -125,8 +146,10 @@ jobs:
         working-directory: mac
 
   server:
-    # macOS because the server's setup.sh uses scutil and shasum.
-    runs-on: macos-26
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    # The tests set VESEL_SERVER_HOST, so setup.sh never calls the macOS-only scutil.
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

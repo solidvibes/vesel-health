@@ -27,7 +27,7 @@ The first line checks the Swift code's format with the `swift-format` that comes
 
 `solidvibes lint .` also checks the docs and rules. It needs the Solid Vibes tool: https://solidvibes.stojanovventures.com.
 
-GitHub runs these checks on every pull request and every push to `main` ([.github/workflows/checks.yml](.github/workflows/checks.yml)), with one difference: the app's tests run on an `iPhone 17` Simulator with iOS 27. For the lint it fetches the Solid Vibes tool from its public repo ([solidvibes/solid-vibes](https://github.com/solidvibes/solid-vibes)) at a pinned commit. CI needs no secrets.
+GitHub runs these checks on every pull request once it is out of draft ([.github/workflows/checks.yml](.github/workflows/checks.yml)), each only when the files it checks change, with one difference: the app's tests run on an `iPhone 17` Simulator with iOS 27. For the lint it fetches the Solid Vibes tool from its public repo ([solidvibes/solid-vibes](https://github.com/solidvibes/solid-vibes)) at a pinned commit. CI needs no secrets.
 
 ## How the repo is worked
 
