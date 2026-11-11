@@ -130,4 +130,13 @@ struct PersonalRangeTests {
         #expect(found.earlierNights == 2)
         #expect(found.median == 44)
     }
+
+    @Test func aRangeWorkedOutOnReadExplainsItself() throws {
+        let explanation = try #require(PersonalRange(previous: seven)).explanation(unit: "bpm")
+        #expect(explanation.method == "range28")
+        #expect(explanation.version == 1)
+        #expect(explanation.inputs.map(\.name) == ["nights", "usualMean", "usualSD"])
+        #expect(explanation.inputs.map(\.value) == [7, 46, 4])
+        #expect(explanation.text == "Your usual is the mean ± 1 standard deviation of your previous 7 nights: 42–50 bpm.")
+    }
 }

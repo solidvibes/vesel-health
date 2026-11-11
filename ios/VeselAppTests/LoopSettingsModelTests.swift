@@ -11,11 +11,12 @@ import VeselWearableTesting
 struct LoopSettingsModelTests {
     let now = try! Date("2026-10-26T09:00:00Z", strategy: .iso8601)
 
-    func settings(lastRead: SyncOutcome? = .success, didForget: @escaping () -> Void = {}) async throws -> (LoopSettingsModel, AppDatabase, FakeWearableSource)
-    {
+    func settings(lastRead: SyncOutcome? = .success, failure: FakeFailure? = nil, didForget: @escaping () -> Void = {}) async throws -> (
+        LoopSettingsModel, AppDatabase, FakeWearableSource
+    ) {
         let database = try AppDatabase.inMemory()
         let clock = FixedClock(now: now, timeZone: .gmt)
-        let band = try FakeWearableSource(scenario: .normal)
+        let band = try FakeWearableSource(scenario: .normal, failure: failure)
         let bandSync = BandSync(band: band, database: database, clock: clock)
         let pipeline = SyncPipeline(bandSync: bandSync, database: database, clock: clock, status: SyncStatusStore(defaults: .throwaway()))
         try await database.save(BandInfo(deviceId: "FAKE0001", name: "Polar Loop", pairedAt: now.addingTimeInterval(-86_400)))
@@ -34,6 +35,29 @@ struct LoopSettingsModelTests {
 
         #expect(!model.alerts.isOn(.lowRecovery))
         #expect(try await database.alertSettings().isOn(.lowRecovery) == false)
+    }
+
+    @Test func theWristIsLeftUntilChosenThenSentToTheLoopAndStored() async throws {
+        let (model, database, band) = try await settings()
+        await model.load()
+        #expect(model.wrist == .left)
+
+        await model.chooseWrist(.right)
+
+        #expect(model.wrist == .right)
+        #expect(await band.wrist == .right)
+        #expect(try await database.wrist() == .right)
+    }
+
+    @Test func aLoopThatRefusesTheWristStoresNothing() async throws {
+        let (model, database, band) = try await settings(failure: .wristFailed)
+
+        await model.chooseWrist(.right)
+
+        #expect(model.wrist == .left)
+        #expect(model.wristNotSaved)
+        #expect(await band.wrist == nil)
+        #expect(try await database.wrist() == .left)
     }
 
     @Test func forgettingResetsTheLoopThenLeaves() async throws {

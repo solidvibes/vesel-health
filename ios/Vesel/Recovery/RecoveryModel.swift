@@ -41,10 +41,8 @@ final class RecoveryModel {
         loaded.flatMap { $0.day == day ? ($0.report, $0.lines) : nil }
     }
 
-    var headline: RecoverySentence? {
-        report.flatMap {
-            RecoverySentence.make(status: $0.status, contributors: $0.contributors, asleepMinutes: $0.value(MetricKind.sleepAsleep), units: units)
-        }
+    var quietLine: String? {
+        report.flatMap { RecoverySentence.quietLine(status: $0.status, contributors: $0.contributors) }
     }
 
     /// "What tends to help" for what was off this night; empty on a good night.

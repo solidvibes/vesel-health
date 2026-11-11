@@ -20,6 +20,8 @@ final class AppEnvironment {
     /// Sync now and I'm up, which keep reading after you leave Vesel.
     let continuedRead: ContinuedRead
     let liveHeartRate: LiveHeartRateController
+    /// The phone's route during a workout the Loop noticed.
+    let routeRecorder: RouteRecorder
     let status: SyncStatusStore
     let units = UnitsStore()
     let launch: LaunchOptions
@@ -47,6 +49,7 @@ final class AppEnvironment {
         pipeline = SyncPipeline(bandSync: bandSync, database: database, clock: clock, status: status)
         continuedRead = ContinuedRead(pipeline: pipeline, database: database)
         liveHeartRate = LiveHeartRateController(bandSync: bandSync)
+        routeRecorder = RouteRecorder(database: database, clock: clock)
         days = DaySelection(clock: clock, chosen: launch.day)
         router = AppRouter(clock: clock)
     }

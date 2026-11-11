@@ -16,6 +16,8 @@ public protocol WearableSource: Sendable {
     func pair() async throws -> PairedBand
     func cancelPairing() async
     func firstTimeUse(_ profile: Profile, now: Date) async throws
+    /// Tells the band which wrist it is worn on.
+    func setWrist(_ wrist: WristSide) async throws
     /// Tells the band a sync starts: it writes its cached 24/7 data to files.
     func startSync() async throws
     func stopSync() async throws
@@ -32,6 +34,17 @@ public protocol WearableSource: Sendable {
     func deleteStored(_ type: StoredDataType, until day: DayKey) async throws
     /// Wipes the band, its pairing included.
     func factoryReset() async throws
+    /// The band's automatic training detection; nil when it has none set.
+    func workoutDetection() async throws -> WorkoutDetection?
+    /// Changes only the band's automatic training detection, leaving its other settings as they are.
+    func setWorkoutDetection(_ detection: WorkoutDetection) async throws
+    /// Whether the band is recording a workout now.
+    func workoutStatus() async throws -> WorkoutStatus
+    /// Every workout on the band, whatever its date.
+    func workoutReferences() async throws -> [WorkoutReference]
+    /// One workout and all its files. Throws `WorkoutReadError.unfinished` for one that isn't over, and when a file fails to
+    /// come off the band.
+    func workout(_ reference: WorkoutReference) async throws -> BandWorkout
     /// What the band says on its own: it reconnected, a night ended, it asks to sync. One stream for the app's lifetime.
     var events: AsyncStream<BandEvent> { get }
     /// Each change in the Bluetooth link to the band, for the connection log. One stream for the app's lifetime.
@@ -60,6 +73,39 @@ public enum BandEvent: Sendable, Equatable {
     case checkIn
     /// The band's own inactivity alert fired at this moment: the wearer has been still too long. Also a check-in.
     case stillTooLong(at: Date)
+    /// The band started recording a workout. Also a check-in.
+    case workoutStarted(at: Date)
+    /// The band stopped recording a workout. Also a check-in.
+    case workoutEnded(at: Date)
+}
+
+/// A workout on the band, as listed before it is read.
+public struct WorkoutReference: Sendable, Equatable {
+    /// The workout's folder on the band, "20261103/071000"; it never changes for that workout.
+    public var session: String
+    /// When it started, from its folder name.
+    public var date: Date
+    /// The total size of its files; a change means the band's copy changed.
+    public var fileSize: Int64
+
+    public init(session: String, date: Date, fileSize: Int64) {
+        self.session = session
+        self.date = date
+        self.fileSize = fileSize
+    }
+}
+
+public enum WorkoutStatus: Sendable, Equatable {
+    /// Since nil when the band doesn't say.
+    case running(since: Date?)
+    case notRunning
+}
+
+public enum WorkoutReadError: Error, Equatable {
+    /// The band's summary has no length yet: the workout is still going.
+    case unfinished
+    /// Not in the band's last list of workouts.
+    case notListed
 }
 
 /// One live heart-rate reading. Shown, never stored or logged.
@@ -101,6 +147,11 @@ public enum PairingError: Error, Equatable {
     case refused
     /// Connected, but the band's first-time setup didn't go through.
     case setupFailed
+}
+
+/// The band didn't take a setting.
+public enum BandWriteError: Error, Equatable {
+    case refused
 }
 
 /// What the band stores and can clear, each covering one or more fetch kinds.

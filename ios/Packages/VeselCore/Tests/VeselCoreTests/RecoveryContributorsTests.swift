@@ -118,19 +118,6 @@ struct RecoveryContributorsTests {
         #expect(metric.explanation.text == "Polar's Nightly Recharge says OK (4 of 6).")
     }
 
-    @Test func theGoodSideIsHigherForHrvAndSleepAndLowerForRestingHeartRate() {
-        #expect(Contributor.hrv.goodSide(of: .higher) == .good)
-        #expect(Contributor.hrv.goodSide(of: .wellAbove) == .good)
-        #expect(Contributor.hrv.goodSide(of: .lower) == .other)
-        #expect(Contributor.hrv.goodSide(of: .wellBelow) == .other)
-        #expect(Contributor.restingHeartRate.goodSide(of: .lower) == .good)
-        #expect(Contributor.restingHeartRate.goodSide(of: .wellBelow) == .good)
-        #expect(Contributor.restingHeartRate.goodSide(of: .higher) == .other)
-        #expect(Contributor.sleep.goodSide(of: .higher) == .good)
-        #expect(Contributor.sleep.goodSide(of: .lower) == .other)
-        #expect(Contributor.sleep.goodSide(of: .wellBelow) == .other)
-    }
-
     @Test func sleepIsJudgedAgainstTheSleepLinesNormal() throws {
         let earlier = history(.sleep, [420, 480, 450, 510, 440, 470, 460])
         let range = try #require(PersonalRange(previous: [420, 480, 450, 510, 440, 470, 460]))
@@ -151,8 +138,6 @@ struct RecoveryContributorsTests {
             #expect(sleep.verdictWord == word)
             #expect(InRange.sleep(sleep).state == state)
         }
-        #expect(Contributor.sleep.goodSide(of: try reading(2.5).verdict) == .none)
-        #expect(Contributor.sleep.goodSide(of: try reading(-1.5).verdict) == .other)
         #expect(try reading(1.5).spreads == 0)
         #expect(abs(try #require(reading(3).spreads) - 2) < 1e-9)
         #expect(abs(try #require(reading(-2.5).spreads) + 2.5) < 1e-9)
@@ -167,23 +152,5 @@ struct RecoveryContributorsTests {
         #expect(hrv.verdict == .higher)
         #expect(hrv.verdictWord == "higher than usual")
         #expect(hrv.explanation.text.contains("mean ± 1 standard deviation"))
-    }
-
-    @Test func aMuchLongerNightIsNotTheGoodSide() {
-        #expect(Contributor.sleep.goodSide(of: .wellAbove) == .none)
-    }
-
-    @Test func usualAndLearningHaveNoSide() {
-        for contributor in Contributor.allCases {
-            #expect(contributor.goodSide(of: .usual) == .none)
-            #expect(contributor.goodSide(of: .learning(nights: 3)) == .none)
-        }
-    }
-
-    @Test func breathingAndSkinTemperatureNeverHaveASide() {
-        for verdict in [RangeVerdict.wellBelow, .lower, .higher, .wellAbove] {
-            #expect(Contributor.breathing.goodSide(of: verdict) == .none)
-            #expect(Contributor.skinTemperature.goodSide(of: verdict) == .none)
-        }
     }
 }

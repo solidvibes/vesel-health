@@ -15,6 +15,16 @@ struct MenuLabelsTests {
             ])
     }
 
+    @Test func workoutsAndRoutesHaveTheirOwnLines() {
+        let lines = MenuLabels.lines(for: ["workout_route": 2, "workout": 3, "workout_file": 9, "workout_choice": 1])
+        #expect(
+            lines == [
+                CountLine(label: "workouts", count: 3),
+                CountLine(label: "workout routes", count: 2),
+                CountLine(label: "other rows", count: 10),
+            ])
+    }
+
     @Test func nothingMeansNoLines() {
         #expect(MenuLabels.lines(for: [:]).isEmpty)
     }

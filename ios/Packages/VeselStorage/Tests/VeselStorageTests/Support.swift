@@ -26,7 +26,8 @@ extension AppDatabase {
 
     static let uploadedTables = [
         "profile", "sleep_night", "nightly_recharge", "hr_sample", "ppi_session", "ppi_sample",
-        "skin_temp_sample", "activity_day", "raw_export", "computed_metric", "alert_event",
+        "skin_temp_sample", "activity_day", "raw_export", "computed_metric", "alert_event", "workout", "workout_file", "workout_choice",
+        "workout_route",
     ]
 }
 

@@ -2,7 +2,7 @@ import SwiftUI
 import VeselCore
 import VeselStorage
 
-/// Calm for one day: how long you were highly stressed, the hours with a finger to read them, how stressed you are now (today), and how it is worked out.
+/// Calm for one day: how long you were highly stressed, every 3-minute reading with a finger to read them, how stressed you are now (today), and how it is worked out.
 struct CalmDay: View {
     @State private var model: StressModel
     @State private var selection: Date?
@@ -59,6 +59,14 @@ struct CalmDay: View {
             guard scenePhase == .active else { return }
             await model.observeBusiestSpan()
         }
+        .task(id: ObserveKey(value: model.day, active: scenePhase == .active)) {
+            guard scenePhase == .active else { return }
+            await model.observeWorkouts()
+        }
+        .task(id: ObserveKey(value: model.day, active: scenePhase == .active)) {
+            guard scenePhase == .active else { return }
+            await model.observeTimeline()
+        }
     }
 
     private var dayLine: String { PageDayLine.day(model.day, today: model.today, zone: model.zone) }
@@ -76,8 +84,9 @@ struct CalmDay: View {
 
     private var scrub: HeaderText? {
         guard let selection else { return nil }
-        let found = HourlyStressChart.scrubText(at: selection, hours: model.hours, zone: model.zone)
-        return HeaderText(value: found.level.capitalizedFirst, line: "\(found.hour) · \(dayLine)")
+        let found = StressTimelineChart.scrubText(at: selection, readings: model.timeline, emptyHours: model.emptyHours, zone: model.zone)
+        let workout = model.workouts.word(at: selection).map { " · \($0.capitalizedFirst)" } ?? ""
+        return HeaderText(value: found.level.capitalizedFirst + workout, line: "\(found.time) · \(dayLine)")
     }
 
     /// "Today: peak 72 (high), 14:00–15:00."; a past day "On this day: …".
@@ -99,17 +108,29 @@ struct CalmDay: View {
                     .foregroundStyle(Theme.Palette.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    HourlyStressChart(
-                        hours: model.hours, day: report.day, zone: zone, takeLaunchScrub: model.takeLaunchScrub,
-                        scrub: .holdThenDrag(slot: { HourlyStepsTime.hour(of: $0, zone: zone) }),
+                    StressTimelineChart(
+                        readings: model.timeline, emptyHours: model.emptyHours, day: report.day, zone: zone, workouts: model.workouts,
+                        takeLaunchScrub: model.takeLaunchScrub,
+                        scrub: .holdThenDrag(slot: { Int($0.timeIntervalSince1970 / StressThresholds.windowSeconds) }),
                         selection: $selection
                     )
                     Text(
-                        "Based on \(model.readings) readings \(model.dayWord). Hours with no bar had no reading. Hold a finger on the bars, then drag, to read one."
+                        "Based on \(model.readings) readings \(model.dayWord), each \(Formatters.whole(StressThresholds.windowSeconds / 60)) minutes of still beats. Gaps had too few still beats, mostly from moving. Hold a finger on the chart, then drag, to read one, or to see why there's a gap."
                     )
                     .font(Theme.Typography.small)
                     .foregroundStyle(Theme.Palette.mutedText)
                     .fixedSize(horizontal: false, vertical: true)
+                    if !model.workouts.isEmpty {
+                        Text(
+                            "Purple: "
+                                + model.workouts.map {
+                                    "\($0.word) \(Formatters.clock($0.range.lowerBound, zone: zone))–\(Formatters.clock($0.range.upperBound, zone: zone))"
+                                }.joined(separator: ", ") + ". Readings inside a workout aren't counted."
+                        )
+                        .font(Theme.Typography.small)
+                        .foregroundStyle(Theme.Palette.mutedText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

@@ -20,6 +20,8 @@ public enum MenuLabels {
         ("ppi_sample", "beat-to-beat readings"),
         ("skin_temp_sample", "skin temperature readings"),
         ("activity_day", "days of activity"),
+        ("workout", "workouts"),
+        ("workout_route", "workout routes"),
         ("alert_event", "alerts"),
     ]
 

@@ -26,8 +26,14 @@ final class LoopSettingsModel {
     private(set) var connection: ConnectionState = .disconnected
     private(set) var lastRead: Date?
     private(set) var alerts = AlertSettings()
+    /// The Loop's training detection as last written; nil before the one-time switch-on.
+    private(set) var workoutDetection: WorkoutDetection?
     /// The owner said no to notifications in iOS: the switches can't reach them.
     private(set) var notificationsDenied = false
+    private(set) var wrist: WristSide = .left
+    private(set) var savingWrist = false
+    /// The last choice didn't reach the Loop, so nothing was stored.
+    private(set) var wristNotSaved = false
     var forget: ForgetStep?
     /// Nil until read.
     private(set) var backupIsSetUp: Bool?
@@ -83,6 +89,8 @@ final class LoopSettingsModel {
         lastRead = try? await database.lastSuccessfulSync()
         connection = await bandSync.connectionState()
         alerts = (try? await database.alertSettings()) ?? AlertSettings()
+        workoutDetection = try? await database.workoutDetection()
+        if !savingWrist { wrist = (try? await database.wrist()) ?? .left }
         notificationsDenied = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied
         if case .lost(nil) = forget { forget = .lost(lastRead: lastRead) }
         await readBackup()
@@ -132,6 +140,19 @@ final class LoopSettingsModel {
         }
         if on { await AlertNotifier.askPermissionOnce() }
         notificationsDenied = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied
+    }
+
+    /// Band first, then the phone. The control keeps showing the stored side if the Loop refuses.
+    func chooseWrist(_ side: WristSide) async {
+        guard !savingWrist, side != wrist else { return }
+        savingWrist = true
+        wristNotSaved = false
+        if await pipeline.setWrist(side) {
+            wrist = side
+        } else {
+            wristNotSaved = true
+        }
+        savingWrist = false
     }
 
     func confirmForget() async {

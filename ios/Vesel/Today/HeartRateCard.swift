@@ -11,6 +11,8 @@ struct HeartRateCard: View {
     let resting: Double?
     /// Today's 5-minute line; empty while it is being read.
     let points: [ReadingPoint]
+    /// Today's workouts, drawn behind the line.
+    var workouts: [WorkoutSpan] = []
     let day: DayKey
     let now: Date
     let zone: TimeZone
@@ -45,7 +47,7 @@ struct HeartRateCard: View {
                         // To the next whole minute, so the card's 1 s refresh leaves the line alone between minutes.
                         let minute = Date(timeIntervalSinceReferenceDate: (now.timeIntervalSinceReferenceDate / 60).rounded(.up) * 60)
                         let end = max(min(minute, day.adding(days: 1).start(in: zone)), start.addingTimeInterval(3600))
-                        SoFarLine(points: soFar, domain: start...end, zone: zone)
+                        SoFarLine(points: soFar, workouts: workouts, domain: start...end, zone: zone)
                             .equatable()
                             .allowsHitTesting(false)
                     }
@@ -77,6 +79,7 @@ struct HeartRateCard: View {
         if let low = soFar.map(\.value).min(), let high = soFar.map(\.value).max() {
             parts.append("today so far \(Formatters.whole(low)) to \(Formatters.whole(high)) bpm")
         }
+        parts += workouts.map { "\($0.word) from \(Formatters.clock($0.range.lowerBound, zone: zone)) to \(Formatters.clock($0.range.upperBound, zone: zone))" }
         return parts.joined(separator: ", ")
     }
 }
@@ -84,12 +87,13 @@ struct HeartRateCard: View {
 /// Today's line so far; redrawn only when its points or its end change.
 private struct SoFarLine: View, Equatable {
     let points: [ReadingPoint]
+    let workouts: [WorkoutSpan]
     let domain: ClosedRange<Date>
     let zone: TimeZone
 
     var body: some View {
         ReadingLineChart(
-            points: points, domain: domain, marks: [], zone: zone, color: Theme.Palette.recovery,
+            points: points, domain: domain, marks: [], zone: zone, color: Theme.Palette.recovery, workouts: workouts,
             yDomain: HeartRateCard.fitted(points), height: 44, selection: .constant(nil)
         )
     }

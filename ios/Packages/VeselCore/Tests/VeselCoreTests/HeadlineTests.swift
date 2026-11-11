@@ -26,13 +26,21 @@ struct HeadlineTests {
         DayLines(recovery: InRange.recovery(status: indicator.map(status), earlierNights: earlierNights), sleep: sleep, calm: calm)
     }
 
-    func make(_ indicator: Int?, sleep: LineVerdict, calm: LineVerdict, contributors: [ContributorReading] = [], asleep: Double? = 490, earlierNights: Int = 20)
-        -> Headline?
-    {
+    func make(
+        _ indicator: Int?, sleep: LineVerdict, calm: LineVerdict, contributors: [ContributorReading] = [], asleep: Double? = 490, earlierNights: Int = 20,
+        yesterdayWorkout: String? = nil
+    ) -> Headline? {
         Headline.make(
             lines: lines(indicator, sleep: sleep, calm: calm, earlierNights: earlierNights),
-            status: indicator.map(status), contributors: contributors, asleepMinutes: asleep
+            status: indicator.map(status), contributors: contributors, asleepMinutes: asleep, yesterdayWorkout: yesterdayWorkout
         )
+    }
+
+    func workout(_ session: String, load: Double?, rating: Int?) -> Workout {
+        Workout(
+            session: session, start: at("2026-10-25T17:30:00Z"), end: at("2026-10-25T18:45:00Z"), utcOffsetSeconds: 3600, bandSportId: nil,
+            durationSeconds: 4500, calories: nil, cardioLoad: load, cardioLoadRating: rating, trainingLoad: nil, averageHeartRate: nil,
+            maxHeartRate: nil, heartRates: nil, fileSize: 1, unreadableFiles: [])
     }
 
     /// Earlier HRV: mean 42, SD 8.
@@ -82,6 +90,29 @@ struct HeadlineTests {
         #expect(longer.why == "Sleep was also longer than usual.")
     }
 
+    @Test func lowRecoveryNamesYesterdaysWorkoutPolarRatedMediumOrHigher() throws {
+        let ride = WorkoutLabel(sport: .cycling, source: .band, hidden: false)
+        let run = WorkoutLabel(sport: .running, source: .owner, hidden: false)
+        // Rated 2: below Polar's middle level, not named.
+        #expect(Headline.namedWorkout([(workout("a", load: 182, rating: 2), ride)]) == nil)
+        // No rating, however high the load: not named.
+        #expect(Headline.namedWorkout([(workout("a", load: 182, rating: nil), ride)]) == nil)
+        // Rated 3 and 5: the higher cardio load is named.
+        #expect(Headline.namedWorkout([(workout("a", load: 87, rating: 5), run), (workout("b", load: 182, rating: 3), ride)]) == "ride")
+        // Hidden ("Not a workout"): not named, the other one is.
+        let hidden = WorkoutLabel(sport: .cycling, source: .band, hidden: true)
+        #expect(Headline.namedWorkout([(workout("a", load: 87, rating: 3), run), (workout("b", load: 182, rating: 5), hidden)]) == "run")
+
+        let low = try #require(make(2, sleep: sleep(.inside), calm: calm(10), yesterdayWorkout: "ride"))
+        #expect(low.sentence == "Low recovery after yesterday's ride.")
+        #expect(low.why == "None of last night's readings stood out on its own; Polar weighs them together.")
+        #expect(low.explanation.text.contains("It names yesterday's ride: Polar rated its cardio load 3 or higher of 5"))
+        let lower = try #require(make(3, sleep: sleep(.inside), calm: calm(10), yesterdayWorkout: "run"))
+        #expect(lower.sentence == "Recovery is lower than usual after yesterday's run.")
+        // Good recovery never names a workout.
+        #expect(try #require(make(5, sleep: sleep(.inside), calm: calm(10), yesterdayWorkout: "ride")).sentence == "Everything looks great today.")
+    }
+
     @Test func shortSleep() throws {
         let headline = try #require(make(5, sleep: sleep(.below, 460), calm: calm(45)))
         #expect(headline.sentence == "You slept less than usual.")
@@ -106,7 +137,7 @@ struct HeadlineTests {
         #expect(good.sentence == "Everything looks great today.")
         #expect(good.why == "Recovery is good, your sleep was right in your normal, and a calm day so far.")
         #expect(good.explanation.method == "headline")
-        #expect(good.explanation.version == 3)
+        #expect(good.explanation.version == 4)
         #expect(good.explanation.inputs.first { $0.name == "rule" }?.value == 9)
 
         let noSleep = try #require(make(5, sleep: sleep(.none), calm: calm(10)))

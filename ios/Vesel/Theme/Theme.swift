@@ -18,6 +18,27 @@ enum Theme {
         static let recovery = Color("Recovery")
         static let sleep = Color("Sleep")
         static let stress = Color("Stress")
+        /// Workout blocks, lines and the route. Never the only sign: blocks have a top edge and the sport in words.
+        static let workout = Color("Workout")
+
+        /// A mark's chip is also the chart dot colour; its ink is the symbol on the chip.
+        static func markChip(_ mark: NormalMark) -> Color {
+            switch mark {
+            case .inside: Color("MarkInside")
+            case .better: Color("MarkBetter")
+            case .off: Color("MarkOff")
+            case .far: Color("MarkFar")
+            }
+        }
+
+        static func markInk(_ mark: NormalMark) -> Color {
+            switch mark {
+            case .inside: Color("OnMarkInside")
+            case .better: Color("OnMarkBetter")
+            case .off: Color("OnMarkOff")
+            case .far: Color("OnMarkFar")
+            }
+        }
 
         /// The Recovery line follows Polar's verdict: the warm colour (the one "something's off" uses) when it is
         /// compromised or worse, the recovery green otherwise.

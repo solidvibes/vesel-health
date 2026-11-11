@@ -2,10 +2,11 @@ import Foundation
 
 /// A word the screens can explain. The raw value is the launch flag (`-VeselMeaning remSleep`) and the term link's address.
 public enum Term: String, CaseIterable, Sendable, Hashable {
-    case deepSleep, lightSleep, remSleep, awake, sleepTime
+    case deepSleep, lightSleep, remSleep, awake, sleepTime, timeInBed, sleepEfficiency, bedtime
     case hrv, restingHeartRate, lowestHeartRate, breathing, skinTemperature
     case recovery, usualRange, stress, highStress, heartRate, howTheBandKnows
     case heartFitness, vo2max, steps
+    case workout, cardioLoad
 }
 
 /// What one term means, in reading order. Written once, here; screens add only their own number for the day shown.
@@ -37,11 +38,11 @@ public enum Glossary {
 
     /// The list in Loop & settings: every term in exactly one group.
     public static let groups: [Group] = [
-        Group(title: "Sleep", terms: [.deepSleep, .lightSleep, .remSleep, .awake, .sleepTime]),
+        Group(title: "Sleep", terms: [.deepSleep, .lightSleep, .remSleep, .awake, .sleepTime, .timeInBed, .sleepEfficiency, .bedtime]),
         Group(title: "Recovery", terms: [.recovery, .hrv, .breathing, .skinTemperature]),
         Group(title: "Heart", terms: [.heartRate, .restingHeartRate, .lowestHeartRate, .heartFitness, .vo2max]),
         Group(title: "Stress", terms: [.stress, .highStress]),
-        Group(title: "Movement", terms: [.steps]),
+        Group(title: "Movement", terms: [.steps, .workout, .cardioLoad]),
         Group(title: "About the readings", terms: [.usualRange, .howTheBandKnows]),
     ]
 
@@ -52,6 +53,9 @@ public enum Glossary {
         case .remSleep: remSleep
         case .awake: awake
         case .sleepTime: sleepTime
+        case .timeInBed: timeInBed
+        case .sleepEfficiency: sleepEfficiency
+        case .bedtime: bedtime
         case .hrv: hrv
         case .restingHeartRate: restingHeartRate
         case .lowestHeartRate: lowestHeartRate
@@ -66,7 +70,14 @@ public enum Glossary {
         case .heartFitness: heartFitness
         case .vo2max: vo2max
         case .steps: steps
+        case .workout: workout
+        case .cardioLoad: cardioLoad
         }
+    }
+
+    /// The term's "Good or bad" sentence.
+    public static func goodOrBad(_ term: Term) -> String? {
+        meaning(term).sections.first { $0.heading == "Good or bad" }?.text
     }
 
     private static let shareOfAsleep = "The share is the stage's minutes ÷ your time asleep, rounded."
@@ -149,6 +160,44 @@ public enum Glossary {
             ),
             .init("What's normal", "Most adults need 7 to 9 hours. Your Sleep line compares you with your own normal, not with that number."),
             .init("What affects it", "Bedtime, alarms, caffeine late in the day, alcohol, light and screens, stress, illness."),
+        ],
+        howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
+        workedOut: nil
+    )
+
+    private static let timeInBed = Meaning(
+        term: .timeInBed, title: "In bed",
+        sections: [
+            .init("What it is", "How long your Loop recorded you sleeping, from when the sleep started to when it ended, wakings included."),
+            .init("Good or bad", "Neither. It is a time you choose more than a sign from your body."),
+            .init("A lot or a little", "A lie-in or an early start changes it. That is not a warning."),
+            .init("What's normal", "Mostly a little longer than your time asleep. Your normal is the middle of your last 4 weeks of nights."),
+            .init("What affects it", "When you go to bed, when you get up, alarms, weekends and lie-ins."),
+        ],
+        howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
+        workedOut: nil
+    )
+
+    private static let sleepEfficiency = Meaning(
+        term: .sleepEfficiency, title: "Efficiency",
+        sections: [
+            .init("What it is", "The share of your time in bed that you were asleep."),
+            .init("Good or bad", "Higher is better. Most people sleeping well are asleep for about 85 % of their time in bed or more."),
+            .init("A lot or a little", "A night now and then well under your normal is fine. Many in a row can mean restless sleep."),
+            .init("What's normal", "Your own normal is the middle of your last 4 weeks of nights. Only a night clearly under it is marked."),
+            .init("What affects it", "Lying awake before sleep, waking in the night, noise, light, caffeine, alcohol, stress, illness."),
+        ],
+        howTheBandKnows: "Your time asleep ÷ your time in bed, both from Polar's sleep result.",
+        workedOut: nil
+    )
+
+    private static let bedtime = Meaning(
+        term: .bedtime, title: "Bedtime and wake",
+        sections: [
+            .init("What it is", "The clock time your sleep started and the clock time it ended."),
+            .init("Good or bad", "Neither. Steady times tend to help sleep, but there is no right time."),
+            .init("What's normal", "Whatever your nights usually are. The middle bedtime and wake time are the middle of the nights shown."),
+            .init("What affects it", "Work, light in the evening, screens, meals, alcohol, weekends, travel."),
         ],
         howTheBandKnows: "Polar sees you fall asleep and wake from movement and heart rate.",
         workedOut: nil
@@ -384,6 +433,44 @@ public enum Glossary {
         ],
         howTheBandKnows:
             "The Loop counts steps from the movement of your wrist. Arm movement without walking, or a day without the Loop, can make a count too high or too low. Vesel shows the total as it was when it last read your band, so today's number lags.",
+        workedOut: nil
+    )
+
+    private static let workout = Meaning(
+        term: .workout, title: "Workout",
+        sections: [
+            .init(
+                "What it is",
+                "A stretch of exercise your Loop noticed by itself, from a raised heart rate and movement that lasted at least your shortest workout. It has a start, an end, your heart rate during it, calories and Polar's load."
+            ),
+            .init("Good or bad", "Neither. It is a record of what you did, not a goal to reach."),
+            .init(
+                "What it explains",
+                "A higher heart rate while it lasts, stress readings left out during it, and sometimes lower recovery the next morning."),
+            .init(
+                "The sport",
+                "From the Loop when it gave one. Otherwise Vesel guesses from your route's speed or from the sport you usually do at that time of day, and says it guessed. You can change it, or say it wasn't a workout."
+            ),
+        ],
+        howTheBandKnows:
+            "The Loop notices a workout from your heart rate and movement and records it until you slow down. It needs no phone and no GPS; the route, if any, comes from your iPhone.",
+        workedOut: nil
+    )
+
+    private static let cardioLoad = Meaning(
+        term: .cardioLoad, title: "Cardio load",
+        sections: [
+            .init("What it is", "Polar's number for how much one workout strained your heart, from your heart rate during it and how long it lasted."),
+            .init("Good or bad", "Neither. A harder or longer workout gives a higher number; it is not a score to beat."),
+            .init(
+                "A lot or a little",
+                "Polar compares each workout's load with your last 90 days and rates it 1 to 5. Vesel shows Polar's word for that rating only once it has been checked against Polar's own app."
+            ),
+            .init("What's normal", "It depends on you: the same run is a bigger load for someone less used to it."),
+            .init("What affects it", "How hard and how long you go, your fitness, heat, tiredness and illness."),
+        ],
+        howTheBandKnows:
+            "The Loop works it out itself at the end of the workout. Vesel keeps the number as the Loop gave it and never adds workouts up over days or weeks.",
         workedOut: nil
     )
 
