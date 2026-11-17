@@ -7,6 +7,7 @@ One plain sentence per entry.
 
 - While Polar finishes your night, Today says so and shows until when Vesel checks, instead of loading without end.
 - Changing a Loop setting can no longer be cut off halfway and leave the Loop stuck; if the Loop is ever stuck saying it's busy for two hours, Today says so and shows how to restart it.
+- When the Loop stays stuck saying it is busy for an hour (and no workout is running), Vesel now restarts it itself, at most once every six hours; its data and pairing stay.
 - Recovery now leads with a short verdict and shows each thing that went into it with a mark against your normal, and tapping one opens its page.
 - HRV, resting heart rate, lowest heart rate, breathing and skin temperature now open with a picture of last night against your normal, and nights outside it are coloured on their chart.
 - Sleep now shows Bedtime · wake, In bed and Efficiency first, then your normal, then the night's chart, each opening its own page, and shows your normal for time asleep as a picture.

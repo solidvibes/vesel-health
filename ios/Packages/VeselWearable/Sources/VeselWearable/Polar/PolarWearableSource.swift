@@ -240,6 +240,10 @@ public actor PolarWearableSource: WearableSource {
         deviceId = nil
     }
 
+    public func restart() async throws {
+        try await api.doRestart(try ready())
+    }
+
     public func workoutDetection() async throws -> WorkoutDetection? {
         let settings = try await api.getPolarUserDeviceSettings(identifier: try ready())
         guard let mode = settings.automaticTrainingDetectionMode else { return nil }

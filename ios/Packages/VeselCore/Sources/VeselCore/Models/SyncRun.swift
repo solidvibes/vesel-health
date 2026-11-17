@@ -35,4 +35,6 @@ public enum SyncDetail {
     public static let stoppedEarly = "Stopped before it finished"
     /// Followed by " at <step>": the Loop refused with Polar's "busy" (error 202).
     public static let loopBusy = "Loop busy"
+    /// Added to a busy read's detail when Vesel then restarted the Loop.
+    public static let restarted = "; Vesel restarted the Loop"
 }
