@@ -141,4 +141,44 @@ struct BandSyncStreamTests {
         #expect(run.isLoopBusy)
         #expect(run.detail == "Loop busy at sleep")
     }
+
+    @Test func aLoopBusyForOverAnHourIsRestartedAndReadsAgain() async throws {
+        await band.setFailure(.busy)
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        clock.set("2026-10-26T07:30:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        #expect(await !band.calls.contains("restart"))
+
+        clock.set("2026-10-26T08:01:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        #expect(await band.calls.filter { $0 == "restart" }.count == 1)
+        let run = try #require(try await database.latestSyncRuns(limit: 1).first)
+        #expect(run.detail == "Loop busy at sleep; Vesel restarted the Loop")
+
+        #expect(await sync.sync(.backgroundRefresh) == .success)
+    }
+
+    @Test func aLoopBusyWithAWorkoutRunningIsNotRestarted() async throws {
+        await band.setFailure(.busy)
+        await band.setWorkoutStatus(.running(since: nil))
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        clock.set("2026-10-26T08:30:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        #expect(await !band.calls.contains("restart"))
+    }
+
+    @Test func aRestartThatDidNotHelpWaitsSixHoursBeforeTheNext() async throws {
+        await band.setFailure(.busy)
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        clock.set("2026-10-26T08:01:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        await band.setFailure(.busy)
+        clock.set("2026-10-26T12:00:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        #expect(await band.calls.filter { $0 == "restart" }.count == 1)
+
+        clock.set("2026-10-26T14:02:00Z")
+        #expect(await sync.sync(.backgroundRefresh) == .failed)
+        #expect(await band.calls.filter { $0 == "restart" }.count == 2)
+    }
 }

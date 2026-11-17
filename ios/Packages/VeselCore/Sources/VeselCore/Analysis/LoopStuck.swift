@@ -4,10 +4,14 @@ import Foundation
 /// stuck only after every read that reached it for `grace` came back busy.
 public enum LoopStuck {
     public static let grace: TimeInterval = 2 * 3600
+    /// Vesel restarts a Loop that stayed busy this long, and no workout is running.
+    public static let restartAfter: TimeInterval = 3600
+    /// At most one restart in this long, so a restart that didn't help isn't repeated every read.
+    public static let restartEvery: TimeInterval = 6 * 3600
 
     /// When the busy streak began; nil when the Loop isn't stuck. `runs` newest first. Reads that didn't reach the Loop, or
     /// were cut off, neither start nor end a streak.
-    public static func since(_ runs: [SyncRun], now: Date) -> Date? {
+    public static func since(_ runs: [SyncRun], now: Date, grace: TimeInterval = grace) -> Date? {
         var first: Date?
         for run in runs where run.outcome != nil && run.outcome != .unreachable {
             guard run.isLoopBusy else { break }
