@@ -1,5 +1,5 @@
 {
-  "originHash" : "0d890950cdfc5cddde7802f2eb0044c2180046d2f83d424654c5da83bee25f1c",
+  "originHash" : "7f2f8298bda7bf1fe5824f4420c49f98b32c891c301c3c1ca2dfc985cb1b3476",
   "pins" : [
     {
       "identity" : "grdb.swift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/polarofficial/polar-ble-sdk.git",
       "state" : {
-        "revision" : "18638ca1dcff594cd2d12de521da8b837b7ac531",
-        "version" : "8.5.0"
+        "revision" : "a18720354a75dd5682e40351367976c6c9a96831",
+        "version" : "8.6.0"
       }
     },
     {
