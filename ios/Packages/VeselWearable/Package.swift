@@ -11,7 +11,7 @@ let package = Package(
     dependencies: [
         .package(path: "../VeselCore"),
         .package(path: "../VeselStorage"),
-        .package(url: "https://github.com/polarofficial/polar-ble-sdk.git", exact: "8.5.0"),
+        .package(url: "https://github.com/polarofficial/polar-ble-sdk.git", exact: "8.6.0"),
         // The SDK asks for these with `from:`; pinned here so the app builds with the tested versions.
         .package(url: "https://github.com/apple/swift-protobuf.git", exact: "1.39.0"),
         .package(url: "https://github.com/marmelroy/Zip.git", exact: "2.1.2"),
