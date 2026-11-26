@@ -16,7 +16,7 @@ Started from the blank 0.1.0 profile. `## Checks at hello` lists what the AI che
 | Phone ↔ server | HTTPS on the home network only, pinned self-signed certificate + token; the phone queues uploads while away | Listens on whatever network the Mac is on, but only the pinned phone with the token can use it; never forwarded to the internet, no third party |
 | Sign-in | None | One user, no accounts |
 | Payments | None | Personal tool |
-| Analytics, crash reporting | None | No data leaves the phone except to the owner's Mac |
+| Analytics, crash reporting | None | No data leaves the phone except to the owner's Mac and Apple Health |
 | Tests | Swift Testing for the app's modules; pytest for the server | Standard tools, no extra dependencies |
 
 ## Code layout
@@ -29,7 +29,7 @@ ios/                       Xcode project
     VeselCore/             models, analysis (no I/O)
     VeselStorage/          GRDB database, migrations, queries
     VeselWearable/         WearableSource protocol + Polar implementation
-    VeselSync/             upload queue to the owner's Mac
+    VeselSync/             copies out: the Mac backup and Apple Health
 mac/                       Vesel Backup menu bar app (XcodeGen)
   VeselBackup/             app target: menu, pairing, server controller
   Packages/VeselBackupKit/ pure logic (paths, QR check, counts, launch arguments)

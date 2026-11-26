@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import VeselCore
 import VeselStorage
+import VeselSync
 import VeselWearable
 import VeselWearableTesting
 @testable import Vesel
@@ -401,4 +402,77 @@ struct SyncPipelineTests {
         #expect(await rig.pipeline.run(.bandEvent, onlyIfDue: true) == .success)
         #expect(await first.value == .unreachable)
     }
+
+    /// Apple Health is written only with no read running, and one write at a time.
+    func healthRig() async throws -> (SyncPipeline, RecordingHealth, AppDatabase, SyncStatusStore) {
+        let database = try AppDatabase.inMemory()
+        let status = SyncStatusStore(defaults: .throwaway())
+        let clock = FixedClock(now: try Date("2026-10-26T09:00:00Z", strategy: .iso8601), timeZone: .gmt)
+        let health = RecordingHealth(database: database)
+        let pipeline = SyncPipeline(
+            bandSync: BandSync(band: try FakeWearableSource(scenario: .normal), database: database, clock: clock), database: database, clock: clock,
+            status: status, health: health, isProtectedDataAvailable: { true })
+        try await database.save(BandInfo(deviceId: "FAKE0001", name: "Polar Loop", pairedAt: try Date("2026-09-26T08:00:00Z", strategy: .iso8601)))
+        try await database.setHealthWrite(true)
+        return (pipeline, health, database, status)
+    }
+
+    @Test func aWriteToHealthNeverStartsWhileAReadRuns() async throws {
+        let (pipeline, health, _, status) = try await healthRig()
+
+        let read = Task { await pipeline.run(.manual) }
+        await waitUntil {
+            if case .reading = status.sync { return true }
+            return false
+        }
+        #expect(await pipeline.writeToHealth(askForNewKinds: false) == .upToDate)
+
+        #expect(await read.value == .success)
+        #expect(await health.sawReadRunning == false)
+        #expect(await health.saves > 0)
+    }
+
+    @Test func twoWritesToHealthDontInterleave() async throws {
+        let (pipeline, health, database, _) = try await healthRig()
+        #expect(await pipeline.run(.manual) == .success)
+        try await database.setHealthWrite(true)
+        let savedByRead = await health.saves
+
+        async let first = pipeline.writeToHealth(askForNewKinds: false)
+        async let second = pipeline.writeToHealth(askForNewKinds: false)
+        _ = await (first, second)
+
+        #expect(await health.saves > savedByRead)
+        #expect(await health.mostAtOnce == 1)
+    }
+}
+
+/// Counts saves, and notes a write that began while a read was still running (its sync run not finished).
+actor RecordingHealth: HealthStore {
+    let database: AppDatabase
+    private(set) var sawReadRunning = false
+    private(set) var saves = 0
+    private(set) var mostAtOnce = 0
+    private var atOnce = 0
+
+    init(database: AppDatabase) {
+        self.database = database
+    }
+
+    func authorization() async -> [HealthKind: HealthAccess] {
+        if let latest = try? await database.latestSyncRun(), latest.finishedAt == nil { sawReadRunning = true }
+        return Dictionary(uniqueKeysWithValues: HealthKind.allCases.map { ($0, .allowed) })
+    }
+
+    func requestAuthorization() {}
+
+    func save(_ items: [HealthItem], unit: HealthUnit, version: Int64) async {
+        atOnce += 1
+        mostAtOnce = max(mostAtOnce, atOnce)
+        saves += 1
+        try? await Task.sleep(for: .milliseconds(2))
+        atOnce -= 1
+    }
+
+    func removeStale(unit: HealthUnit, kind: HealthKind, below version: Int64) {}
 }

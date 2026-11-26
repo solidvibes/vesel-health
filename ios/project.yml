@@ -75,6 +75,8 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.$(VESEL_BUNDLE_PREFIX).ios
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(VESEL_BUNDLE_PREFIX).ios
@@ -88,6 +90,7 @@ targets:
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Vesel records your route during a workout your Loop noticed. It stays on your phone and your Mac."
         INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: "Your Loop starts workouts by itself, so Vesel needs location in the background to record the route. Only during a workout; it stays on your phone and your Mac."
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: "Vesel backs up to your Mac over your home Wi-Fi, and nowhere else."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Vesel copies your Loop's readings into Apple Health, so apps you allow there can read them. It never reads from Health."
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

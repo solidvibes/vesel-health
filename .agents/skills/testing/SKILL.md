@@ -8,6 +8,7 @@ description: Use when a change adds or changes analysis, storage, sync or a test
 What we test: health formulas with written-out expected numbers, migrations, the upload contract, deleting from the band, and the invariants in `AGENTS.md`. Prefer one test that runs a real path (band data in → stored → worked-out numbers, sync log or upload out) over several small ones on the same ground. Don't test Swift, GRDB or SwiftUI themselves, restate constants (unless they are stored values older versions wrote), or test the fake band beyond what the Simulator scenarios need.
 
 - Logic goes in a Swift package and its tests run with `swift test` on the Mac. Only code that needs iOS (the Polar SDK, the app, widgets) is tested in the Simulator.
+- Health mapping and the writer are tested on the Mac with a fake `HealthStore`; only `HealthKitStore` is tested in the Simulator, and those tests never save to Health.
 - Analysis (baselines, HRV, stress, alerts) gets Swift Testing tests on recorded sample data, with the expected numbers written out.
 - Storage tests run against an in-memory GRDB database.
 - Code that needs the band uses a fake `WearableSource`; tests never need a real Loop.

@@ -13,7 +13,7 @@ struct MigrationTests {
         }
         #expect(
             tables == [
-                "activity_day", "alert_event", "band", "band_ledger", "band_link", "computed_metric", "hr_sample", "nightly_recharge", "ppi_sample",
+                "activity_day", "alert_event", "band", "band_ledger", "band_link", "computed_metric", "health_write", "hr_sample", "nightly_recharge", "ppi_sample",
                 "ppi_session", "profile", "raw_export", "setting", "skin_temp_sample", "sleep_night", "sync_run", "workout", "workout_choice",
                 "workout_file", "workout_route",
             ])
@@ -37,7 +37,7 @@ struct MigrationTests {
         try AppDatabase.migrator.migrate(queue)
         try AppDatabase.migrator.migrate(queue)
         let applied = try await queue.read { try AppDatabase.migrator.appliedIdentifiers($0) }
-        #expect(applied == ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"])
+        #expect(applied == ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"])
     }
 
     @Test func v3AddsAlertsAndSettingsAndKeepsEveryExistingRow() async throws {
@@ -181,5 +181,33 @@ struct MigrationTests {
         let cleared = try await database.pendingUploads(.profile, limit: 10, now: now)
         #expect(cleared.first?.data["waist_cm"] == .null)
         #expect(cleared.first?.data["measured_vo2max"] == .null)
+    }
+
+    @Test func v9AddsHealthBookkeepingAndKeepsEveryExistingRow() async throws {
+        let queue = try DatabaseQueue()
+        try AppDatabase.migrator.migrate(queue, upTo: "v8")
+        try await queue.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO hr_sample (ts, bpm, trigger, uploaded_at) VALUES (100, 60, 'timed', 200);
+                    INSERT INTO band_ledger (day, fetch_kind, stored_at, sample_count) VALUES ('2026-10-20', 'heartRate', 200, 1);
+                    INSERT INTO setting (key, value) VALUES ('units', 'imperial');
+                    """)
+        }
+        try AppDatabase.migrator.migrate(queue)
+        let kept = try await queue.read { db in
+            (
+                heartRate: try Int.fetchOne(db, sql: "SELECT uploaded_at FROM hr_sample"),
+                ledger: try Int.fetchOne(db, sql: "SELECT stored_at FROM band_ledger"),
+                units: try String.fetchOne(db, sql: "SELECT value FROM setting WHERE key = 'units'"),
+                written: try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM health_write")
+            )
+        }
+        #expect(kept.heartRate == 200)
+        #expect(kept.ledger == 200)
+        #expect(kept.units == "imperial")
+        #expect(kept.written == 0)
+        let database = try AppDatabase(queue)
+        #expect(try await database.pendingHealthUnits(kinds: [.heartRate]).map(\.id) == ["heartRate/2026-10-20"])
     }
 }

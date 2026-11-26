@@ -1,6 +1,6 @@
 # Apple Health
 
-**Status:** Planned (`docs/plans/2026-11-26-apple-health.md`). Decision `docs/decisions/2026-11-26-apple-health.md`.
+**Status:** Built for heart rate, resting heart rate, respiratory rate, sleep and steps. HRV, energy and workouts are planned (Phase 2 of `docs/plans/2026-11-26-apple-health.md`); until then heart rate stays on its day. Decision `docs/decisions/2026-11-26-apple-health.md`.
 
 > Vesel copies your Loop's readings into Apple Health, so other apps you allow there can read them. It never reads from Health.
 

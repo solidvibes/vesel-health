@@ -8,7 +8,8 @@ description: Use when a change adds a screen, a widget, a module, or code that c
 - `VeselCore`: models and analysis. Pure Swift, no I/O, no imports of the other modules.
 - `VeselStorage`: the database. Depends on VeselCore only.
 - `VeselWearable`: the `WearableSource` protocol and the Polar implementation. The only module that imports PolarBleSdk.
-- `VeselSync`: the upload queue to the owner's Mac.
+- `VeselSync`: copies out after a read: the upload queue to the owner's Mac, and the Apple Health writer (`HealthWriter`) with its `HealthStore` seam.
+- HealthKit is imported only in `ios/Vesel/Health/HealthKitStore.swift`. What to write comes from `HealthMapping` (VeselCore) fed by VeselStorage queries; screens reach Health only through Loop & settings' closures.
 - `mac/`: `VeselBackupKit` holds the Mac app's logic (no UI, no `Process`); the app target composes it. The Mac app never imports the iOS packages.
 - The app and widget targets compose these. Screens never touch Bluetooth or the network directly.
 - A new wearable is a new `WearableSource`, never a branch inside the Polar code.

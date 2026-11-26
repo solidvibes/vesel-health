@@ -258,6 +258,21 @@ extension AppDatabase {
                     );
                     """)
         }
+        // What Vesel last wrote to Apple Health, per day, night or workout. Bookkeeping, not health data: never uploaded.
+        migrator.registerMigration("v9") { db in
+            try db.execute(
+                sql: """
+                    CREATE TABLE health_write (
+                        unit TEXT PRIMARY KEY,
+                        kind TEXT NOT NULL,
+                        mapping_version INTEGER NOT NULL,
+                        digest TEXT NOT NULL,
+                        sync_version INTEGER NOT NULL,
+                        written_at INTEGER NOT NULL
+                    );
+                    CREATE INDEX health_write_kind ON health_write(kind);
+                    """)
+        }
         return migrator
     }
 }

@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: in-progress
 ---
 
 # Apple Health: Vesel writes its readings, one way
@@ -149,13 +149,14 @@ Phase 2:
 
 ## Steps
 Phase 1:
-1. VeselCore items and mapping with tests.
-2. Migration `v9` and `HealthWrites` with tests (in-memory database, the fake band's fixtures).
-3. `HealthStore` and `HealthWriter` in VeselSync with fake-store tests.
-4. `HealthKitStore` and its Simulator tests; entitlement and usage string in `project.yml`.
-5. Wire `SyncPipeline` and `AppEnvironment` (after read; foreground after idle; expiry; protected data; new-kind ask); pipeline tests.
-6. Health section in Loop & settings with its states; model tests; `#Preview` per state.
-7. Docs, rules, contract line, changelog; run the full checks; drive the Simulator flow (Verification).
+- [x] 1. VeselCore items and mapping with tests.
+- [x] 2. Migration `v9` and `HealthWrites` with tests (in-memory database, the fake band's fixtures).
+- [x] 3. `HealthStore` and `HealthWriter` in VeselSync with fake-store tests.
+- [x] 4. `HealthKitStore` and its Simulator tests; entitlement and usage string in `project.yml`.
+- [x] 5. Wire `SyncPipeline` and `AppEnvironment` (after read; foreground after idle; expiry; protected data; new-kind ask); pipeline tests.
+- [x] 6. Health section in Loop & settings with its states; model tests; `#Preview` per state.
+- [x] 7. Docs, rules, contract line, changelog.
+- [ ] 8. Run the full checks; drive the Simulator flow (Verification).
 
 Phase 2:
 1. `NightSDNN` and `SDNNUpdater` with tests.
@@ -188,6 +189,19 @@ Phase 2:
 21. Every sample names the Polar Loop as its device; the device isn't in the fingerprint. — **agent's**
 22. Newest first during the backfill. — **agent's**
 23. Phases: 1 = switch, writer, simple kinds; 2 = HRV, energy, workouts. — **agent's**
+
+## Deviations
+Phase 1:
+- Storage tests use synthetic band payloads, not the fake band's fixtures (`VeselWearableTesting` is iOS-only and can't be linked by VeselStorage's Mac tests).
+- `pendingHealthUnits(kinds:)` has no `limit`: a run reads the pending list once (unit ids only) and walks it, so a unit whose source was stored in the same second as its snapshot isn't taken twice in one run. Times are whole seconds, so a source stamped in the same second as `written_at` counts as pending (`>=`); the next run re-reads it and only moves `written_at` if nothing changed.
+- `clearHealthWrites()` is folded into `setHealthWrite(_:)`: turning on clears `health_write` and `health.lastRun` and stores the switch in one transaction, before Apple's sheet. `healthBatch` takes the clock (`healthBatch(_:kinds:clock:)`): the snapshot is its time, and a heart-rate day is midnight to midnight in its zone.
+- `HealthRunOutcome` has `.stopped` (cancelled, iOS ended the time, or the database paused). `health.lastRun` (`HealthRun`) stores `written`, `waitingForUnlock` or `failed`, days to go, kinds not allowed and `wroteAny` (for "Nothing to write yet"). It isn't written when the switch is off or the phone is locked when the run starts. While on with no run finished yet, the line is "Writing to Apple Health" without a count.
+- A read also stops a running write to Health (after the unit it is on) before it stores anything, so a write never sees half a read.
+- A unit with data but nothing to write (only hours without steps) is marked written with version 0, so it isn't re-read every run; nothing is saved to Health for it.
+- The stale delete also requires Vesel's own source (`HKSource.default()`) besides `VeselUnit` and the older sync version.
+- A kind with a type never asked about counts as not asked even if another of its types is denied, so the on-screen ask shows the new type.
+- `HealthSection` takes plain values (switch, lines, action), so each state previews without a database; the model owns the words (`LoopSettingsModel.healthLines`).
+- VeselCore imports CryptoKit for the fingerprint's SHA-256 (no I/O).
 
 ## Verification
 - Contract `checks` (fast and full); CI green.
