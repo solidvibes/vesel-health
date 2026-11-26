@@ -43,7 +43,7 @@ public struct HealthWriter: Sendable {
         var outcome = HealthRunOutcome.upToDate
         var left: [HealthUnit] = []
         do {
-            left = try await database.pendingHealthUnits(kinds: allowed)
+            left = try await database.pendingHealthUnits(kinds: allowed, zone: clock.timeZone)
             while let unit = left.first {
                 if Task.isCancelled {
                     outcome = .stopped
@@ -71,6 +71,10 @@ public struct HealthWriter: Sendable {
             outcome = error is CancellationError || AppDatabase.isPaused(error) ? .stopped : .failed
         }
         if outcome == .off { return .off }
+        if outcome == .upToDate {
+            // Heart rate and energy days are now all written as Workouts being allowed or not puts them.
+            try? await database.healthDaysWritten(allowed: allowed.subtracting(notAllowed))
+        }
 
         let run = HealthRun(
             at: clock.now,

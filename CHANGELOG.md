@@ -6,6 +6,7 @@ One plain sentence per entry.
 ## Unreleased
 
 - Loop & settings can now copy your heart rate, resting heart rate, breathing rate, sleep stages and hourly steps into Apple Health, one way, so apps you allow there can read them.
+- Apple Health now also gets your nightly HRV (as SDNN), active and resting energy, and your workouts with their heart rate and route.
 - While Polar finishes your night, Today says so and shows until when Vesel checks, instead of loading without end.
 - Changing a Loop setting can no longer be cut off halfway and leave the Loop stuck; if the Loop is ever stuck saying it's busy for two hours, Today says so and shows how to restart it.
 - When the Loop stays stuck saying it is busy for an hour (and no workout is running), Vesel now restarts it itself, at most once every six hours; its data and pairing stay.

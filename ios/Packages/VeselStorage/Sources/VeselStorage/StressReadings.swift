@@ -9,8 +9,12 @@ enum StressInputs {
     }
 
     static func sessions(_ db: Database, day: DayKey) throws -> [PPISession] {
+        try sessions(db, where: "day = ?", arguments: [day.description])
+    }
+
+    static func sessions(_ db: Database, where condition: String, arguments: StatementArguments) throws -> [PPISession] {
         try Row.fetchAll(
-            db, sql: "SELECT id, start_ts, trigger, utc_offset_seconds FROM ppi_session WHERE day = ? ORDER BY start_ts", arguments: [day.description]
+            db, sql: "SELECT id, start_ts, trigger, utc_offset_seconds FROM ppi_session WHERE \(condition) ORDER BY start_ts", arguments: arguments
         ).map { row in
             let samples = try Row.fetchAll(
                 db, sql: "SELECT ts_ms, interval_ms, error_ms, blocker, skin_contact FROM ppi_sample WHERE session_id = ? ORDER BY ts_ms",

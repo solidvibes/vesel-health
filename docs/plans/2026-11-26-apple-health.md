@@ -159,11 +159,12 @@ Phase 1:
 - [ ] 8. Run the full checks; drive the Simulator flow (Verification).
 
 Phase 2:
-1. `NightSDNN` and `SDNNUpdater` with tests.
-2. Energy and workout mapping; tests.
-3. Workout and energy stamps in `HealthWrites`; tests.
-4. `HealthKitStore` workout and route; Simulator tests.
-5. Docs, rules, changelog; full checks; Simulator flow including "Not a workout".
+- [x] 1. `NightSDNN` and `SDNNUpdater` with tests.
+- [x] 2. Energy and workout mapping; tests.
+- [x] 3. Workout and energy stamps in `HealthWrites`; tests.
+- [x] 4. `HealthKitStore` workout and route; Simulator tests.
+- [x] 5. Docs, rules, changelog.
+- [ ] 6. Full checks; Simulator flow including "Not a workout".
 
 ## Decisions
 1. Apple Health on the phone plus its encrypted iCloud backup is allowed; new decision file, `no-cloud` superseded in part. — **mine** (2026-11-26)
@@ -202,6 +203,15 @@ Phase 1:
 - A kind with a type never asked about counts as not asked even if another of its types is denied, so the on-screen ask shows the new type.
 - `HealthSection` takes plain values (switch, lines, action), so each state previews without a database; the model owns the words (`LoopSettingsModel.healthLines`).
 - VeselCore imports CryptoKit for the fingerprint's SHA-256 (no I/O).
+
+Phase 2:
+- `HealthItem` carries `type: HealthType` (the Health sample type: energy is two types, and a workout carries heart-rate and energy samples) instead of `kind`. Phase 1 kinds keep the same strings, so their fingerprints don't change.
+- Whether Workouts were allowed is remembered per day kind (`health.withWorkouts.heartRate`, `health.withWorkouts.energy`), stored at the end of a run that left nothing pending; when it differs from now, every written day of that kind is pending. `pendingHealthUnits` takes the zone (a workout's days are cut in it).
+- The route is optional at save time: `HealthKitStore` adds it only when Health allows routes; the workout kind is allowed with the workout, heart rate and active energy types (the route counts only for "not asked"). Allowing routes later adds a route the next time its workout is written.
+- SDNN's late check uses `ppi` ledger rows of the evening's day and the night (a night is keyed by its wake date) and `sleep` rows of the night and the day after. With no `sdnn.lastPass` yet, the history walk does the work. An unchanged value keeps its `computed_at`, so its Health unit isn't re-read.
+- A workout unit also follows its day's `dailySummary` and `heartRate` ledger rows (its resting share; its fallback 24/7 heart rate). A workout whose own readings are all 0 takes the 24/7 ones.
+- Energy runs to the earlier of the next midnight and the summary's ledger time on any day, not only today. 0 kcal isn't written. HRV spans the sleep window, like resting heart rate.
+- Not fixed: resting heart rate and breathing without a sleep row still end at 24:00 of the night's day (ending at "now" would rewrite them every run).
 
 ## Verification
 - Contract `checks` (fast and full); CI green.

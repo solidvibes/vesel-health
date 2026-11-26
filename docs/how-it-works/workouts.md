@@ -23,7 +23,7 @@ A run or a ride explained nothing before: it showed as a high-heart-rate stretch
 - Points less exact than 25 m are dropped. Distance is the sum of the straight lines between the kept points; average speed is distance ÷ the time the route covers (first to last point). A route covering less than half the workout shows its distance and "Route covers 12 of 42 min", no speed, and isn't used to guess the sport.
 - If iOS doesn't let the phone start in time, the route starts late or not at all. The workout is complete without one. Whether a background start works is checked on the owner's iPhone.
 - In the Simulator, Features → Location → City Run or City Bicycle Ride plays a route while the fake band's workout runs.
-- The route stays on the phone and the Mac backup, like every reading. No place names are looked up.
+- The route stays on the phone and the Mac backup, like every reading, and goes to Apple Health with its workout when that's on and routes are allowed (`apple-health.md`). No place names are looked up.
 
 ### What a workout shows
 - **Sport**, first match:
@@ -63,7 +63,7 @@ Loop & settings → Workouts (a pushed screen):
 A band setting saves when you flip the switch, let go of the slider or pick a length: it waits for a running read, writes the Loop, then stores it on the phone. If the Loop doesn't take it: "Not saved. Your Loop didn't take the change, so nothing changed on your phone either. Keep the Loop close and try again." Record my route: while location isn't allowed the row says "Needs location · Allow"; only tapping Allow (or turning the switch on) asks iOS. Opening the screen never asks. If location is off for Vesel the row says "Location is off for Vesel in iOS Settings" with a link to Settings. With While using only, it says routes start only while Vesel is open, with the same link.
 
 ### Stored and backed up
-- Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; nothing else leaves the phone. Opening a workout page with a route fetches Apple's map tiles for that area; the route is drawn on the phone.
+- Tables: `workout` (typed, one per Loop workout, keyed by its folder on the Loop), `workout_file` (each file as it came off the band), `workout_choice` (your fix), `workout_route` (the phone's route). All go to the Mac backup over the existing pinned connection; with Apple Health on, each shown workout is also copied there (`apple-health.md`); nothing else leaves the phone. Opening a workout page with a route fetches Apple's map tiles for that area; the route is drawn on the phone.
 - Stored as the Loop gave them: cardio load, Polar's rating, training load. Worked out on read, not stored: sport guesses, distance and speed. Stress numbers that skip workouts are stored as before (since `stress` version 3).
 
 ## Do / Don't

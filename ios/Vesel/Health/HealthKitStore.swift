@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import HealthKit
 import VeselCore
@@ -5,7 +6,8 @@ import VeselStorage
 import VeselSync
 
 /// The only code that touches HealthKit. Share-only: it never asks to read, and queries nothing but Vesel's own samples, to
-/// remove the older copies of a unit. Never logs a value or a sample.
+/// remove the older copies of a unit. Never logs a value or a sample. A workout's route is built from its stored points; the
+/// phone's location is never asked for or read here.
 final class HealthKitStore: HealthStore {
     /// The metadata key that ties each sample to what it was written for (`HealthUnit.id`).
     static let unitKey = "VeselUnit"
@@ -20,6 +22,7 @@ final class HealthKitStore: HealthStore {
         self.database = database
     }
 
+    /// Every type a kind is saved as (and removed from). A workout's route is optional: without it, workouts go without routes.
     static func types(_ kind: HealthKind) -> [HKSampleType] {
         switch kind {
         case .heartRate: [HKQuantityType(.heartRate)]
@@ -27,15 +30,21 @@ final class HealthKitStore: HealthStore {
         case .respiratoryRate: [HKQuantityType(.respiratoryRate)]
         case .sleep: [HKCategoryType(.sleepAnalysis)]
         case .steps: [HKQuantityType(.stepCount)]
+        case .hrv: [HKQuantityType(.heartRateVariabilitySDNN)]
+        case .energy: [HKQuantityType(.activeEnergyBurned), HKQuantityType(.basalEnergyBurned)]
+        case .workout: [HKWorkoutType.workoutType(), HKQuantityType(.heartRate), HKQuantityType(.activeEnergyBurned), HKSeriesType.workoutRoute()]
         }
     }
+
+    private static let routeType = HKSeriesType.workoutRoute()
 
     func authorization() async -> [HealthKind: HealthAccess] {
         Dictionary(
             uniqueKeysWithValues: HealthKind.allCases.map { kind in
-                let statuses = Self.types(kind).map(store.authorizationStatus(for:))
-                if statuses.contains(.notDetermined) { return (kind, .notAsked) }
-                return (kind, statuses.contains(.sharingDenied) ? .denied : .allowed)
+                let types = Self.types(kind)
+                if types.map(store.authorizationStatus(for:)).contains(.notDetermined) { return (kind, .notAsked) }
+                let required = types.filter { $0 != Self.routeType }.map(store.authorizationStatus(for:))
+                return (kind, required.contains(.sharingDenied) ? .denied : .allowed)
             })
     }
 
@@ -50,9 +59,58 @@ final class HealthKitStore: HealthStore {
     func save(_ items: [HealthItem], unit: HealthUnit, version: Int64) async throws {
         let device = Self.device(firmware: try? await database.band()?.firmware)
         do {
-            try await store.save(items.map { Self.sample($0, unit: unit, version: version, device: device) })
+            let samples = items.compactMap { item -> HKSample? in
+                if case .workout = item.value { return nil }
+                return Self.sample(item, unit: unit, version: version, device: device)
+            }
+            if !samples.isEmpty { try await store.save(samples) }
+            for item in items {
+                if case .workout(let workout) = item.value {
+                    try await save(item, workout: workout, unit: unit, version: version, device: device)
+                }
+            }
+        } catch let error as HealthStoreError {
+            throw error
         } catch {
             throw Self.storeError(error)
+        }
+    }
+
+    /// The workout with its energy and heart rate, then its route when Health allows routes. Every object carries the
+    /// sync id, version and unit, so a rewrite replaces it and the stale removal finds the old ones.
+    private func save(_ item: HealthItem, workout: HealthWorkout, unit: HealthUnit, version: Int64, device: HKDevice) async throws {
+        let builder = HKWorkoutBuilder(healthStore: store, configuration: Self.configuration(workout.activity), device: device)
+        try await builder.beginCollection(at: item.start)
+        let samples = workout.samples.map { Self.sample($0, unit: unit, version: version, device: device) }
+        if !samples.isEmpty { try await builder.addSamples(samples) }
+        try await builder.addMetadata(Self.metadata(syncId: item.syncId, unit: unit, version: version))
+        try await builder.endCollection(at: item.end)
+        guard let saved = try await builder.finishWorkout() else { throw HealthStoreError.failed }
+        guard !workout.route.isEmpty, store.authorizationStatus(for: Self.routeType) == .sharingAuthorized else { return }
+        let route = HKWorkoutRouteBuilder(healthStore: store, device: device)
+        try await route.insertRouteData(Self.locations(workout.route))
+        try await route.finishRoute(with: saved, metadata: Self.metadata(syncId: "\(item.syncId).route", unit: unit, version: version))
+    }
+
+    static func configuration(_ activity: HealthWorkoutActivity) -> HKWorkoutConfiguration {
+        let configuration = HKWorkoutConfiguration()
+        configuration.activityType =
+            switch activity {
+            case .running: .running
+            case .cycling: .cycling
+            case .swimming: .swimming
+            case .strength: .traditionalStrengthTraining
+            case .other: .other
+            }
+        return configuration
+    }
+
+    /// Stored route points as locations, with their time and accuracy; no altitude.
+    static func locations(_ points: [RoutePoint]) -> [CLLocation] {
+        points.map { point in
+            CLLocation(
+                coordinate: CLLocationCoordinate2D(latitude: point.latitude, longitude: point.longitude), altitude: 0,
+                horizontalAccuracy: point.accuracy, verticalAccuracy: -1, timestamp: point.time)
         }
     }
 
@@ -82,31 +140,37 @@ final class HealthKitStore: HealthStore {
             localIdentifier: nil, udiDeviceIdentifier: nil)
     }
 
+    static func metadata(syncId: String, unit: HealthUnit, version: Int64) -> [String: Any] {
+        [HKMetadataKeySyncIdentifier: syncId, HKMetadataKeySyncVersion: NSNumber(value: version), unitKey: unit.id]
+    }
+
+    /// A quantity or sleep sample. Workouts are built by `save`, never here.
     static func sample(_ item: HealthItem, unit: HealthUnit, version: Int64, device: HKDevice) -> HKSample {
-        let metadata: [String: Any] = [
-            HKMetadataKeySyncIdentifier: item.syncId,
-            HKMetadataKeySyncVersion: NSNumber(value: version),
-            unitKey: unit.id,
-        ]
+        let metadata = metadata(syncId: item.syncId, unit: unit, version: version)
         switch item.value {
         case .quantity(let amount, let quantityUnit):
             return HKQuantitySample(
-                type: quantityType(item.kind), quantity: HKQuantity(unit: hkUnit(quantityUnit), doubleValue: amount), start: item.start, end: item.end,
+                type: quantityType(item.type), quantity: HKQuantity(unit: hkUnit(quantityUnit), doubleValue: amount), start: item.start, end: item.end,
                 device: device, metadata: metadata)
         case .sleep(let stage):
             return HKCategorySample(
                 type: HKCategoryType(.sleepAnalysis), value: sleepValue(stage).rawValue, start: item.start, end: item.end, device: device,
                 metadata: metadata)
+        case .workout:
+            preconditionFailure("A workout is built, not a sample")
         }
     }
 
-    private static func quantityType(_ kind: HealthKind) -> HKQuantityType {
-        switch kind {
+    private static func quantityType(_ type: HealthType) -> HKQuantityType {
+        switch type {
         case .heartRate: HKQuantityType(.heartRate)
         case .restingHeartRate: HKQuantityType(.restingHeartRate)
         case .respiratoryRate: HKQuantityType(.respiratoryRate)
         case .steps: HKQuantityType(.stepCount)
-        case .sleep: preconditionFailure("Sleep is a category")
+        case .hrv: HKQuantityType(.heartRateVariabilitySDNN)
+        case .activeEnergy: HKQuantityType(.activeEnergyBurned)
+        case .restingEnergy: HKQuantityType(.basalEnergyBurned)
+        case .sleep, .workout: preconditionFailure("Not a quantity")
         }
     }
 

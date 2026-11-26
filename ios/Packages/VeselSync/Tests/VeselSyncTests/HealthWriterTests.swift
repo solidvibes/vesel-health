@@ -49,8 +49,8 @@ actor FakeHealth: HealthStore {
         objects = objects.filter { $0.value.unit != unit.id || $0.value.version >= version }
     }
 
-    func ids(_ kind: HealthKind) -> [String] {
-        objects.values.filter { $0.item.kind == kind }.map(\.item.syncId).sorted()
+    func ids(_ type: HealthType) -> [String] {
+        objects.values.filter { $0.item.type == type }.map(\.item.syncId).sorted()
     }
 }
 
@@ -142,7 +142,7 @@ struct HealthWriterTests {
 
         #expect(await health.calls.last == "remove restingHeartRate/2026-10-27")
         #expect(await health.ids(.restingHeartRate).isEmpty)
-        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases)).isEmpty)
+        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases), zone: berlin).isEmpty)
     }
 
     @Test func aLockedPhoneWritesNothingAndTheNextRunCatchesUp() async throws {
@@ -150,7 +150,7 @@ struct HealthWriterTests {
 
         #expect(await run(health, at: "2026-10-27T09:00:00Z", unlocked: { false }) == .waitingForUnlock)
         #expect(await health.calls.isEmpty)
-        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases)).count == 3)
+        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases), zone: berlin).count == 3)
 
         #expect(await run(health, at: "2026-10-27T10:00:00Z") == .upToDate)
         #expect(await health.ids(.heartRate).count == 4)
@@ -174,7 +174,7 @@ struct HealthWriterTests {
         await health.set(saveError: .locked)
 
         #expect(await run(health, at: "2026-10-27T09:00:00Z") == .waitingForUnlock)
-        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases)).count == 3)
+        #expect(try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases), zone: berlin).count == 3)
     }
 
     @Test func kindsNotAllowedOrNotAskedWaitUntilAllowed() async throws {
@@ -250,6 +250,27 @@ struct HealthWriterTests {
         #expect(outcome == .off)
         #expect(await health.calls == ["save heartRate/2026-10-27", "remove heartRate/2026-10-27"])
         #expect(try await database.healthStatus().lastRun == nil)
+    }
+
+    /// 06:02 to 06:32 in Berlin, without heart rate of its own: it takes the 06:05 reading from its day.
+    @Test func notAWorkoutRemovesItAndGivesItsReadingBackToTheDay() async throws {
+        let start = at("2026-10-27T05:02:00Z")
+        let workout = Workout(
+            session: "20261027/060200", start: start, end: start.addingTimeInterval(1800), utcOffsetSeconds: 3600, bandSportId: 1, durationSeconds: 1800,
+            calories: 250, cardioLoad: nil, cardioLoadRating: nil, trainingLoad: nil, averageHeartRate: nil, maxHeartRate: nil, heartRates: nil,
+            fileSize: 1, unreadableFiles: [])
+        try await database.save(BandWorkout(workout: workout, files: []), storedAt: at("2026-10-27T08:00:00Z"))
+        let health = FakeHealth()
+        #expect(await run(health, at: "2026-10-27T09:00:00Z") == .upToDate)
+        #expect(await health.ids(.workout) == ["vesel.workout.20261027/060200"])
+        #expect(await health.ids(.heartRate).count == 3)
+
+        try await database.setChoice(WorkoutChoice(session: "20261027/060200", sport: nil, hidden: true, chosenAt: at("2026-10-27T09:30:00Z")))
+        #expect(await run(health, at: "2026-10-27T10:00:00Z") == .upToDate)
+
+        #expect(await health.ids(.workout).isEmpty)
+        #expect(await health.ids(.heartRate).count == 4)
+        #expect(await health.calls.contains("remove workout/20261027/060200"))
     }
 }
 

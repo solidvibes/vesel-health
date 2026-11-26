@@ -208,6 +208,6 @@ struct MigrationTests {
         #expect(kept.units == "imperial")
         #expect(kept.written == 0)
         let database = try AppDatabase(queue)
-        #expect(try await database.pendingHealthUnits(kinds: [.heartRate]).map(\.id) == ["heartRate/2026-10-20"])
+        #expect(try await database.pendingHealthUnits(kinds: [.heartRate], zone: .gmt).map(\.id) == ["heartRate/2026-10-20"])
     }
 }

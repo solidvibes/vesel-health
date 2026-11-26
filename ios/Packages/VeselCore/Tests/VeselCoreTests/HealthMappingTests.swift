@@ -7,7 +7,7 @@ struct HealthMappingTests {
     @Test func sleepIsInBedThenEachStageAsAPiece() {
         let items = HealthMapping.sleep(sampleNight())
 
-        #expect(items.first == HealthItem(kind: .sleep, start: at("2026-10-25T21:30:00Z"), end: at("2026-10-26T05:30:00Z"), value: .sleep(.inBed), syncId: "vesel.sleep.2026-10-26.inBed"))
+        #expect(items.first == HealthItem(type: .sleep, start: at("2026-10-25T21:30:00Z"), end: at("2026-10-26T05:30:00Z"), value: .sleep(.inBed), syncId: "vesel.sleep.2026-10-26.inBed"))
         let pieces = items.dropFirst().map { "\($0.start.formatted(.iso8601))–\($0.end.formatted(.iso8601)) \($0.value)" }
         #expect(
             pieces == [
@@ -81,8 +81,8 @@ struct HealthMappingTests {
         let resting = HealthMapping.restingHeartRate(night: night.night, bpm: 52.5, sleep: night, utcOffsetSeconds: 3600)
         let breathing = HealthMapping.respiratoryRate(night: night.night, breathsPerMinute: 14.2, sleep: night, utcOffsetSeconds: 3600)
 
-        #expect(resting == HealthItem(kind: .restingHeartRate, start: night.start, end: night.end, value: .quantity(52.5, .bpm), syncId: "vesel.restingHR.2026-10-26"))
-        #expect(breathing == HealthItem(kind: .respiratoryRate, start: night.start, end: night.end, value: .quantity(14.2, .breathsPerMinute), syncId: "vesel.breathing.2026-10-26"))
+        #expect(resting == HealthItem(type: .restingHeartRate, start: night.start, end: night.end, value: .quantity(52.5, .bpm), syncId: "vesel.restingHR.2026-10-26"))
+        #expect(breathing == HealthItem(type: .respiratoryRate, start: night.start, end: night.end, value: .quantity(14.2, .breathsPerMinute), syncId: "vesel.breathing.2026-10-26"))
     }
 
     /// No sleep row: the night's day, midnight to midnight in the Nightly Recharge's offset (UTC+1).
@@ -96,7 +96,7 @@ struct HealthMappingTests {
     @Test func eachReadingIsAHeartRateSampleAtItsTime() {
         let items = HealthMapping.heartRate([HeartRateSample(time: at("2026-10-26T09:00:00Z"), bpm: 61, trigger: .timed)])
 
-        #expect(items == [HealthItem(kind: .heartRate, start: at("2026-10-26T09:00:00Z"), end: at("2026-10-26T09:00:00Z"), value: .quantity(61, .bpm), syncId: "vesel.hr.1793005200")])
+        #expect(items == [HealthItem(type: .heartRate, start: at("2026-10-26T09:00:00Z"), end: at("2026-10-26T09:00:00Z"), value: .quantity(61, .bpm), syncId: "vesel.hr.1793005200")])
     }
 
     /// The same items give the same fingerprint; a changed value or another set of allowed kinds don't.
@@ -118,5 +118,101 @@ struct HealthMappingTests {
         #expect(unit.id == "restingHeartRate/2026-10-26")
         #expect(HealthUnit(id: unit.id) == unit)
         #expect(unit.day == day("2026-10-26"))
+    }
+
+    /// 07:10 in Berlin on 3 November, 42 minutes, 500 kcal.
+    func workout(calories: Int? = 500, heartRates: WorkoutHeartRates? = nil) -> Workout {
+        Workout(
+            session: "20261103/071000", start: at("2026-11-03T06:10:00Z"), end: at("2026-11-03T06:52:00Z"), utcOffsetSeconds: 3600, bandSportId: 1,
+            durationSeconds: 2520, calories: calories, cardioLoad: nil, cardioLoadRating: nil, trainingLoad: nil, averageHeartRate: nil,
+            maxHeartRate: nil, heartRates: heartRates, fileSize: 1, unreadableFiles: [])
+    }
+
+    let calories = ActivityDay.Calories(bmr: 1728, activity: 900, total: 2628)
+
+    /// The workout's resting share is 1728 × 2520 ÷ 86 400 = 50.4 kcal, so it carries 449.6; the day keeps 900 − 449.6 = 450.4.
+    @Test func theDaysActiveEnergyLeavesTheWorkoutsOutOnlyWhenWorkoutsAreAllowed() {
+        let allowed = HealthMapping.energy(
+            day: day("2026-11-03"), calories: calories, utcOffsetSeconds: 3600, readAt: at("2026-11-04T08:00:00Z"), workouts: [workout()])
+        let notAllowed = HealthMapping.energy(
+            day: day("2026-11-03"), calories: calories, utcOffsetSeconds: 3600, readAt: at("2026-11-04T08:00:00Z"), workouts: nil)
+
+        #expect(abs((HealthMapping.activeEnergy(workout(), bmr: 1728) ?? 0) - 449.6) < 1e-9)
+        #expect(allowed.map(\.type) == [.activeEnergy, .restingEnergy])
+        guard case .quantity(let active, .kcal) = allowed[0].value else { Issue.record("not kcal"); return }
+        #expect(abs(active - 450.4) < 1e-9)
+        #expect(allowed[1].value == .quantity(1728, .kcal))
+        #expect(notAllowed[0].value == .quantity(900, .kcal))
+        #expect(allowed.map(\.start) == [at("2026-11-02T23:00:00Z"), at("2026-11-02T23:00:00Z")])
+        #expect(allowed.map(\.end) == [at("2026-11-03T23:00:00Z"), at("2026-11-03T23:00:00Z")])
+        #expect(allowed.map(\.syncId) == ["vesel.activeEnergy.2026-11-03", "vesel.restingEnergy.2026-11-03"])
+    }
+
+    /// Today runs to when the daily summary was read. A workout without calories takes nothing off the day and has no energy.
+    @Test func todayEndsAtTheReadAndAWorkoutWithoutCaloriesCarriesNoEnergy() {
+        let items = HealthMapping.energy(
+            day: day("2026-11-03"), calories: calories, utcOffsetSeconds: 3600, readAt: at("2026-11-03T12:00:00Z"),
+            workouts: [workout(calories: nil)])
+        let label = WorkoutLabel(sport: .running, source: .band, hidden: false)
+        let written = HealthMapping.workout(workout(calories: nil), label: label, route: [], bmr: 1728, dayHeartRates: [])
+
+        #expect(items.map(\.end) == [at("2026-11-03T12:00:00Z"), at("2026-11-03T12:00:00Z")])
+        #expect(items[0].value == .quantity(900, .kcal))
+        guard case .workout(let saved)? = written?.value else { Issue.record("not a workout"); return }
+        #expect(saved.samples.isEmpty)
+    }
+
+    /// The Loop's own readings, 0 left out; the Loop's sport; the route as given.
+    @Test func aWorkoutCarriesItsEnergyOwnHeartRateSportAndRoute() throws {
+        let route = [RoutePoint(time: at("2026-11-03T06:20:00Z"), latitude: 52.5, longitude: 13.4, accuracy: 5)]
+        let item = try #require(
+            HealthMapping.workout(
+                workout(heartRates: WorkoutHeartRates(intervalMs: 60_000, bpm: [120, 0, 130])), label: WorkoutLabel(sport: .running, source: .band, hidden: false),
+                route: route, bmr: 1728,
+                dayHeartRates: [HeartRateSample(time: at("2026-11-03T06:30:00Z"), bpm: 99, trigger: .timed)]))
+
+        #expect(item.type == .workout)
+        #expect(item.syncId == "vesel.workout.20261103/071000")
+        #expect(item.start == at("2026-11-03T06:10:00Z"))
+        #expect(item.end == at("2026-11-03T06:52:00Z"))
+        guard case .workout(let saved) = item.value else { Issue.record("not a workout"); return }
+        #expect(saved.activity == .running)
+        #expect(saved.route == route)
+        #expect(saved.samples.map(\.type) == [.activeEnergy, .heartRate, .heartRate])
+        #expect(saved.samples.dropFirst().map(\.value) == [.quantity(120, .bpm), .quantity(130, .bpm)])
+        #expect(saved.samples.dropFirst().map(\.start) == [at("2026-11-03T06:10:00Z"), at("2026-11-03T06:12:00Z")])
+        #expect(saved.samples[1].syncId == "vesel.workout.20261103/071000.hr.\(Int64(at("2026-11-03T06:10:00Z").timeIntervalSince1970) * 1000)")
+    }
+
+    /// Without its own readings it takes the 24/7 ones inside it; a guessed sport is Other; no route is fine; hidden writes nothing.
+    @Test func aGuessIsOtherAndAHiddenWorkoutIsNothing() throws {
+        let day = [
+            HeartRateSample(time: at("2026-11-03T06:00:00Z"), bpm: 70, trigger: .timed),
+            HeartRateSample(time: at("2026-11-03T06:30:00Z"), bpm: 140, trigger: .timed),
+        ]
+        let guessed = try #require(
+            HealthMapping.workout(workout(), label: WorkoutLabel(sport: .cycling, source: .speed, hidden: false), route: [], bmr: 1728, dayHeartRates: day))
+
+        guard case .workout(let saved) = guessed.value else { Issue.record("not a workout"); return }
+        #expect(saved.activity == .other)
+        #expect(saved.route.isEmpty)
+        #expect(saved.samples.filter { $0.type == .heartRate }.map(\.value) == [.quantity(140, .bpm)])
+        #expect(HealthMapping.workout(workout(), label: WorkoutLabel(sport: .running, source: .owner, hidden: true), route: [], bmr: 0, dayHeartRates: day) == nil)
+    }
+
+    @Test func theDaysReadingsInsideAWorkoutAreLeftOut() {
+        let samples = [
+            HeartRateSample(time: at("2026-11-03T06:00:00Z"), bpm: 70, trigger: .timed),
+            HeartRateSample(time: at("2026-11-03T06:30:00Z"), bpm: 140, trigger: .timed),
+        ]
+
+        #expect(HealthMapping.heartRate(samples, leavingOut: [workout().interval]).map(\.value) == [.quantity(70, .bpm)])
+    }
+
+    @Test func aWorkoutUnitIsOrderedByItsSessionsDay() {
+        let unit = HealthUnit(kind: .workout, key: "20261103/071000")
+        #expect(HealthUnit(id: unit.id) == unit)
+        #expect(unit.day == nil)
+        #expect(unit.date == "2026-11-03")
     }
 }
