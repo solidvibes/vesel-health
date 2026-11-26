@@ -86,7 +86,8 @@ private struct PreviewForget: View {
                     forget: step,
                     backupSetUpError: nil,
                     runSync: { nil },
-                    didForget: {}
+                    didForget: {},
+                    askHealth: nil
                 ), step: step)
         }
     }

@@ -43,12 +43,17 @@ final class LoopSettingsModel {
     private(set) var settingUpBackup = false
     private(set) var backupSetUpError: Backup.SetUpError?
     var scanningBackupQR = false
+    /// Nil until read.
+    private(set) var health: HealthStatus?
+    private let reads = ReadProblem()
     private let database: AppDatabase
     private let clock: any VeselClock
     private let bandSync: BandSync
     private let pipeline: SyncPipeline
     private let runSync: () async -> SyncOutcome?
     private let didForget: () -> Void
+    /// Apple's Health sheet; nil where the device has no Apple Health, and the section is hidden.
+    private let askHealth: (() async -> Void)?
 
     init(
         database: AppDatabase,
@@ -58,7 +63,8 @@ final class LoopSettingsModel {
         forget: ForgetStep?,
         backupSetUpError: Backup.SetUpError?,
         runSync: @escaping () async -> SyncOutcome?,
-        didForget: @escaping () -> Void
+        didForget: @escaping () -> Void,
+        askHealth: (() async -> Void)?
     ) {
         self.database = database
         self.clock = clock
@@ -66,6 +72,7 @@ final class LoopSettingsModel {
         self.pipeline = pipeline
         self.runSync = runSync
         self.didForget = didForget
+        self.askHealth = askHealth
         self.forget = forget
         self.backupSetUpError = backupSetUpError
     }
@@ -126,6 +133,55 @@ final class LoopSettingsModel {
         await Backup.remove(database: database)
         backupSetUpError = nil
         await readBackup()
+    }
+
+    var showsHealth: Bool { askHealth != nil }
+
+    /// The Apple Health section couldn't be read; it shows the "Couldn't show this" card in its place.
+    var healthReadProblem: Bool { reads.isShown }
+
+    func observeHealth() async {
+        await reads.observe {
+            for try await value in database.observeHealthStatus() { health = value }
+        }
+    }
+
+    /// On: forgets earlier writes, shows Apple's sheet, then writes everything. Off: stops writing; Health keeps what's there.
+    func setHealthWrite(_ on: Bool) async {
+        guard (try? await database.setHealthWrite(on)) != nil else { return }
+        guard on else { return }
+        await askHealth?()
+        await pipeline.writeToHealth(askForNewKinds: false)
+    }
+
+    var healthLines: [String] {
+        health.map { Self.healthLines($0, now: clock.now) } ?? []
+    }
+
+    /// The line under the switch, and a second when kinds aren't allowed. The locked phone shows as still writing.
+    static func healthLines(_ status: HealthStatus, now: Date) -> [String] {
+        guard status.isOn else {
+            return status.lastRun == nil
+                ? ["Copies your readings into Apple Health on this iPhone, so apps you allow there can read them. Vesel never reads from Health."]
+                : ["What Vesel wrote stays in Apple Health. To remove it: Health › your profile › Apps › Vesel › Delete All Data."]
+        }
+        guard let run = status.lastRun else { return ["Writing to Apple Health"] }
+        if run.notAllowed.count == HealthKind.allCases.count {
+            return ["Health isn't letting Vesel write anything. Allow it in Health › your profile › Apps › Vesel."]
+        }
+        let main =
+            if run.outcome == .failed {
+                "Couldn't write to Apple Health. Vesel tries again at its next read."
+            } else if run.daysToGo > 0 {
+                "Writing to Apple Health · \(run.daysToGo == 1 ? "1 day" : "\(run.daysToGo) days") to go"
+            } else if !run.wroteAny {
+                "Nothing to write yet. Vesel writes after its first read of your Loop."
+            } else {
+                "Up to date · written \(Formatters.ago(run.at, now: now))"
+            }
+        guard !run.notAllowed.isEmpty else { return [main] }
+        let names = run.notAllowed.map(\.name).joined(separator: ", ")
+        return [main, "Not allowed in Health: \(names). Allow them in Health › your profile › Apps › Vesel."]
     }
 
     /// Turning one on asks for notifications, the first time. A switch that couldn't be saved flips back.

@@ -2,14 +2,17 @@ import SwiftUI
 import VeselCore
 import VeselSync
 
-/// Band status, live heart rate, sync, band storage, alerts, help, Mac backup, Forget this Loop.
+/// Band status, live heart rate, sync, band storage, workouts, Apple Health, alerts, help, Mac backup, Forget this Loop.
 struct LoopSettingsView: View {
     @State private var model: LoopSettingsModel
+    @State private var healthAttempt = 0
+    @Environment(\.scenePhase) private var scenePhase
     private let environment: AppEnvironment
 
     init(environment: AppEnvironment) {
         self.environment = environment
         let continuedRead = environment.continuedRead
+        let health = environment.health
         _model = State(
             initialValue: LoopSettingsModel(
                 database: environment.database,
@@ -19,7 +22,8 @@ struct LoopSettingsView: View {
                 forget: environment.launch.forgetSheet,
                 backupSetUpError: environment.launchBackupError,
                 runSync: { await continuedRead.sync(.manual) },
-                didForget: environment.didForget
+                didForget: environment.didForget,
+                askHealth: health.map { health in { try? await health.requestAuthorization() } }
             ))
     }
 
@@ -74,6 +78,15 @@ struct LoopSettingsView: View {
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
+                    }
+                    if model.showsHealth {
+                        if model.healthReadProblem {
+                            ReadProblemCard { healthAttempt += 1 }
+                        } else {
+                            HealthSection(
+                                isOn: model.health?.isOn ?? false, lines: model.healthLines,
+                                setOn: { on in Task { await model.setHealthWrite(on) } })
+                        }
                     }
                     section("Alerts") {
                         ForEach(Array(AlertKind.allCases.enumerated()), id: \.element) { index, kind in
@@ -148,6 +161,10 @@ struct LoopSettingsView: View {
         .navigationTitle("Loop & settings")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }
+        .task(id: ObserveKey(value: scenePhase, active: scenePhase == .active, attempt: healthAttempt)) {
+            guard scenePhase == .active, model.showsHealth else { return }
+            await model.observeHealth()
+        }
         .sheet(isPresented: Binding(get: { model.scanningBackupQR }, set: { model.scanningBackupQR = $0 })) {
             BackupScannerView { qr in Task { await model.setUpBackup(qr) } }
         }

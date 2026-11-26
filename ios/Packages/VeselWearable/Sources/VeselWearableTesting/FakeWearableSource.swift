@@ -212,6 +212,11 @@ public actor FakeWearableSource: WearableSource {
         profile = nil
     }
 
+    public func restart() {
+        calls.append("restart")
+        if failure == .busy { failure = nil }
+    }
+
     public func watchBand() {
         calls.append("watchBand")
     }

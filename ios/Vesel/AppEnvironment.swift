@@ -23,6 +23,8 @@ final class AppEnvironment {
     /// The phone's route during a workout the Loop noticed.
     let routeRecorder: RouteRecorder
     let status: SyncStatusStore
+    /// Nil where the device has no Apple Health.
+    let health: HealthKitStore?
     let units = UnitsStore()
     let launch: LaunchOptions
     /// Where Vesel keeps its small settings outside the database.
@@ -46,7 +48,8 @@ final class AppEnvironment {
         launchScrub = launch.scrub
         status = SyncStatusStore(defaults: defaults)
         bandSync = BandSync(band: band, database: database, clock: clock)
-        pipeline = SyncPipeline(bandSync: bandSync, database: database, clock: clock, status: status)
+        health = HealthKitStore.isAvailable ? HealthKitStore(database: database) : nil
+        pipeline = SyncPipeline(bandSync: bandSync, database: database, clock: clock, status: status, health: health)
         continuedRead = ContinuedRead(pipeline: pipeline, database: database)
         liveHeartRate = LiveHeartRateController(bandSync: bandSync)
         routeRecorder = RouteRecorder(database: database, clock: clock)
@@ -113,14 +116,16 @@ final class AppEnvironment {
         }
     }
 
-    /// Syncs when the app comes to the front, unless a read finished under 5 minutes ago and the night is over (`SyncGap`). A Loop paired before
-    /// alerts existed gets the notification question here, once.
+    /// Syncs when the app comes to the front, unless a read finished under 5 minutes ago and the night is over (`SyncGap`), then
+    /// writes what's pending to Apple Health, first asking about kinds a newer Vesel writes. A Loop paired before alerts existed
+    /// gets the notification question here, once.
     func foreground() async {
         observeUnits()
         await launching?.value
         guard isPaired == true else { return }
         Task { await AlertNotifier.askPermissionOnce() }
         await pipeline.run(.foreground, onlyIfDue: true)
+        await pipeline.writeToHealth(askForNewKinds: true)
     }
 
     /// The "Sync Vesel" Shortcut, run in the background by iOS. Nil when no Loop is paired.

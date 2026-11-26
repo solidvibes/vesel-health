@@ -18,7 +18,7 @@ public struct MetricsUpdater: Sendable {
     }
 
     /// After a sync: the recent nights, nights with data but no numbers yet, and nights stored under an older
-    /// method version; then the same for stress days. Returns the nights that were recomputed.
+    /// method version; then the same for stress days, then the nights' SDNN for Apple Health. Returns the nights that were recomputed.
     @discardableResult
     public func updateAfterSync() async throws -> Set<DayKey> {
         let today = clock.today
@@ -27,6 +27,8 @@ public struct MetricsUpdater: Sendable {
         let stress = StressUpdater(clock: clock)
         let days = try await database.writer.read { db in try stress.touchedDays(db, today: today) }
         try await recomputeStress(days: days)
+        let now = clock.now
+        try await database.writer.write { db in try SDNNUpdater().update(db, now: now) }
         return nights
     }
 

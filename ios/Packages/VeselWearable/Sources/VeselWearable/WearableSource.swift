@@ -34,6 +34,8 @@ public protocol WearableSource: Sendable {
     func deleteStored(_ type: StoredDataType, until day: DayKey) async throws
     /// Wipes the band, its pairing included.
     func factoryReset() async throws
+    /// Restarts the band, as holding its button does: its data, settings and pairing stay.
+    func restart() async throws
     /// The band's automatic training detection; nil when it has none set.
     func workoutDetection() async throws -> WorkoutDetection?
     /// Changes only the band's automatic training detection, leaving its other settings as they are.

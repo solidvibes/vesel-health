@@ -244,7 +244,10 @@ public actor BandSync {
         let startedAt = clock.now
         guard let runId = try? await database.startSyncRun(trigger, at: startedAt) else { return .failed }
         await pauseLive()
-        let (outcome, detail) = await readBand(wait: wait, progress: progress)
+        var (outcome, detail) = await readBand(wait: wait, progress: progress)
+        if detail?.hasPrefix(SyncDetail.loopBusy) == true, await restartIfStuck() {
+            detail? += SyncDetail.restarted
+        }
         await resumeLive()
         // Recorded even when the sync was stopped: a cancelled task can't write to the database.
         let database = database
@@ -287,6 +290,30 @@ public actor BandSync {
     }
 
     private struct NotStarted: Error {}
+
+    private static let restartedAtKey = "band.restartedAt"
+
+    /// A Loop left busy (after a read was cut off) stays busy until it restarts. Once every read for
+    /// `LoopStuck.restartAfter` came back busy and no workout runs, Vesel restarts it, at most once per
+    /// `LoopStuck.restartEvery`. The Loop keeps its data and pairing and reconnects on its own.
+    private func restartIfStuck() async -> Bool {
+        let now = clock.now
+        guard !Task.isCancelled,
+            let runs = try? await database.latestSyncRuns(limit: 200),
+            LoopStuck.since(runs, now: now, grace: LoopStuck.restartAfter) != nil
+        else { return false }
+        if let last = (try? await database.setting(Self.restartedAtKey))?.flatMap(TimeInterval.init),
+            now.timeIntervalSince1970 - last < LoopStuck.restartEvery
+        {
+            return false
+        }
+        let drops = await band.drops
+        let status = try? await guarded(drops: drops, { try await self.call { _ in try await self.band.workoutStatus() } })
+        guard status == .notRunning else { return false }
+        try? await database.setSettings([Self.restartedAtKey: String(now.timeIntervalSince1970)])
+        try? await guarded(drops: drops, { try await self.call { _ in try await self.band.restart() } })
+        return true
+    }
 
     /// Runs `work`, and stops it when the Loop drops (its drop count changes, or it stays away longer than `awayGrace`) or
     /// a band call goes without an answer longer than its limit. A stopped call that never returns is left behind, cancelled,

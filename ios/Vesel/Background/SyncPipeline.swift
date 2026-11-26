@@ -5,8 +5,8 @@ import VeselStorage
 import VeselSync
 import VeselWearable
 
-/// Everything a sync does, in order: read the band, work out the numbers, send any alerts, back up to the Mac mini.
-/// Runs never overlap.
+/// Everything a sync does, in order: read the band, work out the numbers, send any alerts, back up to the Mac mini, write
+/// to Apple Health. Runs never overlap, and a write to Health never runs beside a read.
 /// Each run asks iOS for background time (or runs on a background task's own, `runHeld`), wakes the database first and lets it sleep again after if the app is in
 /// the background, so iOS never suspends Vesel while it holds the database.
 actor SyncPipeline {
@@ -17,12 +17,21 @@ actor SyncPipeline {
     private var running: Task<SyncOutcome?, Never>?
     private var uploading: Task<BackupOutcome?, Never>?
     private var writing: Task<Void, any Error>?
+    private var healthWriting: Task<HealthRunOutcome, Never>?
+    /// Nil where the device has no Apple Health.
+    private let health: (any HealthStore)?
+    private let isProtectedDataAvailable: @Sendable () async -> Bool
 
-    init(bandSync: BandSync, database: AppDatabase, clock: any VeselClock, status: SyncStatusStore) {
+    init(
+        bandSync: BandSync, database: AppDatabase, clock: any VeselClock, status: SyncStatusStore, health: (any HealthStore)? = nil,
+        isProtectedDataAvailable: @escaping @Sendable () async -> Bool = { UIApplication.shared.isProtectedDataAvailable }
+    ) {
         self.bandSync = bandSync
         self.database = database
         self.clock = clock
         self.status = status
+        self.health = health
+        self.isProtectedDataAvailable = isProtectedDataAvailable
     }
 
     /// The owner got up. Ends sleep on the band (queued with every other band call), then reads the night.
@@ -117,6 +126,43 @@ actor SyncPipeline {
         return outcome
     }
 
+    /// Vesel came to the front, or Apple Health was just turned on: once no sync is running, writes what's pending to Health
+    /// in its own background time. A write already running is awaited instead. `askForNewKinds` shows Apple's sheet first for
+    /// kinds never asked about. Nil without Apple Health.
+    @discardableResult
+    func writeToHealth(askForNewKinds: Bool) async -> HealthRunOutcome? {
+        guard health != nil else { return nil }
+        let time = await BackgroundTime.begin("Write to Apple Health", database: database) { [self] in expire() }
+        while let current = running {
+            _ = await current.value
+            if running == current { running = nil }
+        }
+        let outcome = await writeHealth(askForNewKinds: askForNewKinds)
+        await time.end()
+        return outcome
+    }
+
+    /// Called with no read running. Starts no second write beside a running one.
+    private func writeHealth(askForNewKinds: Bool) async -> HealthRunOutcome? {
+        guard let health else { return nil }
+        if let healthWriting { return await healthWriting.value }
+        let writer = HealthWriter(database: database, store: health, clock: clock)
+        let task = Task { [isProtectedDataAvailable] in await writer.run(askForNewKinds: askForNewKinds, isProtectedDataAvailable: isProtectedDataAvailable) }
+        healthWriting = task
+        let outcome = await task.value
+        if healthWriting == task { healthWriting = nil }
+        return outcome
+    }
+
+    /// A read is about to store: a write to Health stops after the unit it is on, so it never reads half a read.
+    private func stopHealthWrite() async {
+        while let current = healthWriting {
+            current.cancel()
+            _ = await current.value
+            if healthWriting == current { healthWriting = nil }
+        }
+    }
+
     /// About you was saved: once no sync is running, writes the profile to the band (Polar's first-time setup), then
     /// stores it. False when the band didn't take it or iOS ended the time first; nothing is stored on the phone then.
     func writeProfile(_ profile: Profile) async -> Bool {
@@ -169,8 +215,8 @@ actor SyncPipeline {
         return saved
     }
 
-    /// iOS is about to suspend Vesel: stop the sync (nothing gets cleared), the backup and a profile write that hasn't
-    /// reached the band yet, and let go of the database.
+    /// iOS is about to suspend Vesel: stop the sync (nothing gets cleared), the backup, a write to Health and a profile write
+    /// that hasn't reached the band yet, and let go of the database.
     nonisolated func expire() {
         let bandSync = bandSync
         Task { await bandSync.cancelSync() }
@@ -183,6 +229,7 @@ actor SyncPipeline {
         running?.cancel()
         uploading?.cancel()
         writing?.cancel()
+        healthWriting?.cancel()
     }
 
     /// Runs last: it never changes how the band sync went, and its outcome is kept apart from the sync runs.
@@ -244,6 +291,7 @@ actor SyncPipeline {
             )
             if !due { return nil }
         }
+        await stopHealthWrite()
         await status.set(.reading(SyncProgress()))
         var loopWait = bandSync.loopWait(trigger)
         // Not nearby after the whole wait: the read below only checks once more.
@@ -275,6 +323,7 @@ actor SyncPipeline {
             await status.set(.idle)
         }
         _ = await backUp()
+        if !Task.isCancelled { _ = await writeHealth(askForNewKinds: false) }
         return outcome
     }
 
