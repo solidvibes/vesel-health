@@ -1,10 +1,10 @@
 ---
-status: in-progress
+status: implemented
 ---
 
 # Apple Health: Vesel writes its readings, one way
 **Date**: 2026-11-26
-**Status**: Approved
+**Status**: Implemented 2026-11-26
 **Touches**: `docs/decisions/2026-11-26-apple-health.md` (new), `docs/decisions/2026-10-26-no-cloud.md`, `AGENTS.md`, `docs/intent.md`, `docs/how-it-works/apple-health.md` (new), `docs/how-it-works/backup.md`, `docs/how-it-works/sleep.md`, `docs/design/screens.md`, `docs/stack.md`, `.agents/skills/data/SKILL.md`, `.agents/skills/layers/SKILL.md`, `.agents/skills/testing/SKILL.md`
 
 ## TL;DR
