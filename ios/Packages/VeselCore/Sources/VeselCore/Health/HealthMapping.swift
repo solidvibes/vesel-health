@@ -153,10 +153,10 @@ public enum HealthMapping {
         }
         var readings: [HeartRateSample] = []
         if let own = workout.heartRates, own.intervalMs > 0 {
+            // Readings past the workout's end are left out: a workout's samples lie inside it.
             readings = own.bpm.enumerated().compactMap { index, bpm in
-                bpm > 0
-                    ? HeartRateSample(time: interval.start.addingTimeInterval(Double(index * own.intervalMs) / 1000), bpm: bpm, trigger: .timed)
-                    : nil
+                let time = interval.start.addingTimeInterval(Double(index * own.intervalMs) / 1000)
+                return bpm > 0 && interval.contains(time) ? HeartRateSample(time: time, bpm: bpm, trigger: .timed) : nil
             }
         }
         if readings.isEmpty { readings = dayHeartRates.filter { interval.contains($0.time) } }

@@ -84,11 +84,11 @@ extension AppDatabase {
         try await writer.read { try Bool.fetchOne($0, sql: "SELECT EXISTS (SELECT 1 FROM health_write)") ?? false }
     }
 
-    /// Every allowed heart rate and energy day was written with `allowed`: remembers whether Workouts were among them.
-    public func healthDaysWritten(allowed: Set<HealthKind>) async throws {
-        let value = allowed.contains(.workout) ? "on" : "off"
+    /// Every heart rate and energy day of `kinds` was written with Workouts allowed or not: remembers which.
+    public func healthDaysWritten(kinds: Set<HealthKind>, withWorkouts: Bool) async throws {
+        let value = withWorkouts ? "on" : "off"
         try await setSettings(
-            Dictionary(uniqueKeysWithValues: Self.kindsFollowingWorkouts.filter(allowed.contains).map { (Self.healthWithWorkoutsKey($0), value) }))
+            Dictionary(uniqueKeysWithValues: Self.kindsFollowingWorkouts.filter(kinds.contains).map { (Self.healthWithWorkoutsKey($0), value) }))
     }
 
     /// Units of `kinds` to write, newest first. A day is cut in `zone` where a workout crosses it.
@@ -149,13 +149,15 @@ extension AppDatabase {
                 """
             arguments = [FetchKind.dailySummary.rawValue]
         case .workout:
-            // Its fix, its route, and the day's summary (its resting share) and 24/7 heart rate (when it has none of its own).
+            // Its fix, its route, its day's summary (its resting share) and the 24/7 heart rate of the days it spans (when it has
+            // none of its own).
             sql = """
                 SELECT w.session AS key, MAX(
                     w.stored_at, IFNULL(c.chosen_at, 0),
                     IFNULL((SELECT MAX(r.updated_at) FROM workout_route AS r WHERE r.started_at <= w.end_at AND r.started_at >= w.start_at - ?
                         AND IFNULL(r.ended_at, w.end_at) >= w.start_at), 0),
-                    IFNULL((SELECT MAX(l.stored_at) FROM band_ledger AS l WHERE l.day = w.day AND l.fetch_kind IN (?, ?)), 0)) AS stamp
+                    IFNULL((SELECT MAX(l.stored_at) FROM band_ledger AS l WHERE (l.fetch_kind = ? AND l.day = w.day)
+                        OR (l.fetch_kind = ? AND l.day >= w.day AND l.day <= date(w.end_at + w.utc_offset_seconds, 'unixepoch'))), 0)) AS stamp
                 FROM workout AS w LEFT JOIN workout_choice AS c ON c.session = w.session
                 WHERE IFNULL(c.hidden, 0) = 0
                 """

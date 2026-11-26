@@ -72,8 +72,9 @@ public struct HealthWriter: Sendable {
         }
         if outcome == .off { return .off }
         if outcome == .upToDate {
-            // Heart rate and energy days are now all written as Workouts being allowed or not puts them.
-            try? await database.healthDaysWritten(allowed: allowed.subtracting(notAllowed))
+            // Heart rate and energy days are now all written as Workouts being allowed at the start of the run put them, even
+            // if Workouts were turned off in Health during it (the next run then gives the readings back to the days).
+            try? await database.healthDaysWritten(kinds: allowed.subtracting(notAllowed), withWorkouts: allowed.contains(.workout))
         }
 
         let run = HealthRun(

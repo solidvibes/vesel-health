@@ -60,7 +60,7 @@ struct HealthWritesTests {
                 try await database.markHealthWritten(unit, digest: read.batch.digest, version: 1, at: read.snapshot)
             }
         }
-        try await database.healthDaysWritten(allowed: kinds)
+        try await database.healthDaysWritten(kinds: kinds, withWorkouts: kinds.contains(.workout))
     }
 
     @Test func everythingWithDataIsPendingNewestFirstUntilWritten() async throws {
@@ -275,5 +275,9 @@ struct HealthWritesTests {
         #expect(try await items("heartRate/2026-10-28").map(\.start) == [at("2026-10-27T23:30:00Z")])
         #expect(try await items("energy/2026-10-27").first?.value == .quantity(336, .kcal))
         #expect(try await items("energy/2026-10-28").first?.value == .quantity(600, .kcal))
+
+        try await writeAll(clock("2026-10-28T11:00:00Z"))
+        try await heartRates(on: "2026-10-28", ["00:05:00", "00:08:00", "00:30:00"], readAt: "2026-10-28T12:00:00Z")
+        #expect(try await database.pendingHealthUnits(kinds: all, zone: berlin).map(\.id).contains("workout/20261027/234000"))
     }
 }

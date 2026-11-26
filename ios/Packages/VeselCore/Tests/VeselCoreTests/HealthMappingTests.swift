@@ -184,6 +184,17 @@ struct HealthMappingTests {
         #expect(saved.samples[1].syncId == "vesel.workout.20261103/071000.hr.\(Int64(at("2026-11-03T06:10:00Z").timeIntervalSince1970) * 1000)")
     }
 
+    /// 21 minutes apart over 42 minutes: the reading after the end isn't the workout's.
+    @Test func aWorkoutsOwnReadingsStopAtItsEnd() throws {
+        let item = try #require(
+            HealthMapping.workout(
+                workout(calories: nil, heartRates: WorkoutHeartRates(intervalMs: 1_260_000, bpm: [120, 125, 130, 135])),
+                label: WorkoutLabel(sport: .running, source: .band, hidden: false), route: [], bmr: 1728, dayHeartRates: []))
+
+        guard case .workout(let saved) = item.value else { Issue.record("not a workout"); return }
+        #expect(saved.samples.map(\.value) == [.quantity(120, .bpm), .quantity(125, .bpm), .quantity(130, .bpm)])
+    }
+
     /// Without its own readings it takes the 24/7 ones inside it; a guessed sport is Other; no route is fine; hidden writes nothing.
     @Test func aGuessIsOtherAndAHiddenWorkoutIsNothing() throws {
         let day = [

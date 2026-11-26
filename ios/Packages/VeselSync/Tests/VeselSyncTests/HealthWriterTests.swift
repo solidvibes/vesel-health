@@ -20,6 +20,8 @@ actor FakeHealth: HealthStore {
     /// What the sheet leaves when Vesel asks.
     var afterAsking: [HealthKind: HealthAccess]?
     var saveError: HealthStoreError?
+    /// Kinds turned off in Health after the run read the access: their saves are refused.
+    var refused: Set<HealthKind> = []
 
     init(access: [HealthKind: HealthAccess] = Dictionary(uniqueKeysWithValues: HealthKind.allCases.map { ($0, .allowed) })) {
         self.access = access
@@ -28,6 +30,7 @@ actor FakeHealth: HealthStore {
     func set(access: [HealthKind: HealthAccess]) { self.access = access }
     func set(afterAsking: [HealthKind: HealthAccess]) { self.afterAsking = afterAsking }
     func set(saveError: HealthStoreError?) { self.saveError = saveError }
+    func set(refused: Set<HealthKind>) { self.refused = refused }
 
     func authorization() -> [HealthKind: HealthAccess] { access }
 
@@ -38,6 +41,7 @@ actor FakeHealth: HealthStore {
 
     func save(_ items: [HealthItem], unit: HealthUnit, version: Int64) throws {
         if let saveError { throw saveError }
+        if refused.contains(unit.kind) { throw HealthStoreError.notAllowed }
         calls.append("save \(unit.id)")
         for item in items where (objects[item.syncId]?.version ?? -1) < version {
             objects[item.syncId] = Object(item: item, unit: unit.id, version: version)
@@ -271,6 +275,28 @@ struct HealthWriterTests {
         #expect(await health.ids(.workout).isEmpty)
         #expect(await health.ids(.heartRate).count == 4)
         #expect(await health.calls.contains("remove workout/20261027/060200"))
+    }
+
+    /// Workouts turned off in Health during a run: the day was already written without the workout's reading, so the next
+    /// run, with Workouts not allowed, gives it back to the day.
+    @Test func workoutsTurnedOffDuringARunGiveTheirReadingBackNextRun() async throws {
+        let start = at("2026-10-27T05:02:00Z")
+        let workout = Workout(
+            session: "20261027/060200", start: start, end: start.addingTimeInterval(1800), utcOffsetSeconds: 3600, bandSportId: 1, durationSeconds: 1800,
+            calories: 250, cardioLoad: nil, cardioLoadRating: nil, trainingLoad: nil, averageHeartRate: nil, maxHeartRate: nil, heartRates: nil,
+            fileSize: 1, unreadableFiles: [])
+        try await database.save(BandWorkout(workout: workout, files: []), storedAt: at("2026-10-27T08:00:00Z"))
+        let health = FakeHealth()
+        await health.set(refused: [.workout])
+        #expect(await run(health, at: "2026-10-27T09:00:00Z") == .upToDate)
+        let written = await health.ids(.heartRate).count
+
+        var access = await health.authorization()
+        access[.workout] = .denied
+        await health.set(access: access)
+        #expect(await run(health, at: "2026-10-27T10:00:00Z") == .upToDate)
+
+        #expect(await health.ids(.heartRate).count == written + 1)
     }
 }
 

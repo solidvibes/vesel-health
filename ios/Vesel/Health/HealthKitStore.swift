@@ -117,7 +117,8 @@ final class HealthKitStore: HealthStore {
     func removeStale(unit: HealthUnit, kind: HealthKind, below version: Int64) async throws {
         let predicate = Self.stalePredicate(unit: unit, below: version)
         do {
-            for type in Self.types(kind) {
+            // Health refuses a delete of a type it doesn't allow; routes are optional, so a refused route type is skipped.
+            for type in Self.types(kind) where type != Self.routeType || store.authorizationStatus(for: type) == .sharingAuthorized {
                 _ = try await store.deleteObjects(of: type, predicate: predicate)
             }
         } catch {
