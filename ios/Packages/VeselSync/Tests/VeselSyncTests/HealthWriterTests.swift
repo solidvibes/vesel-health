@@ -236,6 +236,21 @@ struct HealthWriterTests {
         #expect(await health.calls.isEmpty)
         #expect(try await database.healthStatus().lastRun == nil)
     }
+
+    @Test func turningOffStopsARunBeforeTheNextUnit() async throws {
+        let health = FakeHealth()
+        let checks = Counter()
+        let database = database
+
+        let outcome = await writer(health, at: "2026-10-27T09:00:00Z").run(askForNewKinds: false) {
+            if checks.next() == 3 { try? await database.setHealthWrite(false) }
+            return true
+        }
+
+        #expect(outcome == .off)
+        #expect(await health.calls == ["save heartRate/2026-10-27", "remove heartRate/2026-10-27"])
+        #expect(try await database.healthStatus().lastRun == nil)
+    }
 }
 
 final class Counter: Sendable {

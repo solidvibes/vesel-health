@@ -9,12 +9,13 @@ public enum HealthRunOutcome: Sendable, Equatable {
     /// The phone is locked: the rest waits for the next run with it unlocked.
     case waitingForUnlock
     case failed
-    /// The switch is off.
+    /// The switch is off, or was turned off during the run.
     case off
 }
 
 /// Copies what's pending into Apple Health, newest first, one unit at a time: save the new copies, then remove Vesel's own
 /// older ones of the unit. Runs only from `SyncPipeline`, never beside a read, and only while protected data is available.
+/// Turning the switch off stops it before the next unit.
 public struct HealthWriter: Sendable {
     private let database: AppDatabase
     private let store: any HealthStore
@@ -52,6 +53,10 @@ public struct HealthWriter: Sendable {
                     outcome = .waitingForUnlock
                     break
                 }
+                guard try await database.healthStatus().isOn else {
+                    outcome = .off
+                    break
+                }
                 do {
                     try await write(unit, allowed: allowed)
                 } catch HealthStoreError.notAllowed {
@@ -65,6 +70,7 @@ public struct HealthWriter: Sendable {
         } catch {
             outcome = error is CancellationError || AppDatabase.isPaused(error) ? .stopped : .failed
         }
+        if outcome == .off { return .off }
 
         let run = HealthRun(
             at: clock.now,
