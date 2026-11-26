@@ -22,6 +22,8 @@ actor FakeHealth: HealthStore {
     var saveError: HealthStoreError?
     /// Kinds turned off in Health after the run read the access: their saves are refused.
     var refused: Set<HealthKind> = []
+    /// Units whose saves always fail.
+    var failing: Set<String> = []
 
     init(access: [HealthKind: HealthAccess] = Dictionary(uniqueKeysWithValues: HealthKind.allCases.map { ($0, .allowed) })) {
         self.access = access
@@ -31,6 +33,7 @@ actor FakeHealth: HealthStore {
     func set(afterAsking: [HealthKind: HealthAccess]) { self.afterAsking = afterAsking }
     func set(saveError: HealthStoreError?) { self.saveError = saveError }
     func set(refused: Set<HealthKind>) { self.refused = refused }
+    func set(failing: Set<String>) { self.failing = failing }
 
     func authorization() -> [HealthKind: HealthAccess] { access }
 
@@ -42,6 +45,7 @@ actor FakeHealth: HealthStore {
     func save(_ items: [HealthItem], unit: HealthUnit, version: Int64) throws {
         if let saveError { throw saveError }
         if refused.contains(unit.kind) { throw HealthStoreError.notAllowed }
+        if failing.contains(unit.id) { throw HealthStoreError.failed }
         calls.append("save \(unit.id)")
         for item in items where (objects[item.syncId]?.version ?? -1) < version {
             objects[item.syncId] = Object(item: item, unit: unit.id, version: version)
@@ -217,6 +221,24 @@ struct HealthWriterTests {
         await health.set(saveError: nil)
         #expect(await run(health, at: "2026-10-27T10:00:00Z") == .upToDate)
         #expect(await health.ids(.heartRate).count == 4)
+    }
+
+    /// The newest unit keeps failing: it stays pending and the older ones are still written.
+    @Test func aUnitThatKeepsFailingDoesNotHoldBackOlderOnes() async throws {
+        let health = FakeHealth()
+        await health.set(failing: ["heartRate/2026-10-27"])
+
+        #expect(await run(health, at: "2026-10-27T09:00:00Z") == .failed)
+
+        #expect(await health.calls == ["save sleep/2026-10-27", "remove sleep/2026-10-27", "save heartRate/2026-10-26", "remove heartRate/2026-10-26"])
+        let pending = try await database.pendingHealthUnits(kinds: Set(HealthKind.allCases), zone: berlin).map(\.id)
+        #expect(pending.contains("heartRate/2026-10-27"))
+        #expect(!pending.contains("sleep/2026-10-27"))
+        #expect(try await database.healthStatus().lastRun?.outcome == .failed)
+        #expect(try await database.healthStatus().lastRun?.daysToGo == 1)
+
+        #expect(await run(health, at: "2026-10-27T10:00:00Z") == .failed)
+        #expect(await health.calls.count == 4)
     }
 
     @Test func aCancelledRunStopsBeforeTheNextUnit() async throws {

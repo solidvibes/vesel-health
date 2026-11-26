@@ -213,6 +213,10 @@ Phase 2:
 - Energy runs to the earlier of the next midnight and the summary's ledger time on any day, not only today. 0 kcal isn't written. HRV spans the sleep window, like resting heart rate.
 - Not fixed: resting heart rate and breathing without a sleep row still end at 24:00 of the night's day (ending at "now" would rewrite them every run).
 
+After review (**agent's**):
+- A unit whose write fails (not "not allowed", not locked) stays pending and is skipped for the rest of the run; older units go on, and the run still ends `failed` ("Couldn't write…"). A kind with such a unit doesn't get its Workouts grouping remembered, since that unit may be pending only because Workouts changed.
+- Known limit, documented, not fixed: turning Workouts off in Health later gives the days back their full active energy and readings, while the workouts' own energy and heart rate already in Health stay, so those spans count twice. Remedy in `docs/how-it-works/apple-health.md`.
+
 ## Verification
 - Contract `checks` (fast and full); CI green.
 - Package tests: mapping numbers written out (sleep segments, steps per hour, energy split, SDNN on a synthetic session with a known SD); pending detection after a late read, a workout fix, a mapping bump, data that went, a switch-on clear; a ledger row from a read that started before the write's snapshot is seen, one from after is pending; writer: protected data unavailable stops with everything still pending, then the next run writes it; denied and not-asked kinds wait; a rewrite removes the old ids.

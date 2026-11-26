@@ -42,6 +42,7 @@ public struct HealthWriter: Sendable {
 
         var outcome = HealthRunOutcome.upToDate
         var left: [HealthUnit] = []
+        var failed: [HealthUnit] = []
         do {
             left = try await database.pendingHealthUnits(kinds: allowed, zone: clock.timeZone)
             while let unit = left.first {
@@ -62,6 +63,9 @@ public struct HealthWriter: Sendable {
                 } catch HealthStoreError.notAllowed {
                     // Turned off in Health since the run began: it waits, shown as not allowed.
                     notAllowed.insert(unit.kind)
+                } catch where !Self.endsTheRun(error) {
+                    // Stays pending for the next run; older units go on, so one that keeps failing doesn't hold them back.
+                    failed.append(unit)
                 }
                 left.removeFirst()
             }
@@ -74,18 +78,25 @@ public struct HealthWriter: Sendable {
         if outcome == .upToDate {
             // Heart rate and energy days are now all written as Workouts being allowed at the start of the run put them, even
             // if Workouts were turned off in Health during it (the next run then gives the readings back to the days).
-            try? await database.healthDaysWritten(kinds: allowed.subtracting(notAllowed), withWorkouts: allowed.contains(.workout))
+            // A kind with a unit that failed isn't: that unit may be pending only because Workouts changed.
+            try? await database.healthDaysWritten(
+                kinds: allowed.subtracting(notAllowed).subtracting(failed.map(\.kind)), withWorkouts: allowed.contains(.workout))
+            if !failed.isEmpty { outcome = .failed }
         }
 
         let run = HealthRun(
             at: clock.now,
             outcome: outcome == .waitingForUnlock ? .waitingForUnlock : outcome == .failed ? .failed : .written,
-            daysToGo: Set(left.map { $0.day?.description ?? $0.key }).count,
+            daysToGo: Set((left + failed).map { $0.day?.description ?? $0.key }).count,
             notAllowed: HealthKind.allCases.filter(notAllowed.contains),
             wroteAny: (try? await database.hasHealthWrites()) ?? false
         )
         try? await database.saveHealthRun(run)
         return outcome
+    }
+
+    private static func endsTheRun(_ error: any Error) -> Bool {
+        error as? HealthStoreError == .locked || error is CancellationError || AppDatabase.isPaused(error)
     }
 
     private func write(_ unit: HealthUnit, allowed: Set<HealthKind>) async throws {
