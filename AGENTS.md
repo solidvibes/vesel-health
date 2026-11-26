@@ -8,7 +8,7 @@ Everything about the project lives in `docs/`. Start at `docs/README.md`. Why it
 
 ## Non-negotiables
 
-- Health data stays on the phone and the owner's own Mac. Never send it to Polar's, Apple's or anyone else's cloud.
+- Health data stays on the phone and the owner's own Mac, plus Apple Health on the phone and its encrypted iCloud backup (`docs/decisions/2026-11-26-apple-health.md`). Never send it to Polar's or anyone else's cloud.
 - Works in the background. Never needs the Polar app opened first.
 - Never nag. Speak up only when something is actually off.
 - Every number can be explained: where it came from and how it was computed.

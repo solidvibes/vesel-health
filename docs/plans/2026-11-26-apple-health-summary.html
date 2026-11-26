@@ -1,0 +1,113 @@
+<title>Apple Health Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one column. Boxes on top, then the settings mockups (one per state), then compact reference lists. App look: clear glass. */
+:root{--bg:#F3F3F1;--surface:#FFFFFF;--text:#111113;--muted:#55555B;--accent:#2F5FE0;--ok:#22844A;--warn:#D9621B;--no:#C42B1C;--line:#E2E2DE;--phone:#F2F2F7;--toggle-off:#E5E5EA;
+--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E0F11;--surface:#1A1C20;--text:#F2F2F4;--muted:#A1A1AA;--accent:#7FA2FF;--ok:#4ADE80;--warn:#FF9A52;--no:#FF7B6E;--line:#2A2D33;--phone:#000000;--toggle-off:#39393D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E0F11;--surface:#1A1C20;--text:#F2F2F4;--muted:#A1A1AA;--accent:#7FA2FF;--ok:#4ADE80;--warn:#FF9A52;--no:#FF7B6E;--line:#2A2D33;--phone:#000000;--toggle-off:#39393D;color-scheme:dark}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45}
+main{max-width:900px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:28px}
+h1{font-size:30px;font-weight:800;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:19px;font-weight:700;margin:0 0 12px}
+p{margin:0}.muted{color:var(--muted)}
+.boxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.box{background:var(--surface);border-radius:16px;padding:16px;display:grid;gap:6px;align-content:start}
+.box b{font-size:16px}
+.box.you{border:2px solid var(--warn)}
+.box .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--warn)}
+.box .tag.info{color:var(--muted)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.shot{display:grid;gap:6px;align-content:start}
+.shot .cap{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.phone{background:var(--phone);border-radius:22px;padding:14px 12px;border:1px solid var(--line)}
+.sec{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:0 10px 6px}
+.row{background:var(--surface);border-radius:12px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px}
+.tg{width:44px;height:26px;border-radius:13px;background:var(--toggle-off);position:relative;flex:none}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.tg.on{background:var(--ok)}.tg.on::after{left:20px}
+.foot{font-size:12.5px;color:var(--muted);padding:6px 10px 0}
+.foot+.foot{padding-top:3px}
+.sheet{background:var(--surface);border-radius:14px;padding:12px;display:grid;gap:6px;font-size:13px}
+.sheet .t{font-weight:700;text-align:center}
+.sheet .l{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:6px}
+.sheet .a{color:var(--accent);font-weight:600}
+.ref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ref ol{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.hard{color:var(--warn);font-weight:700;font-size:12px}
+.own{color:var(--muted);font-size:12px}
+</style>
+<main>
+<header style="display:grid;gap:6px">
+<h1>Apple Health Plan</h1>
+<p class="muted">Vesel copies your readings into Apple Health so Mira can read them. Look at the boxes and the settings pictures. The numbered lists are there if you want them.</p>
+</header>
+
+<section class="boxes">
+<div class="box"><span class="tag info">What you get</span><b>Your readings in Apple Health</b><p>Heart rate, resting heart rate, sleep with stages, breathing and steps come first. HRV, calories and workouts follow in a second update. Your whole history goes in, newest first.</p></div>
+<div class="box"><span class="tag info">What you see</span><b>One switch in Loop &amp; settings</b><p>Off until you turn it on. Apple asks which data to allow. A line under it says how far it has got. Nothing changes on Today and nothing pings you.</p></div>
+<div class="box you"><span class="tag">Check this</span><b>Guessed sports go in as "Other"</b><p>Vesel sometimes guesses a workout's sport from speed and your past workouts. A guess can change later, so only the Loop's sport or one you picked goes to Health. Everything else is "Other".</p></div>
+<div class="box you"><span class="tag">Your one step</span><b>Put the Loop first, three times</b><p>Your iPhone counts steps and calories too. In Health, set Vesel first under Data Sources for Steps, Active Energy and Resting Energy, so nothing is counted twice.</p></div>
+<div class="box"><span class="tag info">I assumed</span><b>HRV over sleep, one a night</b><p>Worked out from short beat recordings taken while you sleep, matching how Apple measures HRV. Vesel's own HRV page doesn't change.</p></div>
+</section>
+
+<section>
+<h2>Loop &amp; settings, each state</h2>
+<div class="shots">
+
+<div class="shot"><span class="cap">1 · Off</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg"></span></div><p class="foot">Copies your readings into Apple Health on this iPhone, so apps you allow there can read them. Vesel never reads from Health.</p></div></div>
+
+<div class="shot"><span class="cap">2 · Turning on: Apple's sheet</span><div class="phone"><div class="sheet"><span class="t">Health Access</span><span class="muted" style="text-align:center">"Vesel" would like to write</span><span class="a" style="text-align:center">Turn On All</span><span class="l">Heart Rate<span class="tg on"></span></span><span class="l">Sleep<span class="tg on"></span></span><span class="l">Steps<span class="tg on"></span></span><span class="muted" style="text-align:center">…</span></div><p class="foot">Shown again once, with only the new types, after the update that adds HRV, calories and workouts.</p></div></div>
+
+<div class="shot"><span class="cap">3 · Catching up</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Writing to Apple Health · 42 days to go</p></div></div>
+
+<div class="shot"><span class="cap">4 · Up to date</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Up to date · written 9 minutes ago</p></div></div>
+
+<div class="shot"><span class="cap">5 · Before the first read</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Nothing to write yet. Vesel writes after its first read of your Loop.</p></div></div>
+
+<div class="shot"><span class="cap">6 · Some types not allowed</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Up to date · written 9 minutes ago</p><p class="foot">Not allowed in Health: Sleep, Workouts. Allow them in Health › your profile › Apps › Vesel.</p></div></div>
+
+<div class="shot"><span class="cap">7 · Nothing allowed</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Health isn't letting Vesel write anything. Allow it in Health › your profile › Apps › Vesel.</p></div></div>
+
+<div class="shot"><span class="cap">8 · Last write failed</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg on"></span></div><p class="foot">Couldn't write to Apple Health. Vesel tries again at its next read.</p></div></div>
+
+<div class="shot"><span class="cap">9 · Off, after writing</span><div class="phone"><div class="sec">Apple Health</div><div class="row">Write to Apple Health<span class="tg"></span></div><p class="foot">What Vesel wrote stays in Apple Health. To remove it: Health › your profile › Apps › Vesel › Delete All Data.</p></div></div>
+
+</div>
+<p class="muted" style="margin-top:10px;font-size:13px">The section sits between Workouts and Alerts. While the phone is locked, Vesel waits and catches up when you unlock it.</p>
+</section>
+
+<section class="ref">
+<div class="box"><b>Decisions</b>
+<ol>
+<li>Apple Health and its encrypted iCloud backup allowed <span class="own">mine</span></li>
+<li>What gets written, and what doesn't <span class="own">mine</span></li>
+<li>HRV worked out Apple's way <span class="own">mine</span></li>
+<li>All history <span class="own">mine</span></li>
+<li>Loop first in Data Sources <span class="own">mine (calories added by me)</span></li>
+<li>HRV: short recordings during sleep, one value a night <span class="own">agent's</span></li>
+<li>A small table of what was written <span class="own">agent's</span> <span class="hard">hard to undo</span></li>
+<li>Fixes replace the old copy in Health <span class="own">agent's</span> <span class="hard">hard to undo</span></li>
+<li>How each reading is named in Health <span class="own">agent's</span> <span class="hard">hard to undo</span></li>
+<li>Workout heart rate and calories sit with the workout, not the day <span class="own">agent's</span></li>
+<li>Guessed sports written as Other <span class="own">agent's</span></li>
+<li>Turning the switch on again rewrites everything, with no doubles <span class="own">agent's</span></li>
+<li>Two updates: simple readings first, then HRV, calories and workouts <span class="own">agent's</span></li>
+</ol></div>
+<div class="box"><b>Risks</b>
+<ol>
+<li>Health data goes to a new place: Apple Health and iCloud. Shows as data in Health, which is the point.</li>
+<li>One new database table. If it goes wrong, the app won't open after the update. Tested before it ships.</li>
+<li>Vesel deletes its own older copies in Health, and only its own. If wrong, a day could disappear from Health. Vesel keeps its own copy either way.</li>
+<li>Polar's calorie figures might not split the way I assumed. That would show as calories a bit too high or low in Health.</li>
+</ol></div>
+<div class="box"><b>How we'll know it works</b>
+<ol>
+<li>The checks on the Mac and in the Simulator, with a fake Health</li>
+<li>In the Simulator: turn it on, see the data in Health, fix a night, see no doubles</li>
+<li><b>You:</b> on the iPhone, readings show in Health and in Mira</li>
+<li><b>You:</b> after a locked night, it catches up with no doubles</li>
+<li><b>You:</b> check that Polar's day calories include workouts</li>
+</ol></div>
+</section>
+</main>

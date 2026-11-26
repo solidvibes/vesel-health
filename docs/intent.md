@@ -18,7 +18,7 @@ A health assistant that works in the background and tells me when something is n
 
 ## Values
 
-- My health data goes nowhere but my phone and my own Mac (the MacBook now, the 2014 Mac mini later).
+- My health data goes nowhere but my phone and my own Mac (the MacBook now, the 2014 Mac mini later), plus Apple Health on my phone and its encrypted iCloud backup, so my other apps can read it (`decisions/2026-11-26-apple-health.md`).
 - The phone is the main thing: it holds the data and does the calculations. The Mac is a backup and a place for heavier analysis.
 - Quiet by default. It speaks up when something is off.
 - Calm, minimal, clean to look at.
@@ -36,7 +36,7 @@ None. Personal tool.
 
 ## Never
 
-- Never send health data to Polar's, Apple's or any other cloud.
+- Never send health data to Polar's or any other cloud. The one exception is Apple Health's encrypted iCloud backup (`decisions/2026-11-26-apple-health.md`).
 - Never depend on the Polar app being opened.
 - Never nag.
 - Never show a number it can't explain.
